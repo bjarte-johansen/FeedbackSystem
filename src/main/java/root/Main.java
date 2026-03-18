@@ -2,107 +2,83 @@ package root;
 
 import root.database.*;
 import root.logger.*;
-import root.models.FNV1A64HashGenerator;
-import root.models.IReview;
-import root.models.interfaces.IReviewRepository;
 //import root.models.repositories.JdbcReviewRepository;
-import root.models.Review;
-import root.models.repositories.JdbcReviewRepository;
 
-import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 
 //import static java.lang.StringTemplate.STR;
 
-
 public class Main {
-    static Connection conn = DB.getConnection();
+    static int TZ_POS;
+    static int TZ_LEN;
 
-
-    public static void execTest() throws Exception {
-        JdbcReviewRepository repo = new JdbcReviewRepository();
-
-        //String externalId = "/product/69";
-        //long externalIdHash = FNV1A64HashGenerator.generate(externalId);
-
-        Review review = new Review();
-        {
-
-            review.setAuthorId(3L);
-            review.setComment("Im old");
-            review.setExternalId("/product/69");
-            //review.setExternalIdHash(externalIdHash);
-            review.setScore(4);
-            review.setTenantId(1L);
-
-            repo.create(review);
-        }
-
-
-
-        FSQLQuery.create(conn, "UPDATE reviews SET comment = :comment, score = :score WHERE tenant_id = :tenant_id AND external_id_hash = :external_id_hash AND external_id = :external_id")
-            .bindNamed("comment", "Im updated")
-            .bindNamed("score", 4)
-            .bindNamed("tenant_id", 1L)
-            .bindNamed("external_id_hash", FNV1A64HashGenerator.generate("/product/69"))
-            .bindNamed("external_id", "/product/69")
-            .update();
-
-/*
-        FSQLQuery.create(conn, "UPDATE reviews SET comment = :comment WHERE id = :id")
-            .bindNamed("comment", "Im updated with named param")
-            .bindNamed("id", review.getId())
-            .update();
-
- */
-
-        {
-            List<IReview> reviews = repo.findByExternalId(1L, "/product/69", null, null);
-
-            for(IReview r : reviews){
-                System.out.println("Fetched review: " + r.getComment() + " with score: " + r.getScore());
-            }
-
-        }
+    public static boolean isValidArrayIndex(int index, int length) {
+        return index >= 0 && index < length;
     }
 
-
-    public static void testProxy() throws Exception{
-        IReviewRepository repo = ReviewRepository.create(conn, Map.of(
-            "tableName", "reviews",
-            "modelClass", Review.class
-        ));
-
-        try(var scope = Logger.scope("Testing proxy repository...")) {
-            Logger.log("Created proxy repository for reviews");
-            Review r1 = new Review();
-            r1.setAuthorId(2L);
-            r1.setComment("Proxied create");
-            r1.setExternalId("/proxy/create");
-            r1.setScore(4);
-            r1.setTenantId(1L);
-            repo.create(r1);
+    public static UpperCaseTokenizer.Token skipStr(List<UpperCaseTokenizer.Token> tokens, String s) {
+        if ((TZ_POS < TZ_LEN) && tokens.get(TZ_POS).matchStr(s)) {
+            TZ_POS++;
+            return tokens.get(TZ_POS - 1);
         }
+        return null;
+    }
+    public static UpperCaseTokenizer.Token skipStrOr(List<UpperCaseTokenizer.Token> tokens, String s) {
+        if ((TZ_POS < TZ_LEN) && tokens.get(TZ_POS).matchStrOr(s)) {
+            TZ_POS++;
+            return tokens.get(TZ_POS - 1);
+        }
+        return null;
+    }
 
-        {
-            //var results = repo.findByScoreAndExternalId(4, "2");
-            var results = repo.findAll();
-            Logger.log("Found " + results.size() + " reviews by author and external id");
-            try (var scope = Logger.scope("Iterating results...")) {
-                results.forEach(Logger::log);
+    public static void interpretTokens(List<UpperCaseTokenizer.Token> tokens) {
+        int pos = 0;
+        int n = tokens.size();
+        List<List<UpperCaseTokenizer.Token>> tokenGroups = new ArrayList<>();
+        List<UpperCaseTokenizer.Token> group = new ArrayList<>();
+
+        TZ_POS = 0;
+        TZ_LEN = tokens.size();
+
+
+        tokenGroups.add(group);
+        while(pos < n){
+            if(tokens.get(pos).matchStrOr("LessThan", "LessThanEqual", "Greater", "GreaterThanEqual", "Equal", "NotEqual")){
+                if(!group.isEmpty())
+                    tokenGroups.add(group = new ArrayList<>());
+                group.add(tokens.get(pos));
+
+                tokenGroups.add(group = new ArrayList<>());
+                pos++;
+                continue;
             }
 
-            repo.delete(results.get(0));
+            if(tokens.get(pos).id() == UpperCaseTokenizer.TOK_AND || tokens.get(pos).id() == UpperCaseTokenizer.TOK_OR) {
+                if(!group.isEmpty())
+                    tokenGroups.add(group = new ArrayList<>());
+                group.add(tokens.get(pos));
+
+                tokenGroups.add(group = new ArrayList<>());
+                pos++;
+                continue;
+            }
+
+            group.add(tokens.get(pos));
+            pos++;
         }
 
+        if(group.isEmpty())
+            tokenGroups.removeLast();
 
-        {
-            var results = repo.findByScoreAndExternalId(4, "2");
-            Logger.log("Found " + results.size() + " reviews by author and external id");
-            try (var scope = Logger.scope("Iterating results...")) {
-                results.forEach(Logger::log);
+        try (var ignore1 = Logger.scope("Tokenizer groups:")) {
+            for (var g : tokenGroups) {
+                try (var ignore2 = Logger.scope("group:")) {
+                    for (var t : g) {
+                        Logger.log(t);
+                    }
+                }
             }
         }
     }
@@ -118,7 +94,17 @@ public class Main {
             "findByScoreAndExternalId"
         };
 
-        var tokens = RepoProxyMethodScanner.tokenize(test[1]);
+        var tokens = UpperCaseTokenizer.tokenize("findByAuthorIdLessOrEqualAndExternalId");
+        interpretTokens(tokens);
+        Logger.log("tokens: " + tokens);
+
+        boolean c = false;
+        if(!c) {
+            return;
+        }
+
+
+        //var tokens = RepoProxyMethodScanner.tokenize(test[1]);
 
 
         boolean b = true;
@@ -136,7 +122,7 @@ public class Main {
                 DBTest.run();
 
                 try(var p = Logger.scope("Running proxy test...")){
-                    testProxy();
+                    JdbcRepoTest.testProxy();
                 }
             } catch (Exception e) {
                 e.printStackTrace();

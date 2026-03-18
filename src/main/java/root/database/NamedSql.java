@@ -2,10 +2,9 @@ package root.database;
 
 import root.logger.Logger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static java.util.Objects.*;
 
 
 /**
@@ -55,6 +54,9 @@ public class NamedSql {
             Logger.log("Positional Arguments: " + java.util.Arrays.toString(positional));
         }
         */
+
+        requireNonNull(sql, "SQL string cannot be null");
+        requireNonNull(named, "Named parameters map cannot be null");
 
         StringBuilder out = new StringBuilder(sql.length());
         List<Object> args = new ArrayList<>();

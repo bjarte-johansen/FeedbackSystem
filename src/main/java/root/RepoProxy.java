@@ -121,13 +121,13 @@ class RepoProxy<T> implements InvocationHandler {
         for(Field f : fields) {
             int mod = f.getModifiers();
             if(Modifier.isStatic(mod) || Modifier.isTransient(mod)) continue;
+
+            // do not serailize id field
             if(f.getName().equals("id")) continue;
 
             f.setAccessible(true);
             Object v = f.get(entity);
-            //if(v == null) continue;
 
-            System.out.println("Field: " + f.getName() + ", value: " + v);
             colNames.add(CaseConverter.camelToSnake(f.getName()));
             colValues.add(v);
         }

@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class FSQLUtils {
+
     public static IColumnWriter createColumnWriter(Class<?> t) throws Exception {
         return (f, o, v) -> ((Field) f).set(o, v);
     }
@@ -12,11 +13,13 @@ public class FSQLUtils {
     public static IColumnReader createColumnReader(Class<?> t) throws SQLException {
 
         // hottest first
-        if (t == String.class)      return ResultSet::getString;
         if (t == int.class)         return ResultSet::getInt;
         if (t == long.class)        return ResultSet::getLong;
         if (t == double.class)      return ResultSet::getDouble;
         if (t == boolean.class)     return ResultSet::getBoolean;
+
+        // string
+        if (t == String.class)      return ResultSet::getString;
 
         // boxed
         if (t == Integer.class)     return ResultSet::getInt;
