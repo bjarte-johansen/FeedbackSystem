@@ -2,6 +2,7 @@ package root;
 
 
 import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import root.quicktests.DBTest;
 import root.common.utils.RandomPastInstant;
@@ -11,13 +12,19 @@ import root.models.Review;
 import root.repositories.ReviewRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.springframework.boot.test.context.SpringBootTest;
 
-@Component
+
+
+@SpringBootTest
 public class TestA0Review {
     LoggerScope __logger;
 
-    //@Autowired
-    ReviewRepository reviewRepo = RepositoryProxyConstructor.create(ReviewRepository.class);
+    @Autowired
+    ReviewRepository reviewRepo;// = RepositoryProxyConstructor.create(ReviewRepository.class);
+
+    @Autowired
+    DBTest dbTest;
 
 
     /**
@@ -44,7 +51,7 @@ public class TestA0Review {
     public void beforeEach(TestInfo info) throws Exception {
         __logger = Logger.scope("TestA0Review.beforeEach");
 
-        DBTest.clean();
+        dbTest.clean();
     }
 
     /**
@@ -56,7 +63,7 @@ public class TestA0Review {
      */
     @AfterEach
     public void afterEach() throws Exception {
-        DBTest.clean();
+        dbTest.clean();
 
         __logger.close();
         //Logger.log("@AfterEach, DB cleaned");
@@ -72,7 +79,7 @@ public class TestA0Review {
         r.setScore(123);
         r.setComment("abc def");
         r.setCreatedAt(RandomPastInstant.generate(java.time.Duration.ofDays(1), java.time.Duration.ofDays(30)));
-        reviewRepo.create(r);
+        reviewRepo.save(r);
     }
 
     /**
@@ -118,10 +125,10 @@ public class TestA0Review {
         rw.setScore(123);
         //rw.setTitle("title");
         rw.setComment("abc def");
-        reviewRepo.create(rw);
+        reviewRepo.save(rw);
 
         // assert that the first review has the expected values
-        var r = reviewRepo.findById(1L, rw.getId()).orElse(null);
+        var r = reviewRepo.findById(rw.getId()).orElse(null);
         assertEquals(1L, r.getTenantId());
         assertEquals("/product/2", r.getExternalId());
         assertEquals(1L, r.getAuthorId());

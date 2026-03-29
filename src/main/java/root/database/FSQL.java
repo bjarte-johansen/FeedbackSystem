@@ -44,6 +44,9 @@ public class FSQL {
     /*****************************************************/
     /* statement binding and execution logic             */
     /*****************************************************/
+    public static void bindNull(PreparedStatement ps, int index) throws SQLException {
+        ps.setNull(index, java.sql.Types.NULL);
+    }
 
     public static void bind(PreparedStatement ps, int index, Object v) throws SQLException {
         switch (v) {

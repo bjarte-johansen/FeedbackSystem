@@ -64,7 +64,11 @@ public class ArgumentBinder {
             } else if (arg != null && arg.getClass().isArray()) {
                 for (int idx = 0, n = Array.getLength(arg); idx < n; idx++) FSQL.bind(ps, i++, Array.get(arg, idx));
             } else {
-                FSQL.bind(ps, i++, arg);
+                if(arg == null){
+                    FSQL.bindNull(ps, i++);
+                }else {
+                    FSQL.bind(ps, i++, arg);
+                }
             }
         }
 

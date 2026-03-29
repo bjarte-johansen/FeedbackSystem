@@ -19,10 +19,10 @@ public class TenantRepositoryCustomImpl {
     /**
      * WARNING: This method will return all reviews for the tenant, which could be a large amount of data. Use with caution.
      *
-     * @param tenantId The ID of the tenant to find reviews for.
+     * @return A list of reviews for the tenant.
      */
 
-    public List<Review> findReviewsByTenantId(long tenantId) throws Exception {
-        return reviewRepo.findByTenantId(tenantId);
+    public List<Review> findReviews() throws Exception {
+        return reviewRepo.findAll();
     }
 }

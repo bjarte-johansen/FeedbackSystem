@@ -1,7 +1,5 @@
 package root.interfaces;
 
-import root.models.IReview;
-import root.models.QueryOptions;
 import root.models.Review;
 
 import java.util.List;
@@ -58,32 +56,31 @@ public interface IReviewService {
     /**
      * Finds a review by its ID and tenant ID.
      *
-     * @param tenantId The tenant ID to search within. Must be a valid tenant ID.
      * @param reviewId The ID of the review to find. Must be a valid ID and tenant ID.
-     * @return An Optional containing the found review, or an empty Optional if no review was found with the specified ID and tenant ID.
+     * @return An Optional containing the found review, or an empty Optional if no review was found with the specified
+     * ID and tenant ID.
      */
 
-    Optional<Review> findById(long tenantId, long reviewId) throws Exception;
+    Optional<Review> findById(long reviewId) throws Exception;
 
 
     /**
      * Deletes a review by its ID and tenant ID.
      *
-     * @param tenantId The tenant ID to search within. Must be a valid tenant ID.
      * @param reviewId The ID of the review to delete. Must be a valid ID and tenant ID.
      */
 
-    void deleteById(Long tenantId, Long reviewId) throws Exception;
+    void deleteById(Long reviewId) throws Exception;
 
 
     /**
      * Finds reviews by external ID and tenant ID, with pagination and sorting options.
      *
-     * @param tenantId The tenant ID to search within. Must be a valid tenant ID.
+     * @param externalIdHash The hash of the external ID to search for. Must be a valid hash of an external ID and tenant ID.
      * @param externalId The external ID to search for. Must be a valid external ID and tenant ID.
-     * @param ctx The query options for pagination and sorting. Must be a valid QueryOptions object.
-     * @return A list of reviews matching the specified external ID and tenant ID, according to the provided query options. The list may be empty if no reviews were found.
+     * @return A list of reviews matching the specified external ID and tenant ID, according to the provided query
+     * options. The list may be empty if no reviews were found.
      */
 
-    List<Review> findByExternalId(Long tenantId, String externalId, Long externalIdHash, QueryOptions ctx) throws Exception;
+    List<Review> findByExternalIdHashAndExternalId(Long externalIdHash, String externalId) throws Exception;
 }

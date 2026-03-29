@@ -17,6 +17,7 @@ import java.util.Optional;
 
 @Repository
 public class ReviewerRepositoryCustomImpl {
+    /*
     public Optional<IReviewer> findByReviewerName(long tenantId, String username) throws Exception {
         return FSQLQuery.create("SELECT * FROM " + AppConfig.REVIEWER_TABLE_NAME + " WHERE tenant_id = ? AND displayName = ?")
             .bind(tenantId, tenantId)
@@ -24,7 +25,8 @@ public class ReviewerRepositoryCustomImpl {
             .fetchOne(Reviewer.class)
             .map(reviewer -> reviewer);
     }
-
+     */
+/*
     public Optional<IReviewer> findByEmail(long tenantId, String email) throws Exception {
         return FSQLQuery.create("SELECT * FROM " + AppConfig.REVIEWER_TABLE_NAME + " WHERE tenant_id = ? AND email = ?")
             .bind(tenantId, email)
@@ -38,4 +40,5 @@ public class ReviewerRepositoryCustomImpl {
             .bind(reviewerId)
             .delete();
     }
+ */
 }

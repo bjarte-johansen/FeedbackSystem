@@ -2,7 +2,6 @@ package root.models;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import root.interfaces.ReviewRepositoryCustom;
 import root.interfaces.IReviewService;
 import root.repositories.ReviewRepository;
 
@@ -67,47 +66,45 @@ class ReviewService implements IReviewService {
     /**
      * Finds a review by its ID and tenant ID. Both the review ID and tenant ID must be valid.
      *
-     * @param tenantId The tenant ID to search within. Must be a valid tenant ID.
      * @param reviewId The ID of the review to find. Must be a valid ID and tenant ID.
-     * @return An Optional containing the found review, or an empty Optional if no review is found with the given ID and tenant ID.
-     * @throws Exception If there is an error finding the review, such as if the database connection fails or if the query is invalid.
+     * @return An Optional containing the found review, or an empty Optional if no review is found with the given ID and
+     * tenant ID.
+     * @throws Exception If there is an error finding the review, such as if the database connection fails or if the
+     * query is invalid.
      */
 
     @Override
-    public Optional<Review> findById(long tenantId, long reviewId) throws Exception {
-        return reviewRepo.findById(tenantId, reviewId).map(review -> (Review) review);
+    public Optional<Review> findById(long reviewId) throws Exception {
+        return reviewRepo.findById(reviewId).map(review -> (Review) review);
     }
 
 
     /**
      * Deletes a review by its ID and tenant ID. Both the review ID and tenant ID must be valid.
-     * @param tenantId The tenant ID to search within. Must be a valid tenant ID.
      * @param reviewId The ID of the review to delete. Must be a valid ID and tenant ID.
      * @throws Exception If there is an error deleting the review, such as if the database connection fails or if the query is invalid.
      */
 
     @Override
-    public void deleteById(Long tenantId, Long reviewId) throws Exception {
-        reviewRepo.deleteByTenantIdAndId(tenantId, reviewId);
+    public void deleteById(Long reviewId) throws Exception {
+        reviewRepo.deleteById(reviewId);
     }
 
 
     /**
      * Finds reviews by their external ID and tenant ID. Both the external ID and tenant ID must be valid.
-     * @param tenantId The tenant ID to search within. Must be a valid tenant ID.
+     * @param externalIdHash The hash of the external ID. If null, it will be generated from the external ID. Must be a valid hash or null.     *
      * @param externalId The external ID to search for. Must be a valid external ID and tenant ID.
-     * @param externalIdHash The hash of the external ID. If null, it will be generated from the external ID. Must be a valid hash or null.
-     * @param queryOptions The query options for pagination and sorting. Must be a valid QueryOptions object.
      * @return A list of reviews that match the given external ID and tenant ID, sorted and paginated according to the provided query options. If no reviews are found, an empty list is returned.
      * @throws Exception If there is an error finding the reviews, such as if the database connection fails or if the query is invalid.
      */
 
     @Override
-    public List<Review> findByExternalId(Long tenantId, String externalId, Long externalIdHash, QueryOptions queryOptions) throws Exception {
+    public List<Review> findByExternalIdHashAndExternalId(Long externalIdHash, String externalId) throws Exception {
         if(externalIdHash == null){
             externalIdHash = FNV1A64HashGenerator.generate(externalId);
         }
 
-        return reviewRepo.findByExternalId(tenantId, externalId, externalIdHash, queryOptions);
+        return reviewRepo.findByExternalIdHashAndExternalId(externalIdHash, externalId);
     }
 }

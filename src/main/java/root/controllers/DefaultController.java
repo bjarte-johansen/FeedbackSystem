@@ -14,7 +14,7 @@ import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.models.Review;
 import root.models.Reviewer;
-import root.repositories.ReviewerRepositoryCustomImpl;
+import root.repositories.ReviewerRepository;
 import root.repositories.ReviewRepository;
 
 import java.time.Instant;
@@ -25,11 +25,12 @@ import java.util.*;
 @Controller
 public class DefaultController {
     private static final Logger log = LoggerFactory.getLogger(DefaultController.class);
-    //@Autowired
-    ReviewRepository reviewRepository = RepositoryProxyConstructor.create(ReviewRepository.class);
 
     @Autowired
-    ReviewerRepositoryCustomImpl reviewerRepo;
+    ReviewRepository reviewRepo;
+
+    @Autowired
+    ReviewerRepository reviewerRepo;
 
     @GetMapping("/error")
     public String error()  {
@@ -68,7 +69,7 @@ public class DefaultController {
             }
 
             // delete review
-            reviewRepository.deleteByTenantIdAndId(tenantId, reviewId);
+            reviewRepo.deleteById(reviewId);
 
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
@@ -151,7 +152,7 @@ public class DefaultController {
                     .redirect(ra, "/");
             }
 
-            Reviewer reviewer = (Reviewer) reviewerRepo.findByEmail(tenantId, email).orElse(null);
+            Reviewer reviewer = (Reviewer) reviewerRepo.findByEmail(email).orElse(null);
             if(Objects.isNull(reviewer)) {
                 return ControllerHelper.create()
                     .withError("Reviewer already exists.")
@@ -159,14 +160,14 @@ public class DefaultController {
             }
 
             Review review = new Review();
-            review.setTenantId(tenantId);
+            //review.setTenantId(tenantId);
             review.setAuthorName(displayName);
             review.setScore(score);
             review.setComment(comment);
             review.setExternalId(externalId);
             review.setCreatedAt(Instant.now());
             review.setTitle(title);
-            reviewRepository.save(review);
+            reviewRepo.save(review);
 
             return ControllerHelper.create()
                 .withSuccess("Review has been added successfully. [REPLACE MSG WITH STATIC CONSTANT]")
@@ -212,20 +213,20 @@ public class DefaultController {
                 return ResponseEntity.badRequest().build();
             }
 
-            Reviewer reviewer = (Reviewer) reviewerRepo.findByEmail(tenantId, email).orElse(null);
+            Reviewer reviewer = (Reviewer) reviewerRepo.findByEmail(email).orElse(null);
             if(Objects.isNull(reviewer)) {
                 return ResponseEntity.badRequest().build();
             }
 
             Review review = new Review();
-            review.setTenantId(tenantId);
+            //review.setTenantId(tenantId);
             review.setAuthorName(displayName);
             review.setScore(score);
             review.setComment(comment);
             review.setExternalId(externalId);
             review.setCreatedAt(Instant.now());
             review.setTitle(title);
-            reviewRepository.save(review);
+            reviewRepo.save(review);
 
 
             return ResponseEntity.ok().build();

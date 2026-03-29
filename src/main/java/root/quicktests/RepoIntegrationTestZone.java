@@ -69,7 +69,7 @@ public class RepoIntegrationTestZone {
 
         {
             Logger.warn("ACTUALLY USING findByExternalId");
-            List<Review> reviews = repo.findByExternalId(1L, "/product/69", null, null);
+            List<Review> reviews = repo.findByExternalIdHashAndExternalId(null, "/product/69");
 
             for (IReview r : reviews) {
                 System.out.println("Fetched review: " + r.getComment() + " with score: " + r.getScore());
