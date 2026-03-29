@@ -3,24 +3,29 @@ package root;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
-import root.ai.GPT;
-import root.database.DBTest;
+import org.springframework.core.annotation.Order;
+import root.quicktests.DBTest;
 
-import jakarta.annotation.PostConstruct;
 import root.logger.Logger;
 
 import java.io.InputStream;
+import java.sql.Connection;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+class FeedbackRequestContext{
+    public static ThreadLocal<Connection> CONN = new ThreadLocal<Connection>();
+    public static ThreadLocal<Integer> TENANT_ID = new ThreadLocal<Integer>();
+}
 
 @SpringBootApplication
 public class App{
+
+
     public static class PropertyFile{
-        private Properties props = new Properties();
+        private final Properties props = new Properties();
 
         public PropertyFile() throws Exception {
         }
@@ -90,6 +95,77 @@ public class App{
         app.run(args);
     }
 
+    public static String wrap80(String s) {
+        StringBuilder out = new StringBuilder(s.length());
+        int col = 0;
+
+        for (String word : s.split(" ")) {
+            int len = word.length();
+
+            if (col != 0 && col + 1 + len > 80) {
+                out.append('\n');
+                col = 0;
+            }
+
+            if (col != 0) {
+                out.append(' ');
+                col++;
+            }
+
+            out.append(word);
+            col += len;
+        }
+
+        return out.toString();
+    }
+
+
+    @Bean
+    @Order(0)
+    CommandLineRunner startup(){
+        return (args) -> {
+            String tmp = """
+██████╗ ███████╗██╗   ██╗██╗███████╗██╗    ██╗
+██╔══██╗██╔════╝██║   ██║██║██╔════╝██║    ██║
+██████╔╝█████╗  ██║   ██║██║█████╗  ██║ █╗ ██║ 
+██╔══██╗██╔══╝  ╚██╗ ██╔╝██║██╔══╝  ██║███╗██║
+██║  ██║███████╗ ╚████╔╝ ██║███████╗╚███╔███╔╝
+╚═╝  ╚═╝╚══════╝  ╚═══╝  ╚═╝╚══════╝ ╚══╝╚══╝
+
+Version: 1.0.0, DAT109 Project, 2026
+Developed by: Bjarte Johansen, Fahad Ahmed, Marcus Lowenstein, Øyvind Nordeide, 
+Prince Nixon Alaoysius, Ahmad Ahmed.
+System: ReView Feedback Engine
+""";
+            // TODO: rette navn i reviewbanneren, jeg skrev de etter hukommelse.
+
+            Logger.log("-".repeat(80));
+            Logger.log("-".repeat(80));
+
+            Logger.log("");
+            Logger.log("");
+
+            Logger.log(tmp);
+
+            Logger.log("");
+            Logger.log("");
+
+            Logger.log("-".repeat(80));
+            Logger.log("-".repeat(80));
+            Logger.log("-".repeat(80));
+            Logger.log("");
+
+            Logger.log(wrap80(RepositoryProxyConstructor.getDeveloperWarningMessages()));
+
+            Logger.log("");
+            Logger.log("-".repeat(80));
+            Logger.log("-".repeat(80));
+            Logger.log("-".repeat(80));
+            Logger.log("");
+            Logger.log("");
+        };
+    }
+
     @Bean
     CommandLineRunner showSources(ConfigurableApplicationContext ctx) {
         return args -> {
@@ -108,12 +184,14 @@ public class App{
     }
 
     @Bean
-    CommandLineRunner dbTestRunner() {
+    CommandLineRunner dbTestRunner(DBTest dbTest) {
         return args -> {
             //showApplicationProperties();
 
-            DBTest.clean();
-            DBTest.run();
+            dbTest
+                .clean();
+            dbTest
+                .run();
         };
     }
 }

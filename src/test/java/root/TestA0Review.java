@@ -2,20 +2,22 @@ package root;
 
 
 import org.junit.jupiter.api.*;
-import org.springframework.stereotype.Service;
-import root.database.DBTest;
+import org.springframework.stereotype.Component;
+import root.quicktests.DBTest;
 import root.common.utils.RandomPastInstant;
 import root.logger.Logger;
 import root.logger.LoggerScope;
 import root.models.Review;
-import root.repositories.JdbcReviewRepository;
+import root.repositories.ReviewRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Service
+@Component
 public class TestA0Review {
     LoggerScope __logger;
-    JdbcReviewRepository reviewRepo = new JdbcReviewRepository();
+
+    //@Autowired
+    ReviewRepository reviewRepo = RepositoryProxyConstructor.create(ReviewRepository.class);
 
 
     /**

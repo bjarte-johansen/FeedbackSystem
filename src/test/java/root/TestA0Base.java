@@ -2,11 +2,12 @@ package root;
 
 
 import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import root.database.DBTest;
+import root.quicktests.DBTest;
 import root.logger.Logger;
 import root.logger.LoggerScope;
-import root.repositories.JdbcReviewRepository;
+import root.repositories.ReviewRepository;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,7 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Service
 public class TestA0Base {
     LoggerScope __logger;
-    JdbcReviewRepository reviewRepo = new JdbcReviewRepository();
+
+    @Autowired
+    ReviewRepository reviewRepo;
 
 
     /**

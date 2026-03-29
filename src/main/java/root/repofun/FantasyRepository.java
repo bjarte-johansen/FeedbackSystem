@@ -3,7 +3,7 @@ package root.repofun;
 import root.ProxyRepository;
 import java.util.List;
 
-public interface FantasyRepoCustom extends ProxyRepository<Fantasy, Long> {
+public interface FantasyRepository extends ProxyRepository<Fantasy, Long> {
     void sayHello();
 
     void delete(Fantasy fantasy);

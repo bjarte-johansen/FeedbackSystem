@@ -10,7 +10,9 @@ public interface ProxyRepository<ENTITY, ID> {
     void deleteById(ID id);
     long count();
 
-    void deleteAll(ENTITY entities);
+    void delete(ENTITY entity);
+
+    void deleteAll(Iterable<ENTITY> entities);
     void deleteAllInBatch(Iterable<ENTITY> entities);
 
     void deleteAllById(ID id);

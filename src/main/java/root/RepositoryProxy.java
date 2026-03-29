@@ -1,6 +1,7 @@
 package root;
 
 import root.database.*;
+import root.logger.Logger;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
@@ -11,7 +12,7 @@ import java.util.function.Function;
 
 import static root.database.TableNameSanitizer.checkSafeTableName;
 
-class RepoProxy<T> implements InvocationHandler {
+class RepositoryProxy<T> implements InvocationHandler {
     private static final String DEFAULT_ID_FIELD_NAME = "id";
 
     @FunctionalInterface
@@ -49,7 +50,7 @@ class RepoProxy<T> implements InvocationHandler {
     }
 
     @SuppressWarnings("unchecked")
-    RepoProxy(Object target, Map<String, Object> options) {
+    RepositoryProxy(Object target, Map<String, Object> options) {
         this.target = target;
         this.options = options != null ? options : new HashMap<String, Object>();
 
@@ -81,7 +82,8 @@ class RepoProxy<T> implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        // default methods
+
+        // invoke default method (e.g. default method in repo interface)
         if (method.isDefault()) {
             return MethodHandles.lookup()
                 .unreflectSpecial(method, method.getDeclaringClass())
@@ -89,11 +91,13 @@ class RepoProxy<T> implements InvocationHandler {
                 .invokeWithArguments(args);
         }
 
-        // implemented methods
-        Method impl = findMethod(target.getClass(), method);
-        if (impl != null) {
-            impl.setAccessible(true);
-            return impl.invoke(target, args);
+        // invoke implemented method (if exists (e.g. custom repo method implemented in a separate class))
+        if(target != null) {
+            Method impl = findMethod(target.getClass(), method);
+            if (impl != null) {
+                impl.setAccessible(true);
+                return impl.invoke(target, args);
+            }
         }
 
 
@@ -524,8 +528,13 @@ class RepoProxy<T> implements InvocationHandler {
         Iterable<T> entities = (Iterable<T>) args[0];
         Long[] ids = FSQLUtils.extractEntityIds(entities);
 
+        //Logger.log("deleteAllInBatch args: " + String.valueOf(args[0]) + ", extracted ids: " + Arrays.toString(ids));
+
         // execute query
-        String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id IN (" + SqlFactory.createParenPlaceholdersSql(args.length) + ")";
+        String sql = "DELETE FROM " + __TABLE_NAME + " WHERE (id IN " + SqlFactory.createParenPlaceholdersSql(ids.length) + ")";
+
+        //Logger.log("sql: " + sql);
+        //Logger.log("args: " + Arrays.toString(ids));
 
         int affectedRows = FSQLQuery.create(sql)
             .bindArray(ids)
@@ -545,7 +554,7 @@ class RepoProxy<T> implements InvocationHandler {
         Iterable<T> ids = (Iterable<T>) args[0];
 
         // execute query
-        String sql = "DELETE FROM " + __TABLE_NAME + " WHERE (id IN (" + SqlFactory.createParenPlaceholdersSql(args.length) + "))";
+        String sql = "DELETE FROM " + __TABLE_NAME + " WHERE (id IN " + SqlFactory.createParenPlaceholdersSql(args.length) + ")";
 
         int affectedRows = FSQLQuery.create(sql)
             .bind(ids)

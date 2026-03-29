@@ -1,17 +1,20 @@
-package root;
+package root.quicktests;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import root.RepositoryProxyConstructor;
 import root.logger.Logger;
-import root.logger.LoggerScope;
 import root.repofun.Fantasy;
-import root.repofun.FantasyRepoCustom;
-import root.repofun.FantasyRepoCustomImpl;
+import root.repofun.FantasyRepository;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
+@Component
 public class FantasyRepoTest {
+    @Autowired
+    FantasyRepository repo = RepositoryProxyConstructor.create(FantasyRepository.class);
+
     public static void report(String action, List<?> entities) {
         Logger.logf("%s: found list of %d entities", action, entities.size());
 
@@ -36,16 +39,7 @@ public class FantasyRepoTest {
         Logger.tab().log(entity);
     }
 
-    public static void run(){
-
-        FantasyRepoCustom repo = ProxyRepositoryFactory.createFantasyRepo(
-            new FantasyRepoCustomImpl(),
-            Map.of(
-                "tableName", "fantasy",
-                "modelClass", Fantasy.class
-            )
-        );
-
+    public void run(){
         testByMethodOverride(repo);
         testFindByTextEquals(repo);
         testRepoFindById(repo);
@@ -61,41 +55,41 @@ public class FantasyRepoTest {
         testDeleteById(repo);
     }
 
-    private static void testByMethodOverride(FantasyRepoCustom repo) {
+    private void testByMethodOverride(FantasyRepository repo) {
         try(var __ = Logger.scope("repo.sayHello")) {
             repo.sayHello();
         }
     }
 
-    private static void testFindByTextEquals(FantasyRepoCustom repo) {
+    private void testFindByTextEquals(FantasyRepository repo) {
         try(var __ = Logger.scope("repo.findByTextEquals")){
             var found = repo.findByTextEquals("test");
             report("found", found);
         }
     }
 
-    private static void testRepoFindById(FantasyRepoCustom repo) {
+    private void testRepoFindById(FantasyRepository repo) {
         try(var __ = Logger.scope("repo.findById")) {
             var found = repo.findById(1L);
             Logger.log("Entities found: " + found);
         }
     }
 
-    private static void testRepoCount(FantasyRepoCustom repo) {
+    private void testRepoCount(FantasyRepository repo) {
         try (var __ = Logger.scope("repo.count")) {
             var found = repo.count();
             Logger.log("Entities counted: " + found);
         }
     }
 
-    private static void testFindAll(FantasyRepoCustom repo) {
+    private void testFindAll(FantasyRepository repo) {
         try(var __ = Logger.scope("repo.findAll")) {
             var all = repo.findAll();
             report("findAll", all);
         }
     }
 
-    private static void testFindByEmailLike(FantasyRepoCustom repo) {
+    private void testFindByEmailLike(FantasyRepository repo) {
         try(var __ = Logger.scope("repo.findByEmailLike")) {
             Logger.log("Deleting any existing entries with email like %@onlyone.com to ensure clean test environment...");
 
@@ -104,7 +98,7 @@ public class FantasyRepoTest {
         }
     }
 
-    private static void testFindById(FantasyRepoCustom repo) {
+    private void testFindById(FantasyRepository repo) {
         try (var scope = Logger.scope("repo.save")) {
             Fantasy f = new Fantasy();
             f.setText("test123");
@@ -122,14 +116,14 @@ public class FantasyRepoTest {
         }
     }
 
-    private static void testCountByEmailLike(FantasyRepoCustom repo) {
+    private void testCountByEmailLike(FantasyRepository repo) {
         try(var scope = Logger.scope("repo.countByEmailLike")) {
             var found = repo.countByEmailLike("%@onlyone.com");
             report("findByEmailLike", found);
         }
     }
 
-    private static void testCountByEmailLikeAndAge(FantasyRepoCustom repo) {
+    private void testCountByEmailLikeAndAge(FantasyRepository repo) {
         try(var scope = Logger.scope("repo.countByEmailLikeAndAge (31)")) {
             var found = repo.countByEmailLikeAndAge("%@onlyone.com", 31);
             report("countByEmailLikeAndAge", found);
@@ -141,14 +135,14 @@ public class FantasyRepoTest {
         }
     }
 
-    private static void testExistsByEmail(FantasyRepoCustom repo) {
+    private void testExistsByEmail(FantasyRepository repo) {
         try (var scope = Logger.scope("repo.existsByEmail()")) {
             var found = repo.existsByEmailLike("%@test.com");
             report("existsByEmailLike", found);
         }
     }
 
-    public static void testDeleteById(FantasyRepoCustom repo){
+    public void testDeleteById(FantasyRepository repo){
         try (var scope = Logger.scope("repo.deleteById")) {
             Fantasy f = new Fantasy();
             f.setText("abc");

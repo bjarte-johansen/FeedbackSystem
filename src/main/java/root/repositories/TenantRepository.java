@@ -1,22 +1,29 @@
 package root.repositories;
 
 import root.ProxyRepository;
-import root.ProxyRepositoryFactory;
+import root.RepositoryProxyConstructor;
+import root.interfaces.ITenant;
+import root.interfaces.TenantRepos;
+import root.models.IReview;
 import root.models.Review;
 import root.models.Tenant;
 
 import java.util.List;
+import java.util.Optional;
 
 
 public interface TenantRepository extends ProxyRepository<Tenant, Long> {
-    /**
-     * WARNING: This method will return all reviews for the tenant, which could be a large amount of data. Use with caution.
-     *
-     * @param tenantId The ID of the tenant to find reviews for.
-     */
+    ITenant create(ITenant tenant) throws Exception;
 
-    default List<Review> findReviewsByTenantId(long tenantId) throws Exception {
-        ReviewRepository reviewRepo = ProxyRepositoryFactory.create(ReviewRepository.class);
-        return reviewRepo.findByTenantId(tenantId);
-    }
+    void update(ITenant tenant) throws Exception;
+
+    List<Tenant> findAll();
+
+    Optional<ITenant> findById(long tenantId) throws Exception;
+
+    List<IReview> findReviewsByTenantId(long tenantId);
+
+    void deleteById(long tenantId);
+
+    void deleteAll();
 }

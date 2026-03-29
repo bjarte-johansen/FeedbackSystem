@@ -2,6 +2,7 @@ package root.interfaces;
 
 import root.models.IReview;
 import root.models.QueryOptions;
+import root.models.Review;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +16,7 @@ public interface IReviewService {
      * @throws Exception if there is an error during the save operation, such as a database error or validation error. The specific exceptions thrown may depend on the implementation of the save method and the underlying data access layer.
      */
 
-    default void save(IReview review) throws Exception {
+    default void save(Review review) throws Exception {
         // DEBUG: we match against 0, not null ?!
         if(review.getId() == null) {
             create(review);
@@ -32,7 +33,7 @@ public interface IReviewService {
      * @return The created review with its ID populated.
      */
 
-    IReview create(IReview review) throws Exception;
+    Review create(Review review) throws Exception;
 
 
     /**
@@ -42,7 +43,7 @@ public interface IReviewService {
      * @return The updated review.
      */
 
-    IReview update(IReview review) throws Exception;
+    Review update(Review review) throws Exception;
 
 
     /**
@@ -51,7 +52,7 @@ public interface IReviewService {
      * @param review The review to delete. Must have a valid ID and tenant ID.
      */
 
-    void delete(IReview review) throws Exception;
+    void delete(Review review) throws Exception;
 
 
     /**
@@ -62,7 +63,7 @@ public interface IReviewService {
      * @return An Optional containing the found review, or an empty Optional if no review was found with the specified ID and tenant ID.
      */
 
-    Optional<IReview> findById(long tenantId, long reviewId) throws Exception;
+    Optional<Review> findById(long tenantId, long reviewId) throws Exception;
 
 
     /**
@@ -84,5 +85,5 @@ public interface IReviewService {
      * @return A list of reviews matching the specified external ID and tenant ID, according to the provided query options. The list may be empty if no reviews were found.
      */
 
-    List<IReview> findByExternalId(Long tenantId, String externalId, Long externalIdHash, QueryOptions ctx) throws Exception;
+    List<Review> findByExternalId(Long tenantId, String externalId, Long externalIdHash, QueryOptions ctx) throws Exception;
 }

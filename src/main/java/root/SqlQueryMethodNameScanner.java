@@ -61,13 +61,14 @@ class SqlQueryMethodNameScanner {
     };
 
 
-    public String sourceString = null;
-    public String methodType = null;
+    public String sourceString = "";
+    public String methodType = "";
     public String whereStr = "";
     public int paramCount = 0;
     public boolean success = false;
 
     public SqlQueryMethodNameScanner() {
+        reset();
     }
 
     public SqlQueryMethodNameScanner(String src) {
@@ -126,7 +127,17 @@ class SqlQueryMethodNameScanner {
         return result;
     }
 
+    private void reset() {
+        sourceString = "";
+        methodType = "";
+        whereStr = "";
+        paramCount = 0;
+        success = false;
+    }
+
     public SqlQueryMethodNameScanner scan(String methodName, int flags) {
+        reset();
+
         StringBuilder whereClause = new StringBuilder();
 
         boolean useExtraParens = checkFlag(flags, FLAG_EXTRA_PARENS) || EMBED_EXTRA_PARENS_FOR_READABILITY;
@@ -134,45 +145,46 @@ class SqlQueryMethodNameScanner {
         String leftParen = useExtraParens ? "(" : "";
         String rightParen = useExtraParens ? ")" : "";
 
-        success = false;
-        sourceString = methodName;
-
         for (String start : methodStarts) {
             if (methodName.startsWith(start)) {
                 methodType = methodName.substring(0, start.length());
-                List<String> combinerParts = splitAndOr( methodName.substring(start.length()) );
 
-                for (var combinerPart : combinerParts) {
-                    if (combinerPart.equals("AND") || combinerPart.equals("OR")) {
-                        whereClause.append(" ").append(combinerPart.toUpperCase()).append(" ");
-                        continue;
-                    }
+                if(methodType.length() < methodName.length()) {
+                    List<String> combinerParts = splitAndOr(methodName.substring(start.length()));
 
-                    var parts = extractFieldAndOperator(combinerPart);
 
-                    String field = parts[0];
-                    String op = parts[1];
-
-                    whereClause.append(leftParen).append(fieldToColumn(field)).append(" ");
-
-                    if (op != null) {
-                        if(op.equals("False") || op.equals("True")) {
-                            whereClause.append("= ").append(op.toUpperCase());
-                        } else {
-                            String finalOpStr = extractOperator(op);
-                            if (finalOpStr == null) {
-                                throw new RuntimeException("Unsupported operator: " + op);
-                            }
-
-                            whereClause.append(finalOpStr).append(" ?");
+                    for (var combinerPart : combinerParts) {
+                        if (combinerPart.equals("AND") || combinerPart.equals("OR")) {
+                            whereClause.append(" ").append(combinerPart.toUpperCase()).append(" ");
+                            continue;
                         }
-                    } else {
-                        whereClause.append(" = ?");
+
+                        var parts = extractFieldAndOperator(combinerPart);
+
+                        String field = parts[0];
+                        String op = parts[1];
+
+                        whereClause.append(leftParen).append(fieldToColumn(field)).append(" ");
+
+                        if (op != null) {
+                            if (op.equals("False") || op.equals("True")) {
+                                whereClause.append("= ").append(op.toUpperCase());
+                            } else {
+                                String finalOpStr = extractOperator(op);
+                                if (finalOpStr == null) {
+                                    throw new RuntimeException("Unsupported operator: " + op);
+                                }
+
+                                whereClause.append(finalOpStr).append(" ?");
+                            }
+                        } else {
+                            whereClause.append(" = ?");
+                        }
+
+                        whereClause.append(rightParen);
+
+                        paramCount++;
                     }
-
-                    whereClause.append(rightParen);
-
-                    paramCount++;
                 }
 
                 whereStr = (whereClause.isEmpty()) ? "" : leftParen + whereClause.toString() + rightParen;

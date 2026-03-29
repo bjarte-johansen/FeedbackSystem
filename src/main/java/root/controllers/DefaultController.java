@@ -9,7 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import root.ProxyRepositoryFactory;
+import root.RepositoryProxyConstructor;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.models.Review;
@@ -26,7 +26,7 @@ import java.util.*;
 public class DefaultController {
     private static final Logger log = LoggerFactory.getLogger(DefaultController.class);
     //@Autowired
-    ReviewRepository reviewRepository = ProxyRepositoryFactory.create(ReviewRepository.class);
+    ReviewRepository reviewRepository = RepositoryProxyConstructor.create(ReviewRepository.class);
 
     @Autowired
     ReviewerRepositoryCustomImpl reviewerRepo;
@@ -38,9 +38,9 @@ public class DefaultController {
 
     @GetMapping("/")
     public String index(Model model) throws Exception{
-        ReviewRepository reviewRepository = ProxyRepositoryFactory.create(ReviewRepository.class);
+        ReviewRepository reviewRepository = RepositoryProxyConstructor.create(ReviewRepository.class);
 
-        var reviews = reviewRepository.findAll();
+        List<Review> reviews = reviewRepository.findAll();
 
         ControllerHelper.setupModel(model);
         model.addAttribute("reviews", reviews);
@@ -68,7 +68,7 @@ public class DefaultController {
             }
 
             // delete review
-            reviewRepository.deleteByTenantIdAndReviewId(tenantId, reviewId);
+            reviewRepository.deleteByTenantIdAndId(tenantId, reviewId);
 
             return ResponseEntity.noContent().build();
         } catch (Exception e) {

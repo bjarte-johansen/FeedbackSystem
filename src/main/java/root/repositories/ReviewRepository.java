@@ -14,16 +14,16 @@ import java.util.Optional;
  */
 
 public interface ReviewRepository extends ProxyRepository<Review, Long> {
-    IReview save(IReview review) throws Exception;
-    IReview create(IReview review) throws Exception;
+    //Review save(Review review) throws Exception;
+    //Review create(Review review) throws Exception;
 
-    IReview update(IReview review) throws Exception;
+    //Review update(Review review) throws Exception;
 
-    void deleteByTenantIdAndReviewId(long tenantId, long reviewId) throws Exception;
+    void deleteByTenantIdAndId(long tenantId, long reviewId) throws Exception;
 
     Optional<Review> findById(long tenantId, long reviewId) throws Exception;
 
-    List<IReview> findByExternalId(long tenantId, String externalId, Long externalIdHash, QueryOptions queryOptions) throws Exception;
+    List<Review> findByExternalId(long tenantId, String externalId, Long externalIdHash, QueryOptions queryOptions) throws Exception;
     List<Review> findByAuthorIdAndExternalId(long authorId, String path, QueryOptions queryOptions) throws Exception;
     List<Review> findByAuthorIdAndExternalId(long authorId, String path) throws Exception;
     List<Review> findByScoreAndExternalId(int score, String externalId) throws Exception;

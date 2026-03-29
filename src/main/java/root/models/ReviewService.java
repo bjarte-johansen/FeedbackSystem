@@ -1,25 +1,25 @@
 package root.models;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.interfaces.ReviewRepositoryCustom;
 import root.interfaces.IReviewService;
+import root.repositories.ReviewRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
 class ReviewService implements IReviewService {
-    private final ReviewRepositoryCustom reviewRepo;
+    @Autowired
+    ReviewRepository reviewRepo;
 
 
     /**
      * Constructor for IReviewServiceImpl.
-     *
-     * @param reviewRepo
      */
 
-    public ReviewService(ReviewRepositoryCustom reviewRepo) {
-        this.reviewRepo = reviewRepo;
+    private ReviewService() {
     }
 
 
@@ -32,8 +32,8 @@ class ReviewService implements IReviewService {
      */
 
     @Override
-    public IReview create(IReview review) throws Exception{
-        return reviewRepo.create(review);
+    public Review create(Review review) throws Exception{
+        return reviewRepo.save(review);
     }
 
 
@@ -46,7 +46,7 @@ class ReviewService implements IReviewService {
      */
 
     @Override
-    public IReview update(IReview review) throws Exception {
+    public Review update(Review review) throws Exception {
         return reviewRepo.save(review);
     }
 
@@ -59,7 +59,7 @@ class ReviewService implements IReviewService {
      */
 
     @Override
-    public void delete(IReview review) throws Exception {
+    public void delete(Review review) throws Exception {
         reviewRepo.delete(review);
     }
 
@@ -74,8 +74,8 @@ class ReviewService implements IReviewService {
      */
 
     @Override
-    public Optional<IReview> findById(long tenantId, long reviewId) throws Exception {
-        return reviewRepo.findById(tenantId, reviewId).map(review -> (IReview) review);
+    public Optional<Review> findById(long tenantId, long reviewId) throws Exception {
+        return reviewRepo.findById(tenantId, reviewId).map(review -> (Review) review);
     }
 
 
@@ -88,7 +88,7 @@ class ReviewService implements IReviewService {
 
     @Override
     public void deleteById(Long tenantId, Long reviewId) throws Exception {
-        reviewRepo.deleteById(tenantId, reviewId);
+        reviewRepo.deleteByTenantIdAndId(tenantId, reviewId);
     }
 
 
@@ -103,7 +103,7 @@ class ReviewService implements IReviewService {
      */
 
     @Override
-    public List<IReview> findByExternalId(Long tenantId, String externalId, Long externalIdHash, QueryOptions queryOptions) throws Exception {
+    public List<Review> findByExternalId(Long tenantId, String externalId, Long externalIdHash, QueryOptions queryOptions) throws Exception {
         if(externalIdHash == null){
             externalIdHash = FNV1A64HashGenerator.generate(externalId);
         }

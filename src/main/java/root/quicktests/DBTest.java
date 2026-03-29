@@ -1,11 +1,13 @@
-package root.database;
+package root.quicktests;
 
 import org.apache.logging.log4j.util.Strings;
-import root.ProxyRepositoryFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import root.RepositoryProxyConstructor;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.common.utils.RandomPastInstant;
-import root.interfaces.ReviewRepositoryCustom;
+import root.database.*;
 import root.logger.Logger;
 import root.models.Review;
 import root.models.Reviewer;
@@ -23,8 +25,22 @@ import java.util.function.Supplier;
 
 //import static root.database.SPIImpl.insert_review;
 
+@Component
 public class DBTest {
-    public static void cleanTable(String tableName) throws Exception {
+    @Autowired
+    ReviewerRepository reviewerRepo;
+
+    @Autowired
+    TenantRepository tenantRepo;
+
+    @Autowired
+    ReviewRepository reviewRepo;
+
+    public static DBTest create(){
+        return new DBTest();
+    }
+
+    public void cleanTable(String tableName) throws Exception {
         DB.with(conn -> {
             FSQLQuery.create(conn, "TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE")
                 .update();
@@ -32,25 +48,38 @@ public class DBTest {
         });
     }
 
-    public static void clean() throws Exception{
-        cleanTable("reviews");
-        cleanTable("reviewers");
-        cleanTable("tenants");
+    public void clean() throws Exception{
+        cleanTable("review");
+        cleanTable("reviewer");
+        cleanTable("tenant");
     }
 
-    public static void run() throws Exception {
+    public void run() throws Exception {
         try(var ignore = Logger.scope("Running DBTest...")) {
 
             DB.with(conn -> {
+                if(tenantRepo == null){
+                    Logger.log("tenantRepo is null");
+                    throw new RuntimeException("tenantRepo is null");
+                }
+                if(reviewerRepo == null){
+                    Logger.log("reviewerRepo is null");
+                    throw new RuntimeException("reviewerRepo is null");
+                }
+                if(reviewRepo == null) {
+                    Logger.log("reviewRepo is null");
+                    throw new RuntimeException("ReviewRepo is null");
+                }
+
                 insertTenants(conn);
 
                 insertAuthors(conn, 1L);
 
                 // insert demo ratings for tenant_id = 1
-                DBTest.insertDemoRatings(conn, 1L);
+                insertDemoRatings(conn, 1L);
 
                 // fetch and print ratings for tenant_id = 1
-                DBTest.fetchAndPrintReviews(conn, 1);
+                fetchAndPrintReviews(conn, 1);
 
                 return null;
             });
@@ -60,7 +89,9 @@ public class DBTest {
         }
     }
 
-    public static void insertTenants(Connection conn) throws Exception {
+    private void insertTenants(Connection conn) throws Exception {
+
+
         try (var p = Logger.scope("Inserting tenant")) {
             Tenant tenant = new Tenant();
             tenant.setName("Tenant 1");
@@ -71,9 +102,8 @@ public class DBTest {
             tenant.setPasswordHash(PasswordService.hash("tenant-1", "salt"));
             tenant.setPasswordSalt("salt");
 
-            var tenantRepo = ProxyRepositoryFactory.createTenantRepo(new TenantRepositoryCustomImpl(), Map.of("tableName", "tenants", "modelClass", Tenant.class));
-            TenantRepository repo = ProxyRepositoryFactory.create(TenantRepository.class);
-            tenantRepo.create(tenant);
+            TenantRepository tenantRepo = RepositoryProxyConstructor.create(TenantRepository.class);
+            tenantRepo.save(tenant);
 
             Logger.log("Inserted tenant: " + tenant);
         }
@@ -85,7 +115,7 @@ public class DBTest {
     }
  */
 
-    static void insertAuthors(Connection conn, long tenantId) throws SQLException, Exception {
+    private void insertAuthors(Connection conn, long tenantId) throws SQLException, Exception {
         var passwordHashForPasswordPass = PasswordService.hash("pass", "salt");
 
         Reviewer[] reviewers = {
@@ -97,15 +127,15 @@ public class DBTest {
             new Reviewer(tenantId, "eve@example.com", "Eve", "hash5", "salt5", Instant.now(), Instant.now())
         };
 
-        ReviewerRepositoryCustomImpl reviewerRepo = new ReviewerRepositoryCustomImpl();
+        //ReviewerRepositoryCustomImpl reviewerRepo = new ReviewerRepositoryCustomImpl();
         for (Reviewer reviewer : reviewers) {
-            reviewerRepo.create(reviewer);
+            reviewerRepo.save(reviewer);
         }
     }
 
 
 
-    static Reviewer insertReviewer(
+    private Reviewer insertReviewer(
         Connection conn,
         long tenantId,
         String authorEmail,
@@ -126,13 +156,13 @@ public class DBTest {
             null
         );
 
-        ReviewerRepository reviewerRepo = new ProxyRepositoryFactory.create(ReviewerRepository.class);
-        reviewerRepo.create(reviewer);
+        ReviewerRepository reviewerRepo = RepositoryProxyConstructor.create(ReviewerRepository.class);
+        reviewerRepo.save(reviewer);
 
         return reviewer;
     }
 
-    public static Review insert_review(long tenant_id, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
+    private Review insert_review(long tenant_id, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
         Review r = new Review();
         r.setTenantId(tenant_id);
         r.setExternalId(external_id);
@@ -144,8 +174,8 @@ public class DBTest {
         r.setCreatedAt(created_at);
 
         DB.with(conn -> {
-            var repo = ProxyRepositoryFactory.createReviewRepository();
-            repo.create(r);
+            var repo = RepositoryProxyConstructor.create(ReviewRepository.class);
+            repo.save(r);
 
             Logger.log("Inserted review: " + r);
 
@@ -155,7 +185,7 @@ public class DBTest {
         return r;
     }
 
-    static void insertDemoRatings(Connection conn, long tenantId) throws SQLException, Exception {
+    private void insertDemoRatings(Connection conn, long tenantId) throws SQLException, Exception {
         try(var p = Logger.scope("Inserting demo ratings for tenant_id = " + tenantId)) {
             String path1 = "/product/1";
             String path2 = "/product/2";
@@ -178,7 +208,7 @@ public class DBTest {
             );
 
             String sql = SqlFactory.createUpdateSql(
-                "reviews",
+                "review",
                 FSQL.linkedNameValueMap("comment", "Updated text!!", "score", 4),
                 FSQL.makeArr("tenant_id =", "?", "external_id =", "?")
             );
@@ -192,19 +222,14 @@ public class DBTest {
 
     //
 
-    static void fetchAndPrintReviews(Connection conn, long tenantId) throws Exception {
-        ReviewRepositoryCustom repo = ProxyRepositoryFactory.createReviewRepository(new JdbcReviewRepository(), Map.of(
-            "tableName", "reviews",
-            "modelClass", Review.class
-        ));
-
-
+    private void fetchAndPrintReviews(Connection conn, long tenantId) throws Exception {
+        ReviewRepository repo = RepositoryProxyConstructor.create(ReviewRepository.class);
         var reviews = repo.findByTenantId(tenantId);
 
         printList("PrintList Reviews (" + reviews.size() + ")", reviews);
     }
 
-    static <T> void printList(String title, List<T> elements)    {
+    private <T> void printList(String title, List<T> elements)    {
         Logger.log();
 
         if(title != null && !title.isEmpty())

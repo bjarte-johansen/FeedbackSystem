@@ -3,6 +3,7 @@ package root.models;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.interfaces.IUserVerificationService;
+import root.repositories.ReviewerRepository;
 import root.repositories.ReviewerRepositoryCustomImpl;
 import java.time.Instant;
 import java.util.Objects;
@@ -11,7 +12,7 @@ import java.util.Objects;
 public class UserVerificationService implements IUserVerificationService {
 
     @Autowired
-    private ReviewerRepositoryCustomImpl userRepository;
+    private ReviewerRepository userRepository;
 
     @Override
     public Long getExpirationDurationSeconds() {
@@ -24,7 +25,7 @@ public class UserVerificationService implements IUserVerificationService {
             .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setVerifiedAt(Instant.now());
-        userRepository.create(user);
+        userRepository.save(user);
     }
 
     @Override

@@ -3,6 +3,9 @@ package root;
 import root.database.*;
 import root.logger.*;
 import root.models.Review;
+import root.quicktests.DBTest;
+import root.quicktests.FantasyRepoTest;
+import root.quicktests.RepoIntegrationTestZone;
 import root.repositories.TenantRepository;
 
 import static root.common.utils.Preconditions.checkArgument;
@@ -64,9 +67,10 @@ public class Main {
         printWarnings();
 
         //JdbcRepoTest.testFantasyProx();
-        FantasyRepoTest.run();
+        FantasyRepoTest fantasyRepoTest = new FantasyRepoTest();
+        fantasyRepoTest.run();
 
-        var tenantRepo = ProxyRepositoryFactory.create(TenantRepository.class);
+        var tenantRepo = RepositoryProxyConstructor.create(TenantRepository.class);
         var l = tenantRepo.findAll();
         l.forEach(System.out::println);
 
@@ -83,15 +87,15 @@ public class Main {
         if(false) {
             System.out.println(Logger.getConfig());
 
-            DBTest.clean();
-
-
+            DBTest.create()
+                .clean();
 
             try {
-                //DBTest.run();
+                DBTest.create()
+                    .run();
 
                 try(var p = Logger.scope("Running proxy test...")){
-                    JdbcRepoTest.testProxy();
+                    RepoIntegrationTestZone.testProxy();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
