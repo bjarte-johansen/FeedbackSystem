@@ -1,23 +1,54 @@
 package root;
 
-import root.database.CaseConverter;
-import root.database.DB;
-import root.database.FSQLQuery;
+import root.database.*;
 
-import java.lang.reflect.Field;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
-import static root.database.CaseConverter.camelToSnake;
+import static root.database.TableNameSanitizer.checkSafeTableName;
 
 class RepoProxy<T> implements InvocationHandler {
+    private static final String DEFAULT_ID_FIELD_NAME = "id";
+
+    @FunctionalInterface
+    interface ThrowingFn {
+        Object apply(Object[] args) throws Exception;
+    }
+
+    static Function<Object[], Object> wrap(ThrowingFn fn) {
+        return args -> {
+            try {
+                return fn.apply(args);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    private final Map<Method, Function<Object[], Object>> HANDLE_CACHE = new ConcurrentHashMap<>();
+
     private final Object target;
     private final Map<String, Object> options;
     //private static MethodHandles.Lookup lookup = MethodHandles.lookup();
 
+    private final String __TABLE_NAME;
+    private final Class<?> __MODEL_CLASS;
 
+    SqlQueryMethodNameScanner methodNameScanner = null;
+
+    boolean checkArgumentInstanceOf(Object obj, Class<?> expected) {
+        if(!expected.isInstance(obj)) {
+            Class<?> actual = (obj != null) ? obj.getClass() : null;
+            throw new IllegalArgumentException("Expected instance of " + expected.getName() + " but got " + String.valueOf(actual));
+        }
+        return true;
+    }
+
+    @SuppressWarnings("unchecked")
     RepoProxy(Object target, Map<String, Object> options) {
         this.target = target;
         this.options = options != null ? options : new HashMap<String, Object>();
@@ -28,68 +59,225 @@ class RepoProxy<T> implements InvocationHandler {
         if (!this.options.containsKey("modelClass"))
             throw new IllegalArgumentException("Missing model class");
 
+        __TABLE_NAME = (String) this.options.get("tableName");
+        __MODEL_CLASS = (Class<T>) this.options.get("modelClass");
+
+        checkSafeTableName(__TABLE_NAME);
+        checkArgumentInstanceOf(__MODEL_CLASS, Class.class);
+
+    }
+
+    private Method findMethod(Class<?> c, Method m) {
+        for (Class<?> cls = c; cls != null; cls = cls.getSuperclass()) {
+            for (var mm : cls.getDeclaredMethods()) {
+                if (mm.getName().equals(m.getName()) &&
+                    Arrays.equals(mm.getParameterTypes(), m.getParameterTypes())) {
+                    return mm;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        // default methods
+        if (method.isDefault()) {
+            return MethodHandles.lookup()
+                .unreflectSpecial(method, method.getDeclaringClass())
+                .bindTo(proxy)
+                .invokeWithArguments(args);
+        }
+
+        // implemented methods
+        Method impl = findMethod(target.getClass(), method);
+        if (impl != null) {
+            impl.setAccessible(true);
+            return impl.invoke(target, args);
+        }
+
+
+        // handle generated methods
         String methodName = method.getName();
 
-        // handle find method(s)
-        if (methodName.startsWith("find")) {
+        methodNameScanner = new SqlQueryMethodNameScanner();
+        methodNameScanner.scan(methodName, SqlQueryMethodNameScanner.FLAG_NONE);
 
-            if (methodName.startsWith("findBy")) {
-                return handleFindBy(method, args);
-            }
+//        try(var ignore = Logger.scope("RepoProxy.invoke (" + methodName + ")")) {
+//            Logger.log("Source: " + root.common.utils.StringUtils.quotedString(methodNameScanner.sourceString));
+//            Logger.log("Type: " + root.common.utils.StringUtils.quotedString(methodNameScanner.methodType));
+//            Logger.log("Where Clause: " + root.common.utils.StringUtils.quotedString(methodNameScanner.whereStr));
+//            Logger.log("Param count: " + methodNameScanner.paramCount);
+//        }
 
-            if (methodName.equals("findAll")) {
-                return handleFindAll(method, args);
-            }
-        }
+        return HANDLE_CACHE.computeIfAbsent(method, m -> {
+            String name = m.getName();
 
-        // handle create method(s)
-        if(methodName.equals("create")) {
-            return handleCreate(method, args);
-        }
+            // TODO: remove this test code
 
-        // handle delete method(s)
-        if (methodName.startsWith("delete")) {
+            // handle default repo method(s)
+            if(name.equals("create")) return wrap((method_args) -> handleCreate(m, method_args));
+            if(name.equals("update")) return wrap((method_args) -> handleUpdate(m, method_args));
+            if(name.equals("save")) return wrap((method_args) -> handleSave(m, method_args));
 
-            if(methodName.startsWith("deleteBy")) {
-                return handleDeleteBy(method, args);
-            }
+            // find
+            //if(name.equals("findById")) return wrap((method_args) -> handleFindById(m, method_args));
+            if(name.equals("findById")) return wrap((method_args) -> handleFindById(m, method_args));
+            if(name.startsWith("findBy")) return wrap((method_args) -> handleFindBy(m, method_args));
+            if(name.equals("findAll")) return wrap((method_args) -> handleFindAll(m, method_args));
 
-            if(methodName.equals("deleteAll")) {
-                return handleDeleteAll(method, args);
-            }
+            // delete
+            if(name.equals("deleteById")) return wrap((method_args) -> handleDeleteById(m, method_args));
+            if(name.startsWith("deleteBy")) return wrap((method_args) -> handleDeleteBy(m, method_args));
+            if(name.equals("delete")) return wrap((method_args) -> handleDelete(m, method_args));
 
-            return handleDelete(method, args);
-        }
+            // delete all methods
+            if(name.equals("deleteAll")) return wrap((method_args) -> handleDeleteAll(m, method_args));
+            if(name.equals("deleteAllInBatch")) return wrap((method_args) -> handleDeleteAllInBatch(m, method_args));
+            if(name.equals("deleteAllById")) return wrap((method_args) -> handleDeleteAllById(m, method_args));
+            if(name.equals("deleteAllByIdInBatch")) return wrap((method_args) -> handleDeleteAllInBatch(m, method_args));
 
-        return method.invoke(target, args);
+            // count
+            if(name.equals("count")) return wrap((method_args) -> handleCount(m, method_args));
+            if(name.startsWith("countBy")) return wrap((method_args) -> handleCountBy(m, method_args));
+
+            // exists
+            if(name.equals("existsById")) return wrap((method_args) -> handleExistsById(m, method_args));
+            if(name.startsWith("existsBy")) return wrap((method_args) -> handleExistsBy(m, method_args));
+
+            throw new UnsupportedOperationException("Unsupported method: " + methodName);
+        }).apply(args);
     }
 
-    private String buildAndClause(String[] parts) {
-        StringBuilder sql = new StringBuilder();
 
-        for (int i = 0; i < parts.length; i++) {
-            if (i > 0) sql.append(" AND ");
 
-            sql.append(camelToSnake(parts[i]));
-            sql.append(" = ?");
+    /*
+        * Utility methods to set / get entity id
+     */
+    /*
+    private static final ConcurrentHashMap<Class<?>, MethodHandle> CACHED_ENTITY_ID_GETTER = new ConcurrentHashMap<>();
+
+    private static Field findField(Class<?> c, String name) {
+        for (Class<?> cur = c; cur != null; cur = cur.getSuperclass()) {
+            try {
+                Field f = cur.getDeclaredField(name);
+                f.setAccessible(true);
+                return f;
+            } catch (NoSuchFieldException ignored) {}
         }
 
-        return sql.toString();
+        throw new RuntimeException("Field '" + name + "' not found in " + c);
     }
 
-    private Object getEntityId(Object entity) throws Exception {
-        return entity.getClass().getMethod("getId").invoke(entity);
+    private static MethodHandle unreflectGetterOf(Field f) {
+        try {
+            MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(
+                f.getDeclaringClass(),
+                MethodHandles.lookup()
+            );
+
+            return lookup.unreflectGetter(f);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Failed to unreflect getter for field " + f, e);
+        }
     }
 
-    private void setEntityId(Object entity, Object id) throws Exception {
-        Field idField = entity.getClass().getDeclaredField("id");
+    private Object getEntityId(Object entity, String idFieldName) throws Exception {
+        Class<?> clazz = entity.getClass();
+
+        MethodHandle mh = CACHED_ENTITY_ID_GETTER.computeIfAbsent(clazz, c -> {
+            try {
+                var idField = findField(c, idFieldName);
+                return unreflectGetterOf(idField);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to get entity id getter for class " + c.getName(), e);
+            }
+        });
+
+        try {
+            return mh.invoke(entity);
+        }catch(Throwable t) {
+            throw new RuntimeException("Failed to get entity id for class " + clazz.getName(), t);
+        }
+    }
+
+    private void setEntityId(Object entity, Object id, String idFieldName) throws Exception {
+        if(entity == null)
+            throw new IllegalArgumentException("Entity cannot be null");
+
+        Class<?> clazz = entity.getClass();
+        Field idField = clazz.getDeclaredField(idFieldName);
         idField.setAccessible(true);
-        idField.set(entity, id);
+
+        if(!(id instanceof Number)) {
+            throw new IllegalArgumentException("Id value must be a number castable to long");
+        }
+        idField.set(entity, ((Number) id).longValue());
     }
+    */
+
+    private Object getIntReturnValue(Class<?> returnType, int affectedRows) {
+        if(returnType == int.class || returnType == Integer.class) return affectedRows;
+        if(returnType == long.class || returnType == Long.class) return (long) affectedRows;
+
+        throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
+    }
+
+    private Object getAffectedRowsReturnValue(Class<?> returnType, int affectedRows) {
+        if(returnType == int.class || returnType == Integer.class) return affectedRows;
+        if(returnType == long.class || returnType == Long.class) return (long) affectedRows;
+        if(returnType == boolean.class || returnType == Boolean.class) return affectedRows > 0;
+        if(returnType == void.class || returnType == Void.class) return null;
+
+        throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
+    }
+
+    private Object getBooleanReturnValue(Class<?> returnType, boolean booleanValue) {
+        if(returnType == int.class || returnType == Integer.class) return booleanValue ? 1: 0;
+        if(returnType == long.class || returnType == Long.class) return booleanValue ? 1L : 0L;
+        if(returnType == boolean.class || returnType == Boolean.class) return booleanValue;
+        if(returnType == void.class || returnType == Void.class) return null;
+
+        throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
+    }
+
+    private static <T> TreeSet<T> toTreeSet(Collection<T> c) {
+        try {
+            return new TreeSet<>(c);
+        } catch (ClassCastException e) {
+            throw new IllegalArgumentException("Elements must be Comparable", e);
+        }
+    }
+
+    private static long convertToLongValueExactOrThrow(Object arg) {
+        if (arg instanceof Long l) return l;
+        if (arg instanceof Integer i) return i.longValue();
+        if (arg instanceof Short s) return s.longValue();
+        if (arg instanceof Byte b) return b.longValue();
+
+        throw new IllegalArgumentException();
+    }
+
+
+
+    /**
+     * Handles the "save" method by determining whether to perform an insert (create) or update operation based on the presence of an ID in the entity.
+     * @param method
+     * @param args
+     * @return
+     * @throws Exception
+     */
+
+    private Object handleSave(Method method, Object[] args) throws Exception {
+        Object entityId = FSQLUtils.getEntityId(args[0], DEFAULT_ID_FIELD_NAME);
+
+        if (entityId == null || convertToLongValueExactOrThrow(entityId) == 0L) {
+            return handleCreate(method, args);
+        } else {
+            return handleUpdate(method, args);
+        }
+    }
+
 
 
     /**
@@ -101,178 +289,270 @@ class RepoProxy<T> implements InvocationHandler {
      * @return
      * @throws Exception
      */
-    @SuppressWarnings("unchecked")
+
     private Object handleCreate(Method method, Object[] args) throws Exception {
-        // setup
-        Object entity = args[0];
-        Class<T> modelClass = (Class<T>) options.get("modelClass");
-        Class<T> returnType = (Class<T>) method.getReturnType();
-        String methodName = method.getName();
+        return DB.with(conn -> {
+            Object entity = args[0];
 
-        // validate
-        if (!modelClass.isInstance(args[0]))
-            throw new IllegalArgumentException("Expected entity of type " + modelClass.getName());
+            GenericEntityPersistence.genericInsertAndUpdateId(conn, __TABLE_NAME, entity, "id");
 
-        // resolve
-        ArrayList<String> colNames = new ArrayList<>(100);
-        ArrayList<Object> colValues = new ArrayList<>(100);
+            // return result
+            Class<?> returnType = method.getReturnType();
+            if (returnType.isAssignableFrom(__MODEL_CLASS)) return entity;
+            if (returnType == void.class || returnType == Void.class) return null;
+            if (returnType == int.class || returnType == long.class) return FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME);
+            if (returnType == Integer.class || returnType == Long.class) return FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME);
 
-        Field[] fields = modelClass.getDeclaredFields();
-        for(Field f : fields) {
-            int mod = f.getModifiers();
-            if(Modifier.isStatic(mod) || Modifier.isTransient(mod)) continue;
+            throw new Exception("Unsupported return type " + returnType);
+        });
+    }
 
-            // do not serailize id field
-            if(f.getName().equals("id")) continue;
+    private Object handleUpdate(Method method, Object[] args) throws Exception {
+        return DB.with(conn -> {
+            Object entity = args[0];
 
-            f.setAccessible(true);
-            Object v = f.get(entity);
+            int affectedRows = GenericEntityPersistence.genericUpdate(conn, __TABLE_NAME, entity, "id");
 
-            colNames.add(CaseConverter.camelToSnake(f.getName()));
-            colValues.add(v);
-        }
+            // return result
+            Class<?> returnType = method.getReturnType();
+            if (returnType.isAssignableFrom(entity.getClass())) return entity;
 
-        // build sql and execute query
-        String sql = "INSERT INTO " + options.get("tableName")
-            + " (" +String.join(", ", colNames) + ")"
-            + " VALUES (" + String.join(", ", Collections.nCopies(colNames.size(), "?")) + ")";
+            if (returnType == int.class || returnType == Integer.class) return (int) affectedRows;
+            if (returnType == long.class || returnType == Long.class) return (long) affectedRows;
 
-        Long id = FSQLQuery.create(DB.getConnection(), sql)
-            .bind(colValues.toArray())
-            .insertAndGetId();
+            if (returnType == boolean.class || returnType == Boolean.class) return affectedRows > 0;
+            if (returnType == void.class || returnType == Void.class) return null;
 
-        // set id if entity has field "id"
-        setEntityId(entity, id);
-
-        if(returnType == int.class || returnType == long.class || returnType == Integer.class || returnType == Long.class) {
-            return id;
-        }
-
-        if(returnType == boolean.class || returnType == Boolean.class){
-            return ((Number) id).longValue() > 0;
-        }
-
-        if(modelClass.isInstance(entity)) {
-            return entity;
-        }
-
-        if(returnType == void.class || returnType == Void.class) {
-            return null;
-        }
-
-        throw new Exception("Unsupported return type " + returnType);
+            throw new Exception("Unsupported return type " + returnType + "(" + returnType.getSimpleName() + "), found (" + ((Object) entity).getClass().getSimpleName() + ")");
+        });
     }
 
 
 
-    private Object handleDeleteAll(Method method, Object[] args) throws Exception {
+    /*
+    handle find methods
+     */
 
-        // setup
-        String methodName = method.getName();                             // deleteAll()
+    private Object handleFindBy(Method method, Object[] args) throws Exception {
+            String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
-        // resolve
-        if(methodName.equals("deleteAll")) {
-            return FSQLQuery.create(DB.getConnection(), "DELETE FROM " + options.get("tableName"))
+            // create query & return result(s) based on return type
+            FSQLQuery q = FSQLQuery.create(sql)
+                .bind(args);
+
+            // return result
+            Class<?> returnType = method.getReturnType();
+            // TODO: support more return types (e.g. Stream, Iterable, array, etc.)
+            if (Collection.class.isAssignableFrom(returnType)) return q.fetchAll(__MODEL_CLASS);
+            if (returnType == Optional.class) return q.fetchOne(__MODEL_CLASS);
+            if (returnType.isAssignableFrom(__MODEL_CLASS)) return q.fetchOne(__MODEL_CLASS).orElse(null);
+
+            throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
+    }
+
+    private Object handleFindAll(Method method, Object[] args) throws Exception {
+        return DB.with(conn -> {
+            // create query & return result(s) based on return type
+            var list = FSQLQuery.create(conn, "SELECT * FROM " + __TABLE_NAME)
+                .fetchAll(__MODEL_CLASS);
+
+            Class<?> returnType = method.getReturnType();
+            if (returnType == HashSet.class) return new HashSet<>(list);
+            if (returnType == LinkedHashSet.class) return new LinkedHashSet<>(list);
+            if (returnType == TreeSet.class) return toTreeSet(list);
+            if (returnType == Set.class) return new LinkedHashSet<>(list);
+            if (Collection.class.isAssignableFrom(returnType)) return list;
+            if (Iterable.class.isAssignableFrom(returnType)) return list;
+            if (returnType.isArray()) return list.toArray( (Object[]) java.lang.reflect.Array.newInstance(__MODEL_CLASS, list.size()) );
+            if (returnType == java.util.stream.Stream.class) return list.stream();
+
+            throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
+        });
+    }
+
+    public Object handleFindById(Method method, Object[] args) throws Exception {
+        return DB.with(conn -> {
+            long entityId = convertToLongValueExactOrThrow(args[0]);
+
+            var result = FSQLQuery.create(conn, "SELECT * FROM " + __TABLE_NAME + " WHERE id = ?")
+                .bind( entityId )
+                .fetchOne(__MODEL_CLASS);
+
+            Class<?> returnType = method.getReturnType();
+            if(returnType == Optional.class) return result;
+            if(returnType == __MODEL_CLASS) return result.orElse(null);
+            if(returnType == void.class || returnType == Void.class) return null;
+
+            throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
+        });
+    }
+
+
+
+    /*
+    handle count methods
+     */
+
+    public Object handleCount(Method method, Object[] args) throws Exception {
+        return DB.with(conn -> {
+            String sql = "SELECT COUNT(*) FROM " + __TABLE_NAME;
+
+            long found = FSQLQuery.create(conn, sql)
+                .selectCount();
+
+            Class<?> returnType = method.getReturnType();
+            return getIntReturnValue(returnType, (int) found);
+        });
+    }
+
+    public Object handleCountBy(Method method, Object[] args) throws Exception {
+        return DB.with(conn -> {
+            if(methodNameScanner.whereStr == null || methodNameScanner.whereStr.isEmpty()) {
+                throw new IllegalArgumentException("Invalid countBy method name: " + method.getName());
+            }
+
+            String sql = "SELECT COUNT(*) FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
+
+            long found = FSQLQuery.create(conn, sql)
+                .bindArray(args)
+                .selectCount();
+
+            Class<?> returnType = method.getReturnType();
+            return getIntReturnValue(returnType, (int) found);
+        });
+    }
+
+
+
+    /*
+    handle exists methods
+     */
+
+    public Object handleExistsById(Method method, Object[] args) throws Exception {
+        return DB.with(conn -> {
+            long entityId = convertToLongValueExactOrThrow(args[0]);
+
+            String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE id = ?";
+
+            boolean exists = FSQLQuery.create(conn, sql)
+                .bind(entityId)
+                .selectExists();
+
+            Class<?> returnType = method.getReturnType();
+            return getBooleanReturnValue(returnType, exists);
+        });
+    }
+
+    public Object handleExistsBy(Method method, Object[] args) throws Exception {
+        return DB.with(conn -> {
+            String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
+
+            boolean exists = FSQLQuery.create(conn, sql)
+                .bindArray( args )
+                //.debug()
+                .selectExists();
+
+            Class<?> returnType = method.getReturnType();
+            return getBooleanReturnValue(returnType, exists);
+        });
+    }
+
+
+
+    /*
+    handle delete methods
+     */
+
+    public Object handleDeleteById(Method method, Object[] args) throws Exception {
+        return DB.with(conn -> {
+            long entityId = convertToLongValueExactOrThrow(args[0]);
+
+            String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id = ?";
+
+            int affectedRows = FSQLQuery.create(conn, sql)
+                .bind( entityId )
                 .delete();
-        }
 
-        // unsupported return type
-        throw new RuntimeException("Unable to match pattern");
+            Class<?> returnType = method.getReturnType();
+            return getAffectedRowsReturnValue(returnType, affectedRows);
+        });
     }
 
-    @SuppressWarnings("unchecked")
     private Object handleDelete(Method method, Object[] args) throws Exception {
+        return DB.with(conn -> {
+            checkArgumentInstanceOf(args[0], __MODEL_CLASS);
 
-        // setup
-        Class<T> modelClass = (Class<T>) options.get("modelClass");
-        String methodName = method.getName();                             // delete(entity)
+            // setup
+            Object entity = args[0];
+            long entityId = convertToLongValueExactOrThrow(FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME));
 
-        // resolve
-        if(methodName.equals("delete")) {
-            if(!modelClass.isInstance(args[0]))  throw new IllegalArgumentException("Expected argument of type " + modelClass.getName());
-
-            return FSQLQuery.create(DB.getConnection(), "DELETE FROM " + options.get("tableName") + " WHERE id = ?")
-                .bind( getEntityId(args[0]) )
+            String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id = ?";
+            int affectedRows = FSQLQuery.create(conn, sql)
+                .bind( entityId )
                 .delete();
-        }
 
-        // unsupported return type
-        throw new RuntimeException("Unable to match pattern");
+            Class<?> returnType = method.getReturnType();
+            return getAffectedRowsReturnValue(returnType, affectedRows);
+        });
     }
 
     private Object handleDeleteBy(Method method, Object[] args) throws Exception {
-        // setup
-        String fullMethodName = method.getName();                             // deleteByEmailAndTenantId ex
+        return DB.with(conn -> {
+            String sql = "DELETE FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
-        // resolve
-        if(fullMethodName.startsWith("deleteBy")) {
-            // build sql
-            String methodName = fullMethodName.substring("deleteBy".length());                    // EmailAndTenantId
-            String[] parts = methodName.split("And");
-
-            return FSQLQuery.create(DB.getConnection(), "DELETE FROM " + options.get("tableName") + " WHERE " + buildAndClause(parts))
-                .bind(args[0])
+            int affectedRows = FSQLQuery.create(conn, sql)
+                .bindArray( args )
                 .delete();
-        }
 
-        // unsupported return type
-        throw new RuntimeException("Unable to match pattern");
+            Class<?> returnType = method.getReturnType();
+            return getAffectedRowsReturnValue(returnType, affectedRows);
+        });
     }
 
 
 
-    @SuppressWarnings("unchecked")
-    private Object handleFindBy(Method method, Object[] args) throws Exception {
-        // setup
-        Class<T> modelClass = (Class<T>) options.get("modelClass");
-        Class<?> returnType = method.getReturnType();
-        boolean isCollectionReturnType = Collection.class.isAssignableFrom(returnType);
+    /*
+    multiple delete methods (e.g. deleteAll, deleteAllById, etc.)
+     */
 
-        // dissect and build sql
-        String methodName = method.getName();
-        String methodCondStr = methodName.substring("findBy".length());
-
-        String sql = "SELECT * FROM " + ((String) options.get("tableName"))
-            + " WHERE "
-            + buildAndClause( methodCondStr.split("And") )
-            + ((!isCollectionReturnType) ? " LIMIT 1" : "");
-
-        // create query & return result(s) based on return type
-        FSQLQuery q = FSQLQuery.create(DB.getConnection(), sql)
-            .bind(args);
-
-        if (isCollectionReturnType)
-            return q.fetchAll(modelClass);
-
-        if (returnType == Optional.class)
-            return q.fetchOne(modelClass);
-
-        if (returnType.isAssignableFrom(modelClass))
-            return q.fetchOne(modelClass).orElse(null);
-
-        // unsupported return type
-        throw new RuntimeException("Unsupported return type");
+    private Object handleDeleteAll(Method method, Object[] args) throws Exception {
+        return handleDeleteAllInBatch(method, args);
     }
 
-    @SuppressWarnings("unchecked")
-    private Object handleFindAll(Method method, Object[] args) throws Exception {
-        // setup
-        Class<T> modelClass = (Class<T>) options.get("modelClass");
+    private Object handleDeleteAllInBatch(Method method, Object[] args) throws Exception {
+        @SuppressWarnings("unchecked")
+        Iterable<T> entities = (Iterable<T>) args[0];
+        Long[] ids = FSQLUtils.extractEntityIds(entities);
+
+        // execute query
+        String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id IN (" + SqlFactory.createParenPlaceholdersSql(args.length) + ")";
+
+        int affectedRows = FSQLQuery.create(sql)
+            .bindArray(ids)
+            .delete();
+
+        // return result
         Class<?> returnType = method.getReturnType();
-        boolean isCollectionReturnType = Collection.class.isAssignableFrom(returnType);
+        return getAffectedRowsReturnValue(returnType, affectedRows);
+    }
 
-        // dissect and build sql
-        String tableName = (String) options.get("tableName");
-        if (tableName == null || tableName.isEmpty())
-            throw new IllegalArgumentException("Missing table name in options");
+    private Object handleDeleteAllById(Method method, Object[] args) throws Exception {
+        return handleDeleteAllByIdInBatch(method, args);
+    }
 
-        if (isCollectionReturnType){
-            // create query & return result(s) based on return type
-            return FSQLQuery.create(DB.getConnection(), "SELECT * FROM " + tableName)
-                .fetchAll(modelClass);
-        }
+    private Object handleDeleteAllByIdInBatch(Method method, Object[] args) throws Exception {
+        @SuppressWarnings("unchecked")
+        Iterable<T> ids = (Iterable<T>) args[0];
 
-        // unsupported return type
-        throw new RuntimeException("Unsupported return type");
+        // execute query
+        String sql = "DELETE FROM " + __TABLE_NAME + " WHERE (id IN (" + SqlFactory.createParenPlaceholdersSql(args.length) + "))";
+
+        int affectedRows = FSQLQuery.create(sql)
+            .bind(ids)
+            .delete();
+
+        // return result
+        Class<?> returnType = method.getReturnType();
+        return getAffectedRowsReturnValue(returnType, affectedRows);
     }
 }

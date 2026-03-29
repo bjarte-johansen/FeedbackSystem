@@ -20,7 +20,7 @@ public class PasswordService {
      * @return Generated salt
      */
 
-    public String generateSalt() {
+    public static String generateSalt() {
         // Implement a secure random salt generator
         // For demonstration purposes, we'll use a simple random string (not recommended for production)
 

@@ -1,11 +1,12 @@
 package root.logger;
 
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
-import java.util.regex.Pattern;
+import java.util.function.Function;
 
 public class Logger {
     protected static LoggerConfiguration cfg = new LoggerConfiguration();
@@ -17,6 +18,10 @@ public class Logger {
     private static final String newlineString = System.lineSeparator();
     private static final String tabString = "\t";
 
+    private static final String BLOCK_HEADER_BACKGROUND = "\033[48;2;40;40;40m";   // background
+    private static final String BLOCK_BACKGROUND_RESET = "\033[0m";
+
+    public static int nextPrintIndent = 0;
 
     public static final String GREEN        = "\u001B[32m";
     public static final String DARK_GRAY    = "\u001B[90m";
@@ -44,12 +49,27 @@ public class Logger {
     );
 
     public static class MagicParameterTemplateProcessor {
-        public static <T> String format(String fmt, LoggerStackFrame callerFrame) {
-            // case insensitive region match helper
-            BiFunction<Integer, String, Boolean> matchString = (fromIndex, other) -> {
-                if (fmt == null || other == null) return false;
-                return fmt.regionMatches(true, fromIndex, other, 0, other.length());
-            };
+        private static LinkedHashMap<String, Function<LoggerStackFrame, String>> PARAM_PROCESSOR_MAP = null;
+
+        private static LinkedHashMap<String, Function<LoggerStackFrame, String>> getOrCreateParamProcessingMap(){
+            if(PARAM_PROCESSOR_MAP == null) {
+                PARAM_PROCESSOR_MAP = new LinkedHashMap<>();
+                PARAM_PROCESSOR_MAP.put("@classMethod", LoggerStackFrame::getClassAndMethod);
+                PARAM_PROCESSOR_MAP.put("@class", LoggerStackFrame::getSimpleName);
+                PARAM_PROCESSOR_MAP.put("@method", LoggerStackFrame::getMethodName);
+                PARAM_PROCESSOR_MAP.put("@link", (F) -> F.getSourceLink(" @ "));
+                PARAM_PROCESSOR_MAP.put("@line", (F) -> String.valueOf(F.getLineNumber()));
+                PARAM_PROCESSOR_MAP.put("@file", LoggerStackFrame::getFileName);
+            }
+
+            return PARAM_PROCESSOR_MAP;
+        }
+        private static boolean matchString(String src, int fromSrcIndex, String other){
+            return src.regionMatches(true, fromSrcIndex, other, 0, other.length());
+        }
+
+        public static <T> String format(String fmt, LoggerStackFrame F) {
+            if(fmt == null || fmt.isEmpty()) return "";
 
             StringBuilder sb = new StringBuilder(fmt.length() + 64);
 
@@ -57,34 +77,21 @@ public class Logger {
             //  regionMatches calls when fmt is long and has few parameters (AKA theres no need to append characters one
             //  by one when there are no parameters, the common case for short formats like "@classMethod" or "@link")
 
-            for (int i = 0; i < fmt.length(); ) {
+
+            LinkedHashMap<String, Function<LoggerStackFrame, String>> paramProcessors = getOrCreateParamProcessingMap();
+
+            outer:
+            for (int i = 0, n = fmt.length(); i < n; ) {
                 char ch = fmt.charAt(i);
 
                 if (ch == '@') {
-                    if (matchString.apply(i, "@classMethod")) {
-                        sb.append(callerFrame.getClassAndMethod());
-                        i += 12;
-                        continue;
-                    } else if (matchString.apply(i, "@class")) {
-                        sb.append(callerFrame.getSimpleName());
-                        i += 6;
-                        continue;
-                    } else if (matchString.apply(i, "@method")) {
-                        sb.append(callerFrame.getMethodName());
-                        i += 7;
-                        continue;
-                    } else if (matchString.apply(i, "@link")) {
-                        sb.append(callerFrame.getSourceLink("@ "));
-                        i += 5;
-                        continue;
-                    } else if (matchString.apply(i, "@line")) {
-                        sb.append(callerFrame.getLineNumber());
-                        i += 5;
-                        continue;
-                    } else if (matchString.apply(i, "@file")) {
-                        sb.append(callerFrame.getFileName());
-                        i += 5;
-                        continue;
+                    for(var entry : paramProcessors.entrySet()) {
+                        String key = entry.getKey();
+                        if (matchString(fmt, i, key)) {
+                            sb.append(entry.getValue().apply(F));
+                            i += key.length();
+                            continue outer;
+                        }
                     }
                 }
 
@@ -95,6 +102,7 @@ public class Logger {
             return sb.toString();
         }
     }
+
 
     /*
         Indent-handling in setup of try-with entering scope
@@ -121,7 +129,8 @@ public class Logger {
 
             if(s != null) {
                 System.out.print(getIndentPrefixStr());
-                System.out.println(colorize(s, LIGHT_GRAY));
+                //System.out.println(colorize(s, LIGHT_GRAY));
+                System.out.println(BLOCK_HEADER_BACKGROUND + colorize(s, GREEN ) + ";" + BLOCK_BACKGROUND_RESET);
             }
         }
 
@@ -143,6 +152,10 @@ public class Logger {
             if(s != null) {
                 System.out.print(getIndentPrefixStr());
                 System.out.println(s);
+            }
+
+            if(cfg.FORMAT_EXTRA_LINE_AFTER_BLOCK) {
+                System.out.println();
             }
         };
     }
@@ -166,7 +179,7 @@ public class Logger {
     /*
     ansi functions
      */
-
+/*
     public static class AnsiStringUtils {
         private static final Pattern ANSI = Pattern.compile("\\u001B\\[[0-9;?]*[ -/]*[@-~]");
 
@@ -177,13 +190,16 @@ public class Logger {
             return strip(s).length();
         }
     }
+*/
 
     //
 
+    /*
     @Deprecated
     private static String padRightAnsiString(String s, int new_width, char pad_char) {
         return padRight(s, AnsiStringUtils.length(s), new_width, pad_char);
     }
+     */
 
     static String padRight(String s, int old_width, int new_width, char pad_char) {
         if(s == null) return "";
@@ -234,6 +250,12 @@ public class Logger {
 
                 // $tab?$userOut?$magicOut$nl
                 out.append(indentStr);
+
+                if(nextPrintIndent > 0) {
+                    out.append(tabString.repeat(nextPrintIndent));
+                    nextPrintIndent = 0;
+                }
+
                 out.append(userOut);
                 out.append(magicOut);
                 out.append(newlineString);
@@ -244,6 +266,12 @@ public class Logger {
 
                 out.append(indentStr);
                 out.append(tabString);
+
+                if(nextPrintIndent > 0) {
+                    out.append(tabString.repeat(nextPrintIndent));
+                    nextPrintIndent = 0;
+                }
+
                 out.append(userOut);
                 out.append(newlineString);
             }
@@ -272,9 +300,22 @@ public class Logger {
 
     protected static String stringify(Object... args){
         int n = (args == null) ? 0 : args.length;
+        //System.out.print("stringify args length: " + n + "\n");
         if(n == 0) {
             return "";
         }else if(n == 1) {
+            if(args[0] != null && args[0].getClass().isArray()) {
+                Object array = args[0];
+                StringBuilder sb = new StringBuilder(1024);
+                for(int i=0; i < java.lang.reflect.Array.getLength(array); i++) {
+                    Object element = java.lang.reflect.Array.get(args[0], i);
+                    //System.out.println("array element " + i + ": " + stringify(element));
+                    sb.append(stringify(element));
+                }
+                //return stringify(args[0]);
+                return sb.toString();
+            }
+
             return String.valueOf(args[0]);
         }else if(n == 2) {
             return String.valueOf(args[0]) + ": " + String.valueOf(args[1]);
@@ -294,10 +335,40 @@ public class Logger {
         log_ext(1, level, stringify(args));
     }
 
+    private static String format(Object[] args) {
+        if(args == null || args.length == 0)
+            throw new IllegalArgumentException("Format string is required for formatted logging methods.");
+
+        String fmt = String.valueOf(args[0]);
+        Object[] rest = Arrays.copyOfRange(args, 1, args.length);
+
+        return String.format(fmt, rest);
+    }
+
     // actual logging methods, just call put with appropriate event type
     public static void log(Object... args) { put(EVENT_DEFAULT, args); }
     public static void debug(Object... args) { put(EVENT_DEBUG, args); }
     public static void info(Object... args) { put(EVENT_INFO, args); }
     public static void warn(Object... args) { put(EVENT_WARN, args); }
     public static void error(Object... args) { put(EVENT_ERROR, args); }
+
+    public static void logf(Object... args) { put(EVENT_DEFAULT, format(args)); }
+    public static void debugf(Object... args) { put(EVENT_DEBUG, format(args)); }
+    public static void infof(Object... args) { put(EVENT_INFO, format(args)); }
+    public static void warnf(Object... args) { put(EVENT_WARN, format(args)); }
+    public static void errorf(Object... args) { put(EVENT_ERROR, format(args)); }
+
+    public static LoggerImpl logProxy = null;
+
+    public static LoggerImpl tab(){
+        return tab(1);
+    }
+    public static LoggerImpl tab(int n){
+        nextPrintIndent += n;
+        if(logProxy == null) {
+            logProxy = new LoggerImpl();
+        }
+        return logProxy;
+    }
 }
+

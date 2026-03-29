@@ -13,7 +13,7 @@ interface TriSupplier<A,B,C,D> {
 
 
 
-
+@Deprecated
 public class Scanners {
 
     public static void scanString(String s, TriSupplier<String, Integer, Integer, String> replace, TriConsumer<String, Integer, Integer> report) {

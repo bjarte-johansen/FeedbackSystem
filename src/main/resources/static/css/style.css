@@ -1,0 +1,241 @@
+body { font-family: Arial, Helvetica, sans-serif; margin: 20px; }
+input{ line-height: 1.6em; }
+table { border-collapse: collapse;  }
+table, th, td { border: 1px solid #ccc; padding: 8px; text-align:left; }
+th { background: #f0f0f0; }
+*{line-height: 1.4em;}
+
+.w-100{
+    width:100%;
+}
+
+.error { color: #bc1919; font-weight: bold; }
+
+.alert{
+    padding: 16px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    color: #FFF;
+}
+.alert-error{
+    border: 1px solid #ff0217;
+    background: #ff0217;
+}
+.alert-success{
+    border: 1px solid #115108;
+    background: #115108;
+}
+.alert-info{
+    border: 1px solid #cdd9ed;
+    background: #cfe2ff;
+    color: #084298;
+}
+.alert-secondary{
+    border: 1px solid #3a3a3a;
+    background: #3a3a3a;
+}
+
+.alert:empty{display: none;}
+
+
+
+h1,h2,h3,h4,h5,h6{ margin:4px 0 1.0rem 0; }
+
+/***************************************************/
+
+.italic{font-style: italic;}
+.bold{font-weight:bold;}
+
+/***************************************************/
+
+.d-block{display:block;}
+.d-inline{display:inline;}
+.d-inline-block{display:inline-block;}
+.d-none{display:none !important;}
+
+/***************************************************/
+
+
+.box{
+    border: 1px solid grey;
+    padding: 16px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+/***************************************************/
+
+.grid{
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+.grid-200px { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.gap-1rem { gap: 1rem; }
+.gap-025rem { gap: 0.25rem; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-5 { grid-template-columns: repeat(5, 1fr); }
+.grid-6 { grid-template-columns: repeat(6, 1fr); }
+.grid-auto { grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); align-items: start; }
+.grid-cell{ padding: 1rem; }
+
+
+/***************************************************/
+
+/* margin-bottom utilities (bootstrap-like scale) */
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-2 { margin-bottom: 0.5rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.mb-4 { margin-bottom: 1.5rem !important; }
+.mb-5 { margin-bottom: 3rem !important; }
+.mb-auto { margin-bottom: auto !important; }
+
+
+/***************************************************/
+
+hr{
+    margin: 16px 0;
+}
+
+/***************************************************/
+
+/* stars, by chatgpt */
+
+/* base */
+.score {
+    --stars: 0;
+    position: relative;
+    display: inline-block;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.score::before,
+.score::after {
+    content: "★★★★★";
+    display: block;           /* 🔥 important */
+}
+
+.score::before {
+    color: #c7c9c9;
+}
+
+.score::after {
+    color: #e8681e;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(var(--stars) * 20%);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* presets */
+.score-1 { --stars: 1; }
+.score-2 { --stars: 2; }
+.score-3 { --stars: 3; }
+.score-4 { --stars: 4; }
+.score-5 { --stars: 5; }
+
+/***************************************************/
+
+.review--list{
+    color:#333;
+
+    .review {
+        &>*{
+            display: block;
+        }
+        .score-outer{
+            display:block;
+            margin-bottom: 4px;
+        }
+        .score-text {
+            display:inline-block;
+            margin-right: 4px;
+        }
+        .score{display:inline-block;}
+
+        .name{font-weight: bold;font-size:0.9em;opacity: 0.8;}
+        .name:empty:before{
+            content: "Anonym";
+        }
+        .time{opacity: 0.7; font-size: 0.9em;}
+        .title{font-weight:bold;}
+        .comment{}
+    }
+}
+
+/***************************************************/
+
+.submit-review-form{
+
+    .form-group{
+        display:block;
+        margin-bottom:8px;
+    }
+
+    label{
+        display:block;
+        margin-bottom:5px;
+        width:100%;
+        clear:both;
+        font-size:1em;
+        font-weight: bold;
+    }
+    textarea, select, input{
+        box-sizing: border-box;
+        border-color: #666;
+        border-style: solid;
+        border-width: 1px;
+        padding:8px;
+        width:100%;
+    }
+    textarea{
+        min-height: 100px;
+    }
+}
+
+/***************************************************/
+
+
+button{
+    --bg: #1551ae;
+
+    background-color: var(--bg);
+    border: 2px solid color-mix(in srgb, var(--bg) 80%, black);
+
+    border-radius: 4px;
+    padding: 8px;
+    color: #FFF;
+    font-weight: bold;
+
+    &:hover{
+        background-color: color-mix(in srgb, var(--bg) 80%, black);
+    }
+
+    &:active{
+        background-color: color-mix(in srgb, var(--bg) 50%, black);
+    }
+}
+
+
+
+/***************************************************/
+
+
+
+#rent-a-car .form--vehicle-category-options{
+    border:1px solid #CCC;
+    padding:16px;
+    margin-bottom:16px;
+
+    .grid-cell{
+        margin:0;
+        padding:0;
+        width:20%;
+    }
+}

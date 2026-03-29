@@ -1,11 +1,6 @@
 package root.database;
 
 
-/**
- * Utility class for converting between different case styles (e.g., snake_case and camelCase).
- * In part written by chatgpt and modified by us. The core logic is from older project + suggestions from chatgpt.
- */
-
 public class CaseConverter {
 
     /**
@@ -35,6 +30,7 @@ public class CaseConverter {
 
         return out.toString();
     }
+
 
     /**
      * Convert camelCase to snake_case

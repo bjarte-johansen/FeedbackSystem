@@ -12,7 +12,7 @@ public class IntelliJDarkAnsi implements AnsiColorScheme {
     public final String KEYWORD = "\033[38;2;204;120;50m";      // #CC7832
     public final String STRING = "\033[38;2;106;135;89m";      // #6A8759
     public final String NUMBER = "\033[38;2;104;151;187m";     // #6897BB
-    public final String SYMBOL = "\033[38;2;124;151;147m";     // #6897BB
+    public final String SYMBOL = "\033[38;2;200;121;127m";     // #6897BB
     public final String COMMENT = "\033[38;2;128;128;128m";     // #808080
     public final String CLASS = DEFAULT;                      // same as default in many setups
 

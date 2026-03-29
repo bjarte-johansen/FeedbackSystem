@@ -2,124 +2,93 @@ package root;
 
 import root.database.*;
 import root.logger.*;
+import root.models.Review;
+import root.repositories.TenantRepository;
+
+import static root.common.utils.Preconditions.checkArgument;
+import static root.common.utils.Preconditions.checkNotNull;
 //import root.models.repositories.JdbcReviewRepository;
-
-import java.util.ArrayList;
-import java.util.List;
-
-
 //import static java.lang.StringTemplate.STR;
 
 public class Main {
-    static int TZ_POS;
-    static int TZ_LEN;
-
-    public static boolean isValidArrayIndex(int index, int length) {
-        return index >= 0 && index < length;
+    static void processNewScanner(String expr){
+        SqlQueryMethodNameScanner sp = (new SqlQueryMethodNameScanner()).scan(expr, SqlQueryMethodNameScanner.FLAG_NONE);
+        System.out.println("Source: " + sp.sourceString);
+        System.out.println("Type: " + sp.methodType);
+        System.out.println("Where Clause: " + sp.whereStr);
+        System.out.println("Param count: " + sp.paramCount);
+        System.out.println("-".repeat(20));
     }
 
-    public static UpperCaseTokenizer.Token skipStr(List<UpperCaseTokenizer.Token> tokens, String s) {
-        if ((TZ_POS < TZ_LEN) && tokens.get(TZ_POS).matchStr(s)) {
-            TZ_POS++;
-            return tokens.get(TZ_POS - 1);
+    public static void testScanner(){
+        String[] test = new String[] {
+            "findByAuthorIdAndExternalId",
+            "findByAuthorIdAndScoreLessThanEqualOrAuthorNameEquals",
+            "deleteByScoreAndExternalId",
+            "findByActiveFalse"
+        };
+
+        for (String s : test) {
+            processNewScanner(s);
         }
-        return null;
-    }
-    public static UpperCaseTokenizer.Token skipStrOr(List<UpperCaseTokenizer.Token> tokens, String s) {
-        if ((TZ_POS < TZ_LEN) && tokens.get(TZ_POS).matchStrOr(s)) {
-            TZ_POS++;
-            return tokens.get(TZ_POS - 1);
-        }
-        return null;
     }
 
-    public static void interpretTokens(List<UpperCaseTokenizer.Token> tokens) {
-        int pos = 0;
-        int n = tokens.size();
-        List<List<UpperCaseTokenizer.Token>> tokenGroups = new ArrayList<>();
-        List<UpperCaseTokenizer.Token> group = new ArrayList<>();
-
-        TZ_POS = 0;
-        TZ_LEN = tokens.size();
-
-
-        tokenGroups.add(group);
-        while(pos < n){
-            if(tokens.get(pos).matchStrOr("LessThan", "LessThanEqual", "Greater", "GreaterThanEqual", "Equal", "NotEqual")){
-                if(!group.isEmpty())
-                    tokenGroups.add(group = new ArrayList<>());
-                group.add(tokens.get(pos));
-
-                tokenGroups.add(group = new ArrayList<>());
-                pos++;
-                continue;
-            }
-
-            if(tokens.get(pos).id() == UpperCaseTokenizer.TOK_AND || tokens.get(pos).id() == UpperCaseTokenizer.TOK_OR) {
-                if(!group.isEmpty())
-                    tokenGroups.add(group = new ArrayList<>());
-                group.add(tokens.get(pos));
-
-                tokenGroups.add(group = new ArrayList<>());
-                pos++;
-                continue;
-            }
-
-            group.add(tokens.get(pos));
-            pos++;
-        }
-
-        if(group.isEmpty())
-            tokenGroups.removeLast();
-
-        try (var ignore1 = Logger.scope("Tokenizer groups:")) {
-            for (var g : tokenGroups) {
-                try (var ignore2 = Logger.scope("group:")) {
-                    for (var t : g) {
-                        Logger.log(t);
-                    }
-                }
-            }
-        }
+    //
+    public static void printWarnings(){
+        System.out.println("Project warnings:");
+        System.out.println("jsonb support is not implemented yet and will be added in the future. For now, you can use the JdbcReviewRepository directly for testing purposes.");
+        System.out.println();
     }
 
     public static void main(String[] args) throws Throwable{
-        //testScanString();
+        boolean bPrintMetaData = true;
 
-        //System.setOut(new CallerPrintStream(System.out));
+        if(bPrintMetaData)
+            DB.printMetaData();
 
-        String[] test = new String[]{
-            "findByAuthorIdAndExternalId",
-            "findByAuthorIdAndScoreLessOrEqualOrAuthorName",
-            "findByScoreAndExternalId"
-        };
+        DataSource.warmp(0, DataSource.TEST);
 
-        var tokens = UpperCaseTokenizer.tokenize("findByAuthorIdLessOrEqualAndExternalId");
-        interpretTokens(tokens);
-        Logger.log("tokens: " + tokens);
 
-        boolean c = false;
-        if(!c) {
-            return;
+        EntityMeta meta = EntityMeta.create(Review.class);
+
+
+        Logger.log("--------------------------------------------------------------------");;
+        try(var ignore = Logger.scope("Printing EntityMeta for Review...")) {
+            Logger.log("EntityMeta for Review:");
+            Logger.log("Meta.toString(), " + meta.toString());
+            Logger.log("-".repeat(20));
+            Logger.log("--------------------------------------------------------------------");;
         }
 
+        // TODO: DO NOT REMOVE
+        printWarnings();
 
-        //var tokens = RepoProxyMethodScanner.tokenize(test[1]);
+        //JdbcRepoTest.testFantasyProx();
+        FantasyRepoTest.run();
 
+        var tenantRepo = ProxyRepositoryFactory.create(TenantRepository.class);
+        var l = tenantRepo.findAll();
+        l.forEach(System.out::println);
 
-        boolean b = true;
-        if(b) {
+        if(false) return;
+        if(true) return;
+
+        /*
+        UnaryOperator<String> fnMapString = s -> "(" + s + ")";
+        String[] test = {"a", "b", "c"};
+        String[] joined = SqlFactory.mapArray(test, fnMapString);
+        System.out.println(String.join(", ", joined));
+        */
+
+        if(false) {
             System.out.println(Logger.getConfig());
 
             DBTest.clean();
 
-            //execTest();
 
-
-            DB.printMetaData();
 
             try {
-                DBTest.run();
+                //DBTest.run();
 
                 try(var p = Logger.scope("Running proxy test...")){
                     JdbcRepoTest.testProxy();
@@ -127,7 +96,7 @@ public class Main {
             } catch (Exception e) {
                 e.printStackTrace();
             }finally {
-                DBTest.clean();
+                //DBTest.clean();
             }
         }
     }

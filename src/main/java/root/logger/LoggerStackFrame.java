@@ -32,8 +32,8 @@ public class LoggerStackFrame {
         return frame.getLineNumber();
     }
     public String getSimpleName() { return extractSimpleName(); }
-    public String getSourceLink(String prefix) {
-        return prefix + "(" + getFileName() + ":" + getLineNumber() + ")";
+    public String getSourceLink(String prefix) { return prefix + "(" + getFileName() + ":" + getLineNumber() + ")"; }
+    public String getSourceLink() { return "(" + getFileName() + ":" + getLineNumber() + ")";
     }
 
     protected String extractSimpleName(){

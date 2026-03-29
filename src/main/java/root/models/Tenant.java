@@ -1,102 +1,102 @@
 package root.models;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import root.interfaces.ITenant;
 
-public class Tenant implements ITenant{
+public class Tenant implements ITenant {
     private Long id;
     private String name;
     private String domain;
-    private String api_key;
+    private String apiKey;
     private String email;
-    private String password_hash;
-    private String password_salt;
+    private String passwordHash;
+    private String passwordSalt;
 
     public Tenant() {
         this("", "", "" , "", "", "");
     }
 
-    public Tenant(String name, String domain, String api_key, String email, String password_hash, String password_salt) {
+    public Tenant(String name, String domain, String apiKey, String email, String password_hash, String passwordSalt) {
         this.id = null;
         this.name = name;
         this.domain = domain;
-        this.api_key = api_key;
+        this.apiKey = apiKey;
         this.email = email;
-        this.password_hash = password_hash;
-        this.password_salt = password_salt;
+        this.passwordHash = password_hash;
+        this.passwordSalt = passwordSalt;
     }
 
+    @Override
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    @Override
+    public void setId(long id) {
         this.id = id;
     }
 
     @Override
-    @NotNull
     public String getName() {
         return name;
     }
 
     @Override
-    public void setName(@NotNull String name) {
+    public void setName(String name) {
         this.name = name;
     }
 
     @Override
-    @NotNull
     public String getDomain() {
         return domain;
     }
 
     @Override
-    public void setDomain(@NotNull String domain) {
+    public void setDomain(String domain) {
         this.domain = domain;
     }
 
     @Override
-    @NotNull
-    public String getApi_key() {
-        return api_key;
+    public String getApiKey() {
+        return apiKey;
     }
 
     @Override
-    public void setApi_key(@NotNull String api_key) {
-        this.api_key = api_key;
+    public void setApiKey(String api_key) {
+        this.apiKey = api_key;
     }
 
     @Override
-    @NotNull
     public String getEmail() {
         return email;
     }
 
     @Override
-    public void setEmail(@NotNull String email) {
+    public void setEmail(String email) {
         this.email = email;
     }
 
     @Override
-    @NotNull
-    public String getPassword_hash() {
-        return password_hash;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
     @Override
-    public void setPassword_hash(@NotNull String password_hash) {
-        this.password_hash = password_hash;
+    public void setPasswordHash(String password_hash) {
+        this.passwordHash = password_hash;
     }
 
     @Override
-    @NotNull
-    public String getPassword_salt() {
-        return password_salt;
+    public String getPasswordSalt() {
+        return passwordSalt;
     }
 
     @Override
-    public void setPassword_salt(@NotNull String password_salt) {
-        this.password_salt = password_salt;
+    public void setPasswordSalt(String password_salt) {
+        this.passwordSalt = password_salt;
+    }
+
+    public String toString()
+    {
+        return "Tenant{id=" + id + ", name='" + name + "', domain='" + domain + "', api_key='" + apiKey + "', email='" + email + "'}";
     }
 }

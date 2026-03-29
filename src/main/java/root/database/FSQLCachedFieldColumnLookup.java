@@ -1,6 +1,7 @@
 package root.database;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.*;
@@ -10,19 +11,28 @@ public class FSQLCachedFieldColumnLookup {
     //private static final ThreadLocal<Map<Class<?>, FSQLColumnMapping[]>> CACHE = ThreadLocal.withInitial(HashMap::new);
     //private static final MethodHandles.Lookup lookup = MethodHandles.lookup();
 
-    protected static Map<String, FSQLColumnMapping> buildNamedFieldMap(Class<?> clazz) throws Exception {
+
+    protected static Map<String, FSQLColumnMapping> buildEntityColumnMapping(Class<?> clazz) throws Exception {
         Map<String, FSQLColumnMapping> m = new HashMap<>();
 
         for (Field f : clazz.getDeclaredFields()) {
             f.setAccessible(true);
 
+            int modifiers = f.getModifiers();
+            if(
+                Modifier.isStatic(modifiers)
+                || Modifier.isTransient(modifiers)
+                || f.isSynthetic()) {
+                continue;
+            }
+
             var t = f.getType();
             FSQLColumnMapping cm = new FSQLColumnMapping(
                 f.getName(),
                 f,
+                CachedCaseConverter.camelToSnake(f.getName()),
                 FSQLUtils.createColumnReader(t),
-                FSQLUtils.createColumnWriter(t)
-            );
+                FSQLUtils.createColumnWriter(t));
 
             m.put(f.getName(), cm);
         }
@@ -34,7 +44,7 @@ public class FSQLCachedFieldColumnLookup {
         Objects.requireNonNull(md, "ResultSetMetaData cannot be null");
 
         int cols = md.getColumnCount();
-        Map<String, FSQLColumnMapping> fieldMap = buildNamedFieldMap(clazz);
+        Map<String, FSQLColumnMapping> fieldMap = buildEntityColumnMapping(clazz);
 
         FSQLColumnMapping[] columnMap = new FSQLColumnMapping[cols + 1];
 

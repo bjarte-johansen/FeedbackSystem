@@ -5,8 +5,34 @@ import root.logger.Logger;
 import java.sql.*;
 import java.util.*;
 import java.util.function.Consumer;
+import java.lang.reflect.Array;
+
+
+/**
+ * FSQLQuery is a utility class for building and executing SQL queries with support for both positional and named parameters.
+ * It provides methods for binding parameters, executing queries, and mapping results to Java objects.
+ *
+ * Example usage:
+ *
+ *   using positional parameters:
+ *   Optional<User> user = FSQLQuery query = new FSQLQuery(conn, "SELECT * FROM users WHERE id = ?")
+ *       .bind(123)
+ *       .fetchOne(User.class);
+ *
+ *   using named parameters:
+ *   Optional<User> user = FSQLQuery query = new FSQLQuery(conn, "SELECT * FROM users WHERE id = :id")
+ *       .bindNamed("id", 123)
+ *       .fetchOne(User.class);
+ *
+ * Note: This class is designed to be flexible and can be extended with additional features as needed.
+ */
 
 public class FSQLQuery {
+    @FunctionalInterface
+    interface QueryExecutor<T> {
+        T run(Connection conn) throws Exception;
+    }
+
     public static class InsertResult{
         private final Long _id;
         private final int _count;
@@ -27,31 +53,73 @@ public class FSQLQuery {
     private static final int DEFAULT_CAPACITY = 32;
     private static final String REPLACED_WITH_INTERNAL_SQL = null;
 
-    private final Connection conn;
+    private Connection conn;
     private final String sql;
     private final List<Object> args = new ArrayList<>(DEFAULT_CAPACITY);
     private final HashMap<String, Object> namedArgs = new HashMap<String,Object>(DEFAULT_CAPACITY);
-    //private final List<Object> finalArgs = new ArrayList<>(DEFAULT_CAPACITY);
+    private boolean ownsConnection = false;
 
-    //private final LinkedHashMap<String, Object> setValues = new LinkedHashMap<>();
-    //public String tableName = null;
+    private boolean overrideDebugSql = false;
 
 
-    public FSQLQuery(Connection conn, String sql) {
+    private FSQLQuery(Connection conn, String sql, boolean ownsConnection) {
         this.conn = conn;
         this.sql = sql;
+        this.ownsConnection = ownsConnection;
     }
 
     public static FSQLQuery create(Connection conn, String sql) {
-        return new FSQLQuery(conn, sql);
+        return new FSQLQuery(conn, sql, false);
     }
 
+    public static FSQLQuery create(String sql) {
+        try {
+            return new FSQLQuery(null, sql, true);
+        }catch(Exception e){
+            throw new RuntimeException("Failed to create FSQLQuery with new connection", e);
+        }
+    }
+
+
+
+    /*
+     * Bind values to the query. This can be used for both positional and named parameters.
+     * For named parameters, use the bindNamed method.
+     */
+
     public FSQLQuery bind(Object... values) {
-        args.addAll(Arrays.asList(values == null ? new Object[0] : values));
+        if(values != null && values.length > 0) {
+            bind( Arrays.asList(values) );
+        }
+        return this;
+    }
+
+    public FSQLQuery bindArray(Object[] values) {
+        if(values != null && values.length > 0) {
+            bind( Arrays.asList(values) );
+        }
+        return this;
+    }
+
+    public FSQLQuery bind(Iterable<?> values){
+        if(values != null) {
+            values.forEach(value -> bind(value));
+        }
+        return this;
+    }
+
+    public FSQLQuery bind(List<?> values){
+        if(values != null) {
+            args.addAll( values );
+        }
         return this;
     }
 
     public FSQLQuery bindNamed(String name, Object value) {
+        if(name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Parameter name cannot be null or blank");
+        }
+
         namedArgs.put(name, value);
         return this;
     }
@@ -66,22 +134,37 @@ public class FSQLQuery {
 
 
 
+    protected static void __bindArgs(PreparedStatement ps, Object[] args) throws SQLException {
+        __bindArgs(ps, Arrays.asList(args));
+    }
+
     @SuppressWarnings("unchecked")
     protected static void __bindArgs(PreparedStatement ps, List<Object> args) throws SQLException {
         int i = 1;
         for(var arg : args){
-            /*
-            if(arg instanceof Collection){
-                for (Object value : (Collection<Object>) arg) {
-                    FSQL.bind(ps, i++, value);
+
+            if(arg instanceof Objects[] arr) {
+                for (var val : arr) FSQL.bind(ps, i++, val);
+            }
+            else if(arg instanceof int[] arr) {
+                for(var val : arr) FSQL.bind(ps, i++, val);
+            }
+            else if(arg instanceof long[] arr) {
+                for(var val : arr) FSQL.bind(ps, i++, val);
+            }
+            else if(arg instanceof List<?> list) {
+                for(Object val : list) FSQL.bind(ps, i++, val);
+            }
+            else if(arg instanceof LinkedHashMap<?, ?> map){
+                for (Object val : map.values()) FSQL.bind(ps, i++, val);
+            }
+            else if(arg != null && arg.getClass().isArray()) {
+                for (int idx = 0, n = Array.getLength(arg); idx < n; idx++) {
+                    Object val = Array.get(arg, idx);
+                    FSQL.bind(ps, i++, val);
                 }
-            }else*/
-            if(arg instanceof LinkedHashMap){
-                Collection<Object> values = ((LinkedHashMap<String, Object>) arg).values();
-                for (Object value : values) {
-                    FSQL.bind(ps, i++, value);
-                }
-            }else {
+            }
+            else {
                 FSQL.bind(ps, i++, arg);
             }
         }
@@ -100,19 +183,51 @@ public class FSQLQuery {
         return keys.getLong(1);
     }
 
-    public PreparedStatement prepareSql(String inputSql, Object... options) throws Exception {
+    public FSQLQuery debug(){
+        this.overrideDebugSql = true;
+        return this;
+    }
+
+    public FSQLQuery debug(boolean activate) {
+        this.overrideDebugSql = activate;
+        return this;
+    }
+
+    private <T> T execute(QueryExecutor<T> executor) throws Exception {
+        if(ownsConnection){
+            Connection oldConn = conn;
+            conn = DataSource.getConnection();
+            var result = executor.run(conn);
+            conn.close();
+            conn = oldConn;
+            return result;
+        }else {
+            return executor.run(conn);
+        }
+    }
+
+    private PreparedStatement prepareSql(String inputSql, Object... options) throws Exception {
         // set activeSql to input if provided, otherwise use original
-        String activeSql = (inputSql != null && !inputSql.isBlank()) ? inputSql : this.sql;
+        String activeSql = (inputSql != null) ? inputSql : this.sql;
+
+        if(overrideDebugSql) {
+            try (var ignore = Logger.scope("Attempt Query::prepareSql")) {
+                Logger.log("Raw: " + activeSql);
+                Logger.log("Arguments: " + args.toString());
+            }
+        }
 
         // parse sql
-        NamedSql.Parsed parsed = NamedSql.parse(this.sql, this.namedArgs, args.toArray());
+        NamedSql.Parsed parsed = NamedSql.parse(activeSql, this.namedArgs, args);
 
         // log
-        try(var ignore = Logger.scope("Query::prepareSql")) {
-            Logger.log("Raw: " + activeSql);
-            Logger.log("Parsed: " + parsed.sql);
-            Logger.log("NewArgs: " + Arrays.toString(parsed.args));
-            Logger.log("Interpolated: " + FSQLQueryInterpolator.interpolate(parsed.sql, parsed.args));
+        if(overrideDebugSql) {
+            try (var ignore = Logger.scope("Parsed Query::prepareSql")) {
+                Logger.log("Raw: " + activeSql);
+                Logger.log("Parsed: " + parsed.sql);
+                Logger.log("NewArgs: " + Arrays.toString(parsed.args));
+                Logger.log("Interpolated: " + FSQLQueryInterpolator.interpolate(parsed.sql, parsed.args));
+            }
         }
 
         // prepare statement
@@ -128,45 +243,49 @@ public class FSQLQuery {
         }
 
         // bind args
-        __bindArgs(ps, Arrays.asList(parsed.args));
+        ArgumentBinder binder = new ArgumentBinder(ps);
+        binder.bind(parsed.args);
 
         return ps;
     }
 
-    protected InsertResult insert(boolean requireResult, boolean resolveEntityId) throws Exception {
-        try(PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL, Statement.RETURN_GENERATED_KEYS)) {
-            int affectedRows = ps.executeUpdate();
+    protected InsertResult insert(boolean requireResult) throws Exception {
+        return execute(conn -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL, Statement.RETURN_GENERATED_KEYS)) {
+                int affectedRows = ps.executeUpdate();
 
-            if (affectedRows == 0) {
-                if (requireResult) {
-                    throw new SQLException("Insert failed, no rows affected.");
-                } else {
-                    return new InsertResult(null, 0);
+                if (affectedRows == 0) {
+                    if (requireResult) {
+                        throw new SQLException("Insert failed, no rows affected.");
+                    } else {
+                        return new InsertResult(null, 0);
+                    }
                 }
+
+                Long insertedId = getGeneratedKey(ps, false);
+                return new InsertResult(insertedId, affectedRows);
             }
-
-            Long insertedId = getGeneratedKey(ps, false);
-
-            return new InsertResult(insertedId, affectedRows);
-        }
+        });
     }
 
     public long insertAndGetCount() throws Exception {
-        InsertResult result = insert(true, false);
+        InsertResult result = insert(true);
         return result.getCount();
     }
 
+    /*
     public boolean insertAndGetStatus() throws Exception {
         return insertAndGetCount() > 0;
     }
+     */
 
     public Long insertAndGetId() throws Exception {
-        InsertResult result = insert(true, true);
+        InsertResult result = insert(true);
         return result.getId();
     }
 
     public Long insertAndGetId(Consumer<Long> after) throws Exception {
-        InsertResult result = insert(true, true);
+        InsertResult result = insert(true);
 
         if(after != null)
             after.accept(result.getId());
@@ -175,95 +294,97 @@ public class FSQLQuery {
     }
 
     public Long insertAndSetId(Object instance, String idField) throws Exception {
+        // no execute pattern as this method uses other method that already handles connection closing and error handling
+
         // perform insert and get generated id
         Long entityId = insertAndGetId();
 
         // set id field if possible
-        if(entityId != null) {
-            Class<?> clazz = instance.getClass();
-
-            try {
-                var field = clazz.getDeclaredField(idField);
-                field.setAccessible(true);
-                field.set(instance, entityId);
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                throw new RuntimeException("Failed to set ID field: " + idField, e);
-            }
+        if (entityId != null) {
+            FSQLUtils.setEntityId(instance, entityId, idField);
         }
 
         return entityId;
     }
 
     public int delete() throws Exception {
-        try(PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
-            return ps.executeUpdate();
-        }
+        return execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
+                return ps.executeUpdate();
+            }
+        });
     }
 
     public int update() throws Exception {
-        try(PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
-            return ps.executeUpdate();
-        }
+        return execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
+                return ps.executeUpdate();
+            }
+        });
     }
 
     public <T> List<T> fetchAll(Class<T> clazz) throws Exception {
-        try(PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
-            ps.executeQuery();
+        return execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
+                ps.executeQuery();
 
-            try(ResultSet rs = ps.getResultSet()) {
-                // build class mapping
-                FSQLClassMapping<T> classMapping = new FSQLClassMapping<>(
-                    clazz.getDeclaredConstructor(),
-                    FSQLCachedFieldColumnLookup.build(clazz, rs)
-                );
+                try (ResultSet rs = ps.getResultSet()) {
+                    // build class mapping
+                    FSQLClassMapping<T> classMapping = new FSQLClassMapping<>(
+                        clazz.getDeclaredConstructor(),
+                        FSQLCachedFieldColumnLookup.build(clazz, rs)
+                    );
 
-                // hydrate
-                List<T> items = new ArrayList<>(32);
-                while (rs.next()) {
-                    items.add (FSQLDefaultRowMapper.map(rs, classMapping) );
+                    // hydrate
+                    List<T> items = new ArrayList<>(32);
+                    while (rs.next()) {
+                        items.add(FSQLDefaultRowMapper.map(rs, classMapping));
+                    }
+                    return items;
                 }
-                return items;
             }
-        }
+        });
     }
 
     public <T> Optional<T> fetchOne(Class<T> clazz) throws Exception {
-        try(PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
-            ps.executeQuery();
+        return execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
+                ps.executeQuery();
 
-            try(ResultSet rs = ps.getResultSet()) {
-                // build class mapping
-                FSQLClassMapping<T> classMapping = new FSQLClassMapping<>(
-                    clazz.getDeclaredConstructor(),
-                    FSQLCachedFieldColumnLookup.build(clazz, rs)
-                );
+                try (ResultSet rs = ps.getResultSet()) {
+                    // build class mapping
+                    FSQLClassMapping<T> classMapping = new FSQLClassMapping<>(
+                        clazz.getDeclaredConstructor(),
+                        FSQLCachedFieldColumnLookup.build(clazz, rs)
+                    );
 
-                // hydrate
-                return rs.next()
-                    ? Optional.of( FSQLDefaultRowMapper.map(rs, classMapping) )
-                    : Optional.empty();
+                    // hydrate
+                    return rs.next()
+                        ? Optional.of(FSQLDefaultRowMapper.map(rs, classMapping))
+                        : Optional.empty();
+                }
             }
-        }
+        });
     }
 
     public long selectCount() throws Exception {
-        System.out.println("@EXPERIMENTAL, Executing selectCount with SQL: " + this.sql);
-
-        try(PreparedStatement ps = prepareSql("SELECT COUNT(*) FROM (" + this.sql + ") q")) {
-            ResultSet rs = ps.executeQuery();
-            rs.next();
-            return rs.getLong(1);
-        }
+        return execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
+                ResultSet rs = ps.executeQuery();
+                rs.next();
+                return rs.getLong(1);
+            }
+        });
     }
 
     public boolean selectExists() throws Exception {
-        System.out.println("@EXPERIMENTAL, Executing selectExists with SQL: " + this.sql);
-
-        try(PreparedStatement ps = prepareSql("SELECT EXISTS (" + this.sql + ")")) {
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                return rs.getBoolean(1);
+        return execute(r -> {
+            try (PreparedStatement ps = prepareSql("SELECT EXISTS (" + this.sql + ")")) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    return rs.getBoolean(1);
+                }
             }
-        }
+        });
     }
 }

@@ -10,7 +10,11 @@ public class FSQLDefaultRowMapper {
         for (int i = 1; i < columnMapping.length; i++) {
             FSQLColumnMapping cm = columnMapping[i];
             if(cm != null) {
-                cm.setter.write(cm.field, o, cm.getter.read(rs, i));
+                Object v = cm.getter.read(rs, i);
+                if(rs.wasNull()) {
+                    v = null;
+                }
+                cm.setter.write(cm.field, o, v);
             }else{
                 System.out.println("WARNING [FSQLDefaultRowMapper]: No mapping for column " + i + ", column name: " + rs.getMetaData().getColumnName(i) + ", type: " + rs.getMetaData().getColumnTypeName(i));
             }

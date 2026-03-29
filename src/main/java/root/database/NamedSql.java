@@ -46,20 +46,23 @@ public class NamedSql {
         }
     }
 
-    static Parsed parse(String sql, Map<String,Object> named, Object... positional) {
-        /*
-        try(var logger = Logger.scope("NamedSql.parse")) {
-            Logger.log("Parsing SQL: " + sql);
-            Logger.log("Named Arguments: " + named.toString());
-            Logger.log("Positional Arguments: " + java.util.Arrays.toString(positional));
+    static Parsed parse(String sql, Map<String,Object> named, Object[] positional) {
+        return parse(sql, named, Arrays.asList(positional == null ? new Object[0] : positional));
+    }
+
+    static Parsed parse(String sql, Map<String,Object> named, List<Object> positional) {
+        if(sql.indexOf(':') == -1) {
+            // Fast path for SQL without named parameters
+            //Logger.log("SQL does not contain named parameters, using fast path.");
+            return new Parsed(sql, positional);
         }
-        */
 
         requireNonNull(sql, "SQL string cannot be null");
-        requireNonNull(named, "Named parameters map cannot be null");
+        requireNonNull(named, "Named parameters cannot be null");
+        requireNonNull(positional, "Positional parameters cannot be null");
 
-        StringBuilder out = new StringBuilder(sql.length());
-        List<Object> args = new ArrayList<>();
+        StringBuilder out = new StringBuilder( sql.length() * 2);
+        List<Object> args = new ArrayList<>( named.size() + positional.size() );
 
         int pos = 0;
         int n = sql.length();
@@ -134,7 +137,7 @@ public class NamedSql {
 
             // ---- positional parameter
             if (c == '?') {
-                args.add(positional[pos++]);
+                args.add(positional.get(pos++));
                 out.append('?');
                 continue;
             }

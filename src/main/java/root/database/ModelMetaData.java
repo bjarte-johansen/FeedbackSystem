@@ -24,6 +24,8 @@ public class ModelMetaData {
     }
 
     static ModelMetaData create(Class<?> model, String idName) {
+        String finalIdName = (idName == null) ? DEFAULT_ID_FIELD_NAME : idName;
+
         return CACHE.computeIfAbsent(model, m -> {
             Field[] fields = m.getDeclaredFields();
             String[] columns = new String[fields.length];
@@ -31,13 +33,19 @@ public class ModelMetaData {
             Field entityId = null;
 
             for (int i = 0; i < fields.length; i++) {
-                if(entityId == null
-                    && ((fields[i].getName().equals(idName)) || (idName == null && fields[i].getName().equalsIgnoreCase(DEFAULT_ID_FIELD_NAME))))
-                {
-                    entityId = fields[i];
-                }
-                columns[i] = CaseConverter.camelToSnake(fields[i].getName());
-                types[i] = fields[i].getType();
+                Field f = fields[i];
+                String fieldName = f.getName();
+
+                if(entityId == null && fieldName.equals(finalIdName)) {
+                    entityId = f;
+                 }
+
+                columns[i] = CaseConverter.camelToSnake(fieldName);
+                types[i] = f.getType();
+            }
+
+            if(entityId == null) {
+                throw new RuntimeException("Failed to find id field with name " + finalIdName + " in class " + model.getName());
             }
 
             return new ModelMetaData(model, columns, types, fields, entityId);

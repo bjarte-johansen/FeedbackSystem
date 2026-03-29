@@ -1,29 +1,66 @@
 package root.database;
 
+import root.logger.Logger;
+
 import java.sql.*;
+import java.util.function.Consumer;
 
-public class DB implements AutoCloseable{
-    private static Connection conn;
+public class DB {
+    public interface ConnectionConsumer<R>{
+        R run(Connection connection) throws Exception;
+    }
 
+    public static <R> R with(ConnectionConsumer<R> fn) {
+        try (Connection connection = DataSource.getConnection()) {
+            return fn.run(connection);
+        } catch (Exception e) {
+            Logger.log("An exception occurred while executing a database operation: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+/*
+    private static volatile String QUOTE = null;
+
+    public static String getQuoteSymbol(){
+        String q = QUOTE;
+        if(q != null) return q;
+
+        synchronized (DB.class) {
+            if(QUOTE == null){
+                try {
+                    with(conn -> {
+                        QUOTE = conn.getMetaData().getIdentifierQuoteString().trim();
+                        return null;
+                    });
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to get identifier quote string from database metadata.");
+                }
+            }
+            return QUOTE;
+        }
+    }
+*/
+    /*
+    public static String quoteIdentifier(String s) {
+        String q = getQuoteSymbol();
+        if(q.isEmpty()) return s;
+
+        return q + s + q;
+    }
+     */
+/*
     public static Connection getConnection(){
         try {
-            if(conn == null || conn.isClosed()) {
-                conn = DataSource.getConnection();
-            }
+            //Logger.log("CHANGE getConnection ENV TO PROD/TEXT BASED ON ENV SETTINGS");
+
+            return DataSource.getConnection(DataSource.TEST);
         } catch (Exception e){
-            e.printStackTrace();
-        }
-
-        return conn;
-    }
-
-    @Override
-    public void close() throws SQLException {
-        if (conn != null && !conn.isClosed()) {
-            conn.close();
-            conn = null;
+            throw new RuntimeException(e);
         }
     }
+*/
+
 /*
     public static NamedSql.Parsed prepareSql(String sql, Map<String, Object> params, Object... args) {
         NamedSql.Parsed parsed = NamedSql.parse(sql, params, args);
@@ -32,8 +69,9 @@ public class DB implements AutoCloseable{
  */
 
     public static void printMetaData() throws Exception {
-        try (Connection connection = getConnection()) {
-            DatabaseMetaData metaData = connection.getMetaData();
+        DB.with(conn -> {
+            DatabaseMetaData metaData = conn.getMetaData();
+
             System.out.println("Database Product Name: " + metaData.getDatabaseProductName());
             System.out.println("Database Product Version: " + metaData.getDatabaseProductVersion());
             System.out.println("Driver Name: " + metaData.getDriverName());
@@ -56,8 +94,8 @@ public class DB implements AutoCloseable{
 
                 System.out.println();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+
+            return null;
+        });
     }
 }
