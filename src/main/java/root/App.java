@@ -179,7 +179,7 @@ System: ReView Feedback Engine
             }
 
             System.out.println("ActiveProfiles: " + Arrays.toString(env.getActiveProfiles()));
-             */
+            */
         };
     }
 
@@ -188,10 +188,8 @@ System: ReView Feedback Engine
         return args -> {
             //showApplicationProperties();
 
-            dbTest
-                .clean();
-            dbTest
-                .run();
+            dbTest.clean();
+            dbTest.run();
         };
     }
 }
