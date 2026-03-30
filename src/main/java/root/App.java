@@ -86,6 +86,7 @@ public class App{
             }
         }
     }
+
     public static void main(String[] args) throws Exception {
         SpringApplication app = new SpringApplication(App.class);
         app.setDefaultProperties(Map.of(
@@ -95,14 +96,14 @@ public class App{
         app.run(args);
     }
 
-    public static String wrap80(String s) {
+    public static String wordwrap(String s, int maxColumnWidth) {
         StringBuilder out = new StringBuilder(s.length());
         int col = 0;
 
         for (String word : s.split(" ")) {
             int len = word.length();
 
-            if (col != 0 && col + 1 + len > 80) {
+            if (col != 0 && col + 1 + len > maxColumnWidth) {
                 out.append('\n');
                 col = 0;
             }
@@ -155,7 +156,7 @@ System: ReView Feedback Engine
             Logger.log("-".repeat(80));
             Logger.log("");
 
-            Logger.log(wrap80(RepositoryProxyConstructor.getDeveloperWarningMessages()));
+            Logger.log(wordwrap(RepositoryProxyConstructor.getDeveloperWarningMessages(), 80));
 
             Logger.log("");
             Logger.log("-".repeat(80));
