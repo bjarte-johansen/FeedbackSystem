@@ -9,9 +9,6 @@ import java.time.Instant;
  */
 
 public interface IReviewer extends HasId{
-    Long getTenantId();
-    void setTenantId(long tenantId);
-
     String getDisplayName();
     void setDisplayName(String displayName);
 

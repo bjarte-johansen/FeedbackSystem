@@ -172,53 +172,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
         throw new RuntimeException("Field '" + name + "' not found in " + c);
     }
-
-    private static MethodHandle unreflectGetterOf(Field f) {
-        try {
-            MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(
-                f.getDeclaringClass(),
-                MethodHandles.lookup()
-            );
-
-            return lookup.unreflectGetter(f);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Failed to unreflect getter for field " + f, e);
-        }
-    }
-
-    private Object getEntityId(Object entity, String idFieldName) throws Exception {
-        Class<?> clazz = entity.getClass();
-
-        MethodHandle mh = CACHED_ENTITY_ID_GETTER.computeIfAbsent(clazz, c -> {
-            try {
-                var idField = findField(c, idFieldName);
-                return unreflectGetterOf(idField);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to get entity id getter for class " + c.getName(), e);
-            }
-        });
-
-        try {
-            return mh.invoke(entity);
-        }catch(Throwable t) {
-            throw new RuntimeException("Failed to get entity id for class " + clazz.getName(), t);
-        }
-    }
-
-    private void setEntityId(Object entity, Object id, String idFieldName) throws Exception {
-        if(entity == null)
-            throw new IllegalArgumentException("Entity cannot be null");
-
-        Class<?> clazz = entity.getClass();
-        Field idField = clazz.getDeclaredField(idFieldName);
-        idField.setAccessible(true);
-
-        if(!(id instanceof Number)) {
-            throw new IllegalArgumentException("Id value must be a number castable to long");
-        }
-        idField.set(entity, ((Number) id).longValue());
-    }
-    */
+*/
 
     private Object getIntReturnValue(Class<?> returnType, int affectedRows) {
         if(returnType == int.class || returnType == Integer.class) return affectedRows;

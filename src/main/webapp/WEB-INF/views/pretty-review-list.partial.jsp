@@ -12,7 +12,7 @@
 
             <!--<a href="" class="btn btn-secondary">Fjern</a>-->
 
-            <form class="ajax" action="${pageContext.request.contextPath}/api/delete-review/${review.tenantId}/${review.id}" method="post">
+            <form class="ajax" action="${pageContext.request.contextPath}/api/delete-review/${tenantId}/${review.id}" method="post">
                 <input type="hidden" name="_method" value="delete">
                 <button type="submit">Delete</button>
             </form>

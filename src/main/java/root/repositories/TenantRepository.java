@@ -13,13 +13,5 @@ import java.util.Optional;
 
 
 public interface TenantRepository extends ProxyRepository<Tenant, Long> {
-    //ITenant create(ITenant tenant) throws Exception;
-    //void update(ITenant tenant) throws Exception;
-    //List<Tenant> findAll();
-    //Optional<ITenant> findById(long tenantId) throws Exception;
-    //void deleteById(long tenantId);
-    //List<IReview> findReviewsByTenantId(long tenantId);
-    //void deleteAll();
-
     public List<Review> findReviews() throws Exception;
 }

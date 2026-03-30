@@ -3,6 +3,7 @@ package root.quicktests;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import root.AppConfig;
 import root.RepositoryProxyConstructor;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
@@ -49,9 +50,9 @@ public class DBTest {
     }
 
     public void clean() throws Exception{
-        cleanTable("review");
-        cleanTable("reviewer");
-        cleanTable("tenant");
+        cleanTable(AppConfig.REVIEW_TABLE_NAME);
+        cleanTable(AppConfig.REVIEWER_TABLE_NAME);
+        cleanTable(AppConfig.TENANT_TABLE_NAME);
     }
 
     public void run() throws Exception {
@@ -73,13 +74,13 @@ public class DBTest {
 
                 insertTenants(conn);
 
-                insertAuthors(conn, 1L);
+                insertAuthors(conn);
 
-                // insert demo ratings for tenant_id = 1
-                insertDemoRatings(conn, 1L);
+                // insert demo ratings
+                insertDemoRatings(conn);
 
-                // fetch and print ratings for tenant_id = 1
-                fetchAndPrintReviews(conn, 1);
+                // fetch and print ratings
+                fetchAndPrintReviews(conn);
 
                 return null;
             });
@@ -102,7 +103,7 @@ public class DBTest {
             tenant.setPasswordHash(PasswordService.hash("tenant-1", "salt"));
             tenant.setPasswordSalt("salt");
 
-            TenantRepository tenantRepo = RepositoryProxyConstructor.create(TenantRepository.class);
+            //TenantRepository tenantRepo = RepositoryProxyConstructor.create(TenantRepository.class);
             tenantRepo.save(tenant);
 
             Logger.log("Inserted tenant: " + tenant);
@@ -115,29 +116,26 @@ public class DBTest {
     }
  */
 
-    private void insertAuthors(Connection conn, long tenantId) throws SQLException, Exception {
+    private void insertAuthors(Connection conn) throws SQLException, Exception {
+        // TODO: move to
         var passwordHashForPasswordPass = PasswordService.hash("pass", "salt");
 
-        Reviewer[] reviewers = {
-            new Reviewer(tenantId, "test@test.com", "Leif", passwordHashForPasswordPass, "salt", Instant.now(), Instant.now()),
-            new Reviewer(tenantId, "alice@example.com", "Alice", "hash1", "salt1", Instant.now(), Instant.now()),
-            new Reviewer(tenantId, "bob@example.com", "Bob", "hash2", "salt2", Instant.now(), Instant.now()),
-            new Reviewer(tenantId, "charlie@example.com", "Charlie", "hash3", "salt3", Instant.now(), Instant.now()),
-            new Reviewer(tenantId, "diana@example.com", "Diana", "hash4", "salt4", Instant.now(), Instant.now()),
-            new Reviewer(tenantId, "eve@example.com", "Eve", "hash5", "salt5", Instant.now(), Instant.now())
-        };
+        List<Reviewer> reviewers = List.of(
+            new Reviewer("test@test.com", "Leif", passwordHashForPasswordPass, "salt", Instant.now(), Instant.now()),
+            new Reviewer("alice@example.com", "Alice", "hash1", "salt1", Instant.now(), Instant.now()),
+            new Reviewer("bob@example.com", "Bob", "hash2", "salt2", Instant.now(), Instant.now()),
+            new Reviewer("charlie@example.com", "Charlie", "hash3", "salt3", Instant.now(), Instant.now()),
+            new Reviewer("diana@example.com", "Diana", "hash4", "salt4", Instant.now(), Instant.now()),
+            new Reviewer("eve@example.com", "Eve", "hash5", "salt5", Instant.now(), Instant.now())
+        );
 
-        //ReviewerRepositoryCustomImpl reviewerRepo = new ReviewerRepositoryCustomImpl();
-        for (Reviewer reviewer : reviewers) {
-            reviewerRepo.save(reviewer);
-        }
+        reviewers.forEach(reviewerRepo::save);
     }
 
 
 
     private Reviewer insertReviewer(
         Connection conn,
-        long tenantId,
         String authorEmail,
         String authorDisplayName,
         String authorPassword
@@ -147,7 +145,6 @@ public class DBTest {
         String authorPasswordHash = PasswordService.hash(authorPassword, authorPasswordSalt);
 
         Reviewer reviewer = new Reviewer(
-            tenantId,
             authorEmail,
             authorDisplayName,
             authorPasswordHash,
@@ -162,9 +159,8 @@ public class DBTest {
         return reviewer;
     }
 
-    private Review insert_review(long tenant_id, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
+    private Review insert_review(String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
         Review r = new Review();
-        r.setTenantId(tenant_id);
         r.setExternalId(external_id);
         r.setAuthorId(author_id);
         r.setAuthorName(displayName);
@@ -172,21 +168,15 @@ public class DBTest {
         r.setComment(comment);
         r.setScore(score);
         r.setCreatedAt(created_at);
+        reviewRepo.save(r);
 
-        DB.with(conn -> {
-            var repo = RepositoryProxyConstructor.create(ReviewRepository.class);
-            repo.save(r);
-
-            Logger.log("Inserted review: " + r);
-
-            return r;
-        });
+        Logger.log("Inserted review: " + r);
 
         return r;
     }
 
-    private void insertDemoRatings(Connection conn, long tenantId) throws SQLException, Exception {
-        try(var p = Logger.scope("Inserting demo ratings for tenant_id = " + tenantId)) {
+    private void insertDemoRatings(Connection conn) throws SQLException, Exception {
+        try(var p = Logger.scope("Inserting demo ratings")) {
             String path1 = "/product/1";
             String path2 = "/product/2";
 
@@ -201,20 +191,22 @@ public class DBTest {
             Supplier<Instant> createdAt = () -> RandomPastInstant.generate(period.first(), period.second());
 
             List<Review> reviews = List.of(
-                insert_review(tenantId, path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
-                insert_review(tenantId, path1, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
-                insert_review(tenantId, path1, username.get(), 3L, title.get(), comment.get(), 3, createdAt.get()),
-                insert_review(tenantId, path2, username.get(), 3L, title.get(), comment.get(), 4, createdAt.get())
+                insert_review(path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
+                insert_review(path1, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
+                insert_review(path1, username.get(), 3L, title.get(), comment.get(), 3, createdAt.get()),
+                insert_review(path2, username.get(), 3L, title.get(), comment.get(), 4, createdAt.get())
             );
 
+            var data = FSQL.linkedNameValueMap("comment", "Updated text!!", "score", 4);
             String sql = SqlFactory.createUpdateSql(
-                "review",
-                FSQL.linkedNameValueMap("comment", "Updated text!!", "score", 4),
-                FSQL.makeArr("tenant_id =", "?", "external_id =", "?")
+                AppConfig.REVIEW_TABLE_NAME,
+                data,
+                FSQL.makeArr("external_id =", "?")
             );
 
             FSQLQuery.create(conn, sql)
-                .bind("Updated text!!", 4, 1L, path2)
+                .bindArray(data.values().toArray())
+                .bind(path2)
                 .update();
         }
     }
@@ -222,9 +214,8 @@ public class DBTest {
 
     //
 
-    private void fetchAndPrintReviews(Connection conn, long tenantId) throws Exception {
-        ReviewRepository repo = RepositoryProxyConstructor.create(ReviewRepository.class);
-        var reviews = repo.findByTenantId(tenantId);
+    private void fetchAndPrintReviews(Connection conn) throws Exception {
+        var reviews = reviewRepo.findAll();
 
         printList("PrintList Reviews (" + reviews.size() + ")", reviews);
     }

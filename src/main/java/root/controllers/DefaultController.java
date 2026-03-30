@@ -39,9 +39,8 @@ public class DefaultController {
 
     @GetMapping("/")
     public String index(Model model) throws Exception{
-        ReviewRepository reviewRepository = RepositoryProxyConstructor.create(ReviewRepository.class);
 
-        List<Review> reviews = reviewRepository.findAll();
+        List<Review> reviews = reviewRepo.findAll();
 
         ControllerHelper.setupModel(model);
         model.addAttribute("reviews", reviews);
@@ -51,6 +50,9 @@ public class DefaultController {
         model.addAttribute("titleSuggestion", IpsumLoremGenerator.generate(2 + (int)(Math.random() * 4)).replace(".", ""));
         model.addAttribute("commentSuggestion", IpsumLoremGenerator.generate(7 + (int)(Math.random() * 15)));
         model.addAttribute("scoreSuggestion", 1 + new Random().nextInt(5));
+
+        // TODO: set to 1 for testing only
+        model.addAttribute("tenantId", 1);
 
         return "index";
     }
@@ -160,7 +162,6 @@ public class DefaultController {
             }
 
             Review review = new Review();
-            //review.setTenantId(tenantId);
             review.setAuthorName(displayName);
             review.setScore(score);
             review.setComment(comment);
@@ -219,7 +220,6 @@ public class DefaultController {
             }
 
             Review review = new Review();
-            //review.setTenantId(tenantId);
             review.setAuthorName(displayName);
             review.setScore(score);
             review.setComment(comment);
@@ -227,7 +227,6 @@ public class DefaultController {
             review.setCreatedAt(Instant.now());
             review.setTitle(title);
             reviewRepo.save(review);
-
 
             return ResponseEntity.ok().build();
         }catch(Exception e){

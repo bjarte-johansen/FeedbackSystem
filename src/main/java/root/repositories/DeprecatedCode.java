@@ -5,16 +5,16 @@ public class DeprecatedCode {
     //protected static Connection getConnection() throws Exception { return DB.getConnection(); }
 
 /*
-    private static FSQLColumnMapping[] extractEntityFieldNames(Review entity, String id_field_name, boolean include_id) throws Exception {
+    private static FSQLColumnMapping[] extractEntityFieldNames(
+        Review entity,
+        String id_field_name,
+        boolean include_id
+    ) throws Exception
+    {
         Logger.error("[FML ERROR], extractEntityFieldNames used, remove this method and use reflection or code generation instead");
 
         EntityMeta meta = EntityMeta.create(Review.class);
-
-        if(include_id) {
-            return meta.all;
-        }else{
-            return meta.nonId;
-        }
+        return (include_id) ? meta.all : meta.nonId;
     }
 
     // returns pair with first element being map of field names and values, and second element being the id of the entity
@@ -44,7 +44,8 @@ public class DeprecatedCode {
         return map;
     }
 */
-    /*
+
+/*
     private Object[] extractFieldValuesFromColumnMappings(Object o, FSQLColumnMapping[] mappings) throws Exception {
         Object[] values = new Object[mappings.length];
 
@@ -54,5 +55,5 @@ public class DeprecatedCode {
 
         return values;
     }
-     */
+*/
 }

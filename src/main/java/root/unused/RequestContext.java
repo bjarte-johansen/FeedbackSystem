@@ -1,9 +1,10 @@
 package root.unused;
 
-
+@Deprecated
 public class RequestContext {
-    private final long tenantId;
-    private final String tenantDomain;
+    public final long tenantId;
+    public final String tenantDomain;
+
 
     public RequestContext(String tenantDomain, long tenantId) {
         this.tenantId = tenantId;

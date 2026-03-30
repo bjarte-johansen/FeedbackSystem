@@ -4,7 +4,7 @@ import java.time.Instant;
 
 public class Reviewer implements IReviewer {
 
-    private Long tenantId = 0L;
+    //private Long tenantId = 0L;
     private Long id = 0L;
     private String email = "";
     private String displayName = "";
@@ -16,7 +16,6 @@ public class Reviewer implements IReviewer {
     public Reviewer() {}
 
     public Reviewer(
-            Long tenantId,
     String email,
     String displayName,
     String passwordHash,
@@ -24,7 +23,6 @@ public class Reviewer implements IReviewer {
     Instant createdAt,
     Instant verifiedAt
     ) {
-        this.tenantId = tenantId;
         this.email = email;
         this.displayName = displayName;
         this.passwordHash = passwordHash;
@@ -34,14 +32,6 @@ public class Reviewer implements IReviewer {
     }
 
     // --- getters / setters ---
-
-    @Override
-    public Long getTenantId() { return tenantId; }
-
-    @Override
-    public void setTenantId(long tenantId) {
-        this.tenantId = tenantId;
-    }
 
     @Override
     public Long getId() { return id; }

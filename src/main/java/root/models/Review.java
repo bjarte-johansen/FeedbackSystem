@@ -7,9 +7,7 @@ import java.time.Instant;
 public class Review implements IReview {
 
     private Long id = null;
-    private Long tenantId;
     private String externalId = "";
-    private long externalIdHash;
     private long authorId;
     private String authorName = "";
     private int score;
@@ -20,7 +18,6 @@ public class Review implements IReview {
     public Review() {}
 
     public Review(
-        Long tenantId,
         String externalId,
         long authorId,
         String authorName,
@@ -28,8 +25,7 @@ public class Review implements IReview {
         String comment,
         Instant createdAt
     ) {
-        this.tenantId = tenantId;
-        this.setExternalId(externalId); // ensures hash update
+        this.externalId = externalId; // ensures hash update
         this.authorId = authorId;
         this.authorName = authorName;
         this.score = score;
@@ -38,14 +34,13 @@ public class Review implements IReview {
     }
 
     public Review(
-        Long tenantId,
         String externalId,
         long authorId,
         String authorName,
         int score,
         String comment
     ) {
-        this(tenantId, externalId, authorId, authorName, score, comment, Instant.now());
+        this(externalId, authorId, authorName, score, comment, Instant.now());
     }
 
     @Override
@@ -59,16 +54,6 @@ public class Review implements IReview {
     }
 
     @Override
-    public Long getTenantId() {
-        return tenantId;
-    }
-
-    @Override
-    public void setTenantId(Long tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    @Override
     public String getExternalId() {
         return externalId;
     }
@@ -76,17 +61,6 @@ public class Review implements IReview {
     @Override
     public void setExternalId(String externalId) {
         this.externalId = externalId;
-        this.externalIdHash = FNV1A64HashGenerator.generate(externalId);
-    }
-
-    @Override
-    public long getExternalIdHash() {
-        return externalIdHash;
-    }
-
-    @Override
-    public void setExternalIdHash(long externalIdHash) {
-        this.externalIdHash = externalIdHash;
     }
 
     @Override
@@ -151,9 +125,7 @@ public class Review implements IReview {
     public String toString() {
         return "Review(" +
                 "id=" + id +
-                ", tenantId=" + tenantId +
                 ", externalId='" + externalId + '\'' +
-                ", externalIdHash=" + externalIdHash +
                 ", authorId=" + authorId +
                 ", authorName='" + authorName + '\'' +
                 ", score=" + score +

@@ -25,7 +25,7 @@ public class ReviewerRepositoryCustomImpl {
             .fetchOne(Reviewer.class)
             .map(reviewer -> reviewer);
     }
-     */
+*/
 /*
     public Optional<IReviewer> findByEmail(long tenantId, String email) throws Exception {
         return FSQLQuery.create("SELECT * FROM " + AppConfig.REVIEWER_TABLE_NAME + " WHERE tenant_id = ? AND email = ?")

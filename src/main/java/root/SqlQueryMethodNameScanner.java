@@ -60,7 +60,6 @@ class SqlQueryMethodNameScanner {
         "countBy", "count"
     };
 
-
     public String sourceString = "";
     public String methodType = "";
     public String whereStr = "";
@@ -110,24 +109,27 @@ class SqlQueryMethodNameScanner {
         return sb.toString();
     }
 
-    private static List<String> splitAndOr(String subexpr) {
+    private static List<String> splitAndOr(String expr) {
         /* method written by chatGPT and modified */
 
-        Matcher m = Pattern.compile("(And|Or)").matcher(subexpr);
+        Matcher m = Pattern.compile("(And|Or)").matcher(expr);
         List<String> result = new ArrayList<>(32);
         int last = 0;
 
         while (m.find()) {
-            if (m.start() > last) result.add(subexpr.substring(last, m.start()));
+            if (m.start() > last)
+                result.add(expr.substring(last, m.start()));
             result.add(m.group().toUpperCase()); // And / Or
             last = m.end();
         }
 
-        if (last < subexpr.length()) result.add(subexpr.substring(last));
+        if (last < expr.length())
+            result.add(expr.substring(last));
         return result;
     }
 
-    private void reset() {
+    private void reset()
+    {
         sourceString = "";
         methodType = "";
         whereStr = "";
@@ -135,7 +137,8 @@ class SqlQueryMethodNameScanner {
         success = false;
     }
 
-    public SqlQueryMethodNameScanner scan(String methodName, int flags) {
+    public SqlQueryMethodNameScanner scan(String methodName, int flags)
+    {
         reset();
 
         StringBuilder whereClause = new StringBuilder();
@@ -145,16 +148,20 @@ class SqlQueryMethodNameScanner {
         String leftParen = useExtraParens ? "(" : "";
         String rightParen = useExtraParens ? ")" : "";
 
-        for (String start : methodStarts) {
-            if (methodName.startsWith(start)) {
+        for (String start : methodStarts)
+        {
+            if (methodName.startsWith(start))
+            {
                 methodType = methodName.substring(0, start.length());
 
-                if(methodType.length() < methodName.length()) {
+                if(methodType.length() < methodName.length())
+                {
                     List<String> combinerParts = splitAndOr(methodName.substring(start.length()));
 
-
-                    for (var combinerPart : combinerParts) {
-                        if (combinerPart.equals("AND") || combinerPart.equals("OR")) {
+                    for (var combinerPart : combinerParts)
+                    {
+                        if (combinerPart.equals("AND") || combinerPart.equals("OR"))
+                        {
                             whereClause.append(" ").append(combinerPart.toUpperCase()).append(" ");
                             continue;
                         }
@@ -166,8 +173,10 @@ class SqlQueryMethodNameScanner {
 
                         whereClause.append(leftParen).append(fieldToColumn(field)).append(" ");
 
-                        if (op != null) {
-                            if (op.equals("False") || op.equals("True")) {
+                        if (op != null)
+                        {
+                            if (op.equals("False") || op.equals("True"))
+                            {
                                 whereClause.append("= ").append(op.toUpperCase());
                             } else {
                                 String finalOpStr = extractOperator(op);
@@ -182,7 +191,6 @@ class SqlQueryMethodNameScanner {
                         }
 
                         whereClause.append(rightParen);
-
                         paramCount++;
                     }
                 }

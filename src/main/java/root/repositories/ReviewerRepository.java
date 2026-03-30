@@ -10,7 +10,8 @@ import java.util.Optional; /**
  */
 
 public interface ReviewerRepository extends ProxyRepository<Reviewer, Long> {
-    Optional<IReviewer> findByReviewerName(String username) throws Exception;
     Optional<IReviewer> findByEmail(String email) throws Exception;
+    Optional<IReviewer> findByReviewerName(String username) throws Exception;
+
     //int deleteById(long reviewerId) throws Exception;
 }

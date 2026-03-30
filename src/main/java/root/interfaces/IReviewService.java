@@ -76,11 +76,10 @@ public interface IReviewService {
     /**
      * Finds reviews by external ID and tenant ID, with pagination and sorting options.
      *
-     * @param externalIdHash The hash of the external ID to search for. Must be a valid hash of an external ID and tenant ID.
      * @param externalId The external ID to search for. Must be a valid external ID and tenant ID.
      * @return A list of reviews matching the specified external ID and tenant ID, according to the provided query
      * options. The list may be empty if no reviews were found.
      */
 
-    List<Review> findByExternalIdHashAndExternalId(Long externalIdHash, String externalId) throws Exception;
+    List<Review> findByExternalId(String externalId) throws Exception;
 }

@@ -93,18 +93,13 @@ class ReviewService implements IReviewService {
 
     /**
      * Finds reviews by their external ID and tenant ID. Both the external ID and tenant ID must be valid.
-     * @param externalIdHash The hash of the external ID. If null, it will be generated from the external ID. Must be a valid hash or null.     *
      * @param externalId The external ID to search for. Must be a valid external ID and tenant ID.
      * @return A list of reviews that match the given external ID and tenant ID, sorted and paginated according to the provided query options. If no reviews are found, an empty list is returned.
      * @throws Exception If there is an error finding the reviews, such as if the database connection fails or if the query is invalid.
      */
 
     @Override
-    public List<Review> findByExternalIdHashAndExternalId(Long externalIdHash, String externalId) throws Exception {
-        if(externalIdHash == null){
-            externalIdHash = FNV1A64HashGenerator.generate(externalId);
-        }
-
-        return reviewRepo.findByExternalIdHashAndExternalId(externalIdHash, externalId);
+    public List<Review> findByExternalId(String externalId) throws Exception {
+        return reviewRepo.findByExternalId(externalId);
     }
 }

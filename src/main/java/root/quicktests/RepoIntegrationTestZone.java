@@ -28,7 +28,6 @@ public class RepoIntegrationTestZone {
             review.setExternalId("/product/69");
             review.setTitle("My review title");
             review.setScore(4);
-            review.setTenantId(1L);
 
             repo.save(review);
         }
@@ -41,8 +40,6 @@ public class RepoIntegrationTestZone {
                 "score", 4
             )
             , FSQL.makeArr(
-                "tenant_id", 1L,
-                "external_id_hash", FNV1A64HashGenerator.generate("/product/69"),
                 "external_id", "/product/69"
             )
         );
@@ -51,30 +48,19 @@ public class RepoIntegrationTestZone {
             FSQLQuery.create(conn, sql)
                 .bindNamed("comment", "Im updated")
                 .bindNamed("score", 4)
-                .bindNamed("tenant_id", 1L)
-                .bindNamed("external_id_hash", FNV1A64HashGenerator.generate("/product/69"))
                 .bindNamed("external_id", "/product/69")
                 .update();
 
             return null;
         });
 
-/*
-        FSQLQuery.create(conn, "UPDATE reviews SET comment = :comment WHERE id = :id")
-            .bindNamed("comment", "Im updated with named param")
-            .bindNamed("id", review.getId())
-            .update();
-
- */
-
         {
             Logger.warn("ACTUALLY USING findByExternalId");
-            List<Review> reviews = repo.findByExternalIdHashAndExternalId(null, "/product/69");
+            List<Review> reviews = repo.findByExternalId("/product/69");
 
             for (IReview r : reviews) {
                 System.out.println("Fetched review: " + r.getComment() + " with score: " + r.getScore());
             }
-
         }
     }
 
@@ -90,7 +76,7 @@ public class RepoIntegrationTestZone {
             r1.setExternalId("/proxy/create");
             r1.setTitle("Proxy review title");
             r1.setScore(4);
-            r1.setTenantId(1L);
+            //r1.setTenantId(1L);
             repo.save(r1);
         }
 

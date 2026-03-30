@@ -16,14 +16,13 @@ public interface ReviewRepository extends ProxyRepository<Review, Long> {
     //Review create(Review review) throws Exception;
     //Review update(Review review) throws Exception;
     //void deleteByTenantIdAndId(long tenantId, long reviewId) throws Exception;
-
     //Optional<Review> findById(long tenantId, long reviewId) throws Exception;
 
-    List<Review> findByExternalIdHashAndExternalId(Long externalIdHash, String externalId) throws Exception;
-    List<Review> findByAuthorIdAndExternalId(long authorId, String path) throws Exception;
+    List<Review> findByExternalId(String externalId) throws Exception;
+    //List<Review> findByAuthorIdAndExternalId(long authorId, String path) throws Exception;
     List<Review> findByScoreAndExternalId(int score, String externalId) throws Exception;
 
-    long countByExternalIdHashAndExternalId(Long externalIdHash, String externalId) throws Exception;
+    long countByExternalId(String externalId) throws Exception;
 
-    List<Review> findByTenantId(long tenantId) throws Exception;
+    //List<Review> findByTenantId(long tenantId) throws Exception;
 }
