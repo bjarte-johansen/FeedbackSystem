@@ -3,7 +3,7 @@ package root;
 import root.database.*;
 import root.logger.*;
 import root.models.Review;
-import root.quicktests.DBTest;
+import root.quicktests.DatabaseManager;
 import root.quicktests.FantasyRepoTest;
 import root.quicktests.RepoIntegrationTestZone;
 import root.repositories.TenantRepository;
@@ -73,35 +73,5 @@ public class Main {
         var tenantRepo = RepositoryProxyConstructor.create(TenantRepository.class);
         var l = tenantRepo.findAll();
         l.forEach(System.out::println);
-
-        if(false) return;
-        if(true) return;
-
-        /*
-        UnaryOperator<String> fnMapString = s -> "(" + s + ")";
-        String[] test = {"a", "b", "c"};
-        String[] joined = SqlFactory.mapArray(test, fnMapString);
-        System.out.println(String.join(", ", joined));
-        */
-
-        if(false) {
-            System.out.println(Logger.getConfig());
-
-            DBTest.create()
-                .clean();
-
-            try {
-                DBTest.create()
-                    .run();
-
-                try(var p = Logger.scope("Running proxy test...")){
-                    RepoIntegrationTestZone.testProxy();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }finally {
-                //DBTest.clean();
-            }
-        }
     }
 }

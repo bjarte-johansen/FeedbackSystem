@@ -112,10 +112,17 @@ public class Logger {
         return color + s + RESET;
     }
 
-    public static LoggerScope scope(String title){
+
+    public static LoggerScope scope(String title) {
+        return scope(title, 1, true);
+    }
+    public static LoggerScope scope(String title, boolean verbose) {
+        return scope(title, 1, verbose);
+    }
+    public static LoggerScope scope(String title, int depth, boolean verbose) {
         // magic logging
-        if (cfg.USE_MAGIC_LOGGING) {
-            var callerFrame = LoggerStackFrame.createFromCurrentStack(0);
+        if (cfg.USE_MAGIC_LOGGING && verbose) {
+            var callerFrame = LoggerStackFrame.createFromCurrentStack(depth + 1);
 
             String magicString = MagicParameterTemplateProcessor.format("@classMethod @link", callerFrame);
 
@@ -142,20 +149,23 @@ public class Logger {
             // leave block
             leave();
 
-            // magic logging
-            String s = switch(cfg.FORMAT_TYPE) {
-                case LoggerFormatType.BEGIN_END -> colorize("### ", GREEN) + colorize("LEAVE", LIGHT_GRAY);
-                case LoggerFormatType.BLOCK, LoggerFormatType.TITLED_BLOCK -> "}";
-                default -> null;
-            };
+            if(verbose) {
 
-            if(s != null) {
-                System.out.print(getIndentPrefixStr());
-                System.out.println(s);
-            }
+                // magic logging
+                String s = switch (cfg.FORMAT_TYPE) {
+                    case LoggerFormatType.BEGIN_END -> colorize("### ", GREEN) + colorize("LEAVE", LIGHT_GRAY);
+                    case LoggerFormatType.BLOCK, LoggerFormatType.TITLED_BLOCK -> "}";
+                    default -> null;
+                };
 
-            if(cfg.FORMAT_EXTRA_LINE_AFTER_BLOCK) {
-                System.out.println();
+                if (s != null) {
+                    System.out.print(getIndentPrefixStr());
+                    System.out.println(s);
+                }
+
+                if (cfg.FORMAT_EXTRA_LINE_AFTER_BLOCK) {
+                    System.out.println();
+                }
             }
         };
     }

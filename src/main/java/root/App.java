@@ -6,14 +6,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
-import root.quicktests.DBTest;
+import root.quicktests.DatabaseManager;
 
 import root.logger.Logger;
 
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 class FeedbackRequestContext{
     public static ThreadLocal<Connection> CONN = new ThreadLocal<Connection>();
@@ -185,12 +184,12 @@ System: ReView Feedback Engine
     }
 
     @Bean
-    CommandLineRunner dbTestRunner(DBTest dbTest) {
+    CommandLineRunner dbTestRunner(DatabaseManager databaseManager) {
         return args -> {
             //showApplicationProperties();
 
-            dbTest.clean();
-            dbTest.run();
+            databaseManager.resetDemoData();
+            //dbTest.run();
         };
     }
 }

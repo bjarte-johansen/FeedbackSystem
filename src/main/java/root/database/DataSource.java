@@ -2,6 +2,7 @@ package root.database;
 
 import root.logger.Logger;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -15,48 +16,46 @@ import static root.common.utils.Preconditions.checkNotNull;
 
 
 public class DataSource {
+
     static class PooledConnection {
-        static Connection wrap(Connection real) {
+        public static Connection wrap(Connection real) {
+            InvocationHandler h = (proxy, method, args) -> {
+
+                if (method.getName().equals("close")) {
+                    enqueueConnection((Connection) proxy);
+                    return null;
+                }
+
+                if(method.getName().equals("unwrap") && args.length == 1 && args[0].equals(Connection.class)) {
+                    Class<?> iface = (Class<?>) args[0];
+
+                    if(iface.isInstance(real)) {
+                        return real;
+                    }
+
+                    return real.unwrap(iface);
+                }
+
+                return method.invoke(real, args);
+            };
+
             return (Connection) Proxy.newProxyInstance(
                 Connection.class.getClassLoader(),
                 new Class[]{Connection.class},
-                (proxy, method, args) -> {
-
-                    if (method.getName().equals("close")) {
-                        enqueueConnection((Connection) proxy);
-                        return null;
-                    }
-
-                    if(method.getName().equals("unwrap") && args.length == 1 && args[0].equals(Connection.class)) {
-                        Class<?> iface = (Class<?>) args[0];
-
-                        if(iface.isInstance(real)) {
-                            return real;
-                        }
-
-                        return real.unwrap(iface);
-                    }
-
-                    return method.invoke(real, args);
-                });
+                h);
         }
     }
 
-    private static final AtomicInteger TOTAL_CONNECTION_COUNT = new AtomicInteger(0);
     private static int MAX_TOTAL_CONNECTION_COUNT = 10;
-
+    private static final AtomicInteger TOTAL_CONNECTION_COUNT = new AtomicInteger(0);
     private static final boolean LOG_POOL_CHANGES_TO_CONSOLE = false;
+    private static final BlockingQueue<Connection> CONNECTION_POOL = new ArrayBlockingQueue<>(MAX_TOTAL_CONNECTION_COUNT);
 
-    public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams(
-        "jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test","h184905", "pass"
-    );
-    public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams(
-        "jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public","h184905", "pass"
-    );
+    public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test","h184905", "pass");
+    public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public","h184905", "pass");
 
     private static DataSourceConnectionParams currentDataSourceParams = TEST;
 
-    private static final BlockingQueue<Connection> pool = new ArrayBlockingQueue<>(MAX_TOTAL_CONNECTION_COUNT);
 
     /*
     public static String getIdentifierQuoteString(Connection conn) {
@@ -86,7 +85,7 @@ public class DataSource {
         return TOTAL_CONNECTION_COUNT.get();
     }
     public static int getAvailableCount(){
-        return pool.size();
+        return CONNECTION_POOL.size();
     }
     public static int getUsedCount(){
         return getTotalCount() - getAvailableCount();
@@ -132,7 +131,7 @@ public class DataSource {
     }
 
     private static Connection dequeueConnection(DataSourceConnectionParams params) throws SQLException {
-        Connection conn = pool.poll();
+        Connection conn = CONNECTION_POOL.poll();
 
         if(conn == null) {
             conn = createConnection(params);
@@ -145,7 +144,7 @@ public class DataSource {
 
     private static void enqueueConnection(Connection conn) throws SQLException {
         conn = conn.unwrap(Connection.class);
-        pool.add(conn);  // return to pool
+        CONNECTION_POOL.add(conn);  // return to pool
 
         logMessage("Connection -->> Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
     }

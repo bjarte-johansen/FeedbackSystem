@@ -1,4 +1,4 @@
-package root.database;
+package root.database.deprecated;
 
 import java.lang.reflect.*;
 

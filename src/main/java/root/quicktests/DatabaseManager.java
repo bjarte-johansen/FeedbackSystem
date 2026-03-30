@@ -4,7 +4,6 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import root.AppConfig;
-import root.RepositoryProxyConstructor;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.common.utils.RandomPastInstant;
@@ -16,7 +15,6 @@ import root.models.Tenant;
 import root.models.services.PasswordService;
 import root.repositories.*;
 //import root.repositories.TenantRepository;
-import root.utils.PasswordSaltGenerator;
 
 import java.sql.*;
 import java.time.Duration;
@@ -27,7 +25,9 @@ import java.util.function.Supplier;
 //import static root.database.SPIImpl.insert_review;
 
 @Component
-public class DBTest {
+public class DatabaseManager {
+    public static boolean DEBUG = false;
+
     @Autowired
     ReviewerRepository reviewerRepo;
 
@@ -37,16 +37,13 @@ public class DBTest {
     @Autowired
     ReviewRepository reviewRepo;
 
-    public static DBTest create(){
-        return new DBTest();
+    public static DatabaseManager create(){
+        return new DatabaseManager();
     }
 
-    public void cleanTable(String tableName) throws Exception {
-        DB.with(conn -> {
-            FSQLQuery.create(conn, "TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE")
-                .update();
-            return null;
-        });
+    private void cleanTable(String tableName) throws Exception {
+        FSQLQuery.create("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE")
+            .update();
     }
 
     public void clean() throws Exception{
@@ -55,45 +52,41 @@ public class DBTest {
         cleanTable(AppConfig.TENANT_TABLE_NAME);
     }
 
-    public void run() throws Exception {
-        try(var ignore = Logger.scope("Running DBTest...")) {
+    public void resetDemoData() throws Exception {
+        clean();
 
+        validateReposReferences();
+
+        try(var ignore = Logger.scope("Inserting demo data...", DEBUG)) {
             DB.with(conn -> {
-                if(tenantRepo == null){
-                    Logger.log("tenantRepo is null");
-                    throw new RuntimeException("tenantRepo is null");
-                }
-                if(reviewerRepo == null){
-                    Logger.log("reviewerRepo is null");
-                    throw new RuntimeException("reviewerRepo is null");
-                }
-                if(reviewRepo == null) {
-                    Logger.log("reviewRepo is null");
-                    throw new RuntimeException("ReviewRepo is null");
-                }
-
                 insertTenants(conn);
-
                 insertAuthors(conn);
-
-                // insert demo ratings
                 insertDemoRatings(conn);
-
-                // fetch and print ratings
-                fetchAndPrintReviews(conn);
-
                 return null;
             });
-
-            // end print
-            System.out.println("OK");
         }
     }
 
+    private void validateReposReferences(){
+        if(tenantRepo == null){
+            if(DEBUG) Logger.log("tenantRepo is null");
+            throw new RuntimeException("tenantRepo is null");
+        }
+        if(reviewerRepo == null){
+            if(DEBUG) Logger.log("reviewerRepo is null");
+            throw new RuntimeException("reviewerRepo is null");
+        }
+        if(reviewRepo == null) {
+            if(DEBUG) Logger.log("reviewRepo is null");
+            throw new RuntimeException("ReviewRepo is null");
+        }
+    }
+
+
+
     private void insertTenants(Connection conn) throws Exception {
 
-
-        try (var p = Logger.scope("Inserting tenant")) {
+        try (var p = Logger.scope("Inserting tenant", DEBUG)) {
             Tenant tenant = new Tenant();
             tenant.setName("Tenant 1");
             tenant.setId(1L);
@@ -106,15 +99,9 @@ public class DBTest {
             //TenantRepository tenantRepo = RepositoryProxyConstructor.create(TenantRepository.class);
             tenantRepo.save(tenant);
 
-            Logger.log("Inserted tenant: " + tenant);
+            if(DEBUG) Logger.log("Inserted tenant: " + tenant);
         }
     }
-
-/*
-    static LinkedHashMap<String, Object> makeLinkedMap(Object... values) {
-        return linkedMap(values);
-    }
- */
 
     private void insertAuthors(Connection conn) throws SQLException, Exception {
         // TODO: move to
@@ -132,34 +119,7 @@ public class DBTest {
         reviewers.forEach(reviewerRepo::save);
     }
 
-
-
-    private Reviewer insertReviewer(
-        Connection conn,
-        String authorEmail,
-        String authorDisplayName,
-        String authorPassword
-        ) throws Exception
-    {
-        String authorPasswordSalt = PasswordSaltGenerator.generate(16);
-        String authorPasswordHash = PasswordService.hash(authorPassword, authorPasswordSalt);
-
-        Reviewer reviewer = new Reviewer(
-            authorEmail,
-            authorDisplayName,
-            authorPasswordHash,
-            authorPasswordSalt,
-            Instant.now(),
-            null
-        );
-
-        ReviewerRepository reviewerRepo = RepositoryProxyConstructor.create(ReviewerRepository.class);
-        reviewerRepo.save(reviewer);
-
-        return reviewer;
-    }
-
-    private Review insert_review(String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
+    private Review insertReview(String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
         Review r = new Review();
         r.setExternalId(external_id);
         r.setAuthorId(author_id);
@@ -170,13 +130,13 @@ public class DBTest {
         r.setCreatedAt(created_at);
         reviewRepo.save(r);
 
-        Logger.log("Inserted review: " + r);
+        if(DEBUG) Logger.log("Inserted review: " + r);
 
         return r;
     }
 
     private void insertDemoRatings(Connection conn) throws SQLException, Exception {
-        try(var p = Logger.scope("Inserting demo ratings")) {
+        try(var p = Logger.scope("Inserting demo ratings", DEBUG)) {
             String path1 = "/product/1";
             String path2 = "/product/2";
 
@@ -191,41 +151,12 @@ public class DBTest {
             Supplier<Instant> createdAt = () -> RandomPastInstant.generate(period.first(), period.second());
 
             List<Review> reviews = List.of(
-                insert_review(path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
-                insert_review(path1, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
-                insert_review(path1, username.get(), 3L, title.get(), comment.get(), 3, createdAt.get()),
-                insert_review(path2, username.get(), 3L, title.get(), comment.get(), 4, createdAt.get())
+                insertReview(path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
+                insertReview(path1, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
+                insertReview(path1, username.get(), 3L, title.get(), comment.get(), 3, createdAt.get()),
+                insertReview(path2, username.get(), 3L, title.get(), comment.get(), 4, createdAt.get())
             );
-
-            var data = FSQL.linkedNameValueMap("comment", "Updated text!!", "score", 4);
-            String sql = SqlFactory.createUpdateSql(
-                AppConfig.REVIEW_TABLE_NAME,
-                data,
-                FSQL.makeArr("external_id =", "?")
-            );
-
-            FSQLQuery.create(conn, sql)
-                .bindArray(data.values().toArray())
-                .bind(path2)
-                .update();
         }
     }
-
-
-    //
-
-    private void fetchAndPrintReviews(Connection conn) throws Exception {
-        var reviews = reviewRepo.findAll();
-
-        printList("PrintList Reviews (" + reviews.size() + ")", reviews);
-    }
-
-    private <T> void printList(String title, List<T> elements)    {
-        Logger.log();
-
-        if(title != null && !title.isEmpty())
-            Logger.log(title);
-
-        elements.forEach(Logger::log);
-    }
 }
+

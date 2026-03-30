@@ -1,7 +1,7 @@
-package root.database;
+package root.a_unused_package;
 
 public class Caller {
-    static String caller(int depth) {
+    static String getCalledSourceLink(int depth) {
         return StackWalker.getInstance()
             .walk(s -> s.skip(1 + depth).findFirst()
                 .map(f ->

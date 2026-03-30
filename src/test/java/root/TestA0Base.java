@@ -4,8 +4,7 @@ package root;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.stereotype.Service;
-import root.quicktests.DBTest;
+import root.quicktests.DatabaseManager;
 import root.logger.Logger;
 import root.logger.LoggerScope;
 import root.repositories.ReviewRepository;
@@ -24,7 +23,7 @@ public class TestA0Base {
     ReviewRepository reviewRepo;
 
     @Autowired
-    DBTest dbTest;
+    DatabaseManager databaseManager;
 
 
     /**
@@ -63,7 +62,7 @@ public class TestA0Base {
     public void beforeEach(TestInfo info) throws Exception {
         __logger = Logger.scope("TestA0Review.beforeEach");
 
-        dbTest.clean();
+        databaseManager.clean();
     }
 
     /**
@@ -75,7 +74,7 @@ public class TestA0Base {
      */
     @AfterEach
     public void afterEach() throws Exception {
-        dbTest.clean();
+        databaseManager.clean();
 
         __logger.close();
         System.out.println("-".repeat(40));

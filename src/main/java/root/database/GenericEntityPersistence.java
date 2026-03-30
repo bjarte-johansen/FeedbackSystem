@@ -12,34 +12,36 @@ import static root.common.utils.Preconditions.checkArgument;
 public class GenericEntityPersistence {
     private static final boolean DEBUG_SQL = false;
 
+    public static String DEFAULT_ID_NAME = "id";
+    private final static ConcurrentHashMap<Class<?>, LinkedHashMap<String, FieldGetter>> PROPERTY_MAP_CACHE = new ConcurrentHashMap<>();
+
     @FunctionalInterface
     public interface FieldGetter {
         Object get(Object entity) throws Exception;
     }
 
-    public static String DEFAULT_ID_NAME = "id";
-    private final static ConcurrentHashMap<Class<?>, Map<String, FieldGetter>> PROPERTY_MAP_CACHE = new ConcurrentHashMap<>();
+
 
     public static void setDefaultIdName(String id_name) {
         DEFAULT_ID_NAME = id_name;
     }
-
     public static String getDefaultIdName() {
         return DEFAULT_ID_NAME;
     }
 
-    private static Map<String, FieldGetter> buildPropertyMapWithoutId(Object entity, String id_field_name, boolean requireNonEmpty) {
+    private static LinkedHashMap<String, FieldGetter> buildPropertyMapWithoutId(Object entity, String id_field_name, boolean requireNonEmpty) {
         return PROPERTY_MAP_CACHE.computeIfAbsent(entity.getClass(), clazz -> buildPropertyMapWithoutIdImpl(entity, id_field_name, requireNonEmpty));
     }
 
-    private static Map<String, FieldGetter> buildPropertyMapWithoutIdImpl(Object entity, String id_field_name, boolean requireNonEmpty) {
+    private static LinkedHashMap<String, FieldGetter> buildPropertyMapWithoutIdImpl(Object entity, String id_field_name, boolean requireNonEmpty) {
         id_field_name = (id_field_name == null) ? DEFAULT_ID_NAME : id_field_name;
-        Map<String, FieldGetter> props = new LinkedHashMap<>();
+        LinkedHashMap<String, FieldGetter> props = new LinkedHashMap<>();
 
         try {
             for (var field : entity.getClass().getDeclaredFields()) {
                 int mod = field.getModifiers();
-                if (Modifier.isStatic(mod) || Modifier.isTransient(mod)) continue;
+                if (Modifier.isStatic(mod) || Modifier.isTransient(mod) || field.isSynthetic())
+                    continue;
 
                 String name = field.getName();
                 if (name.equals(id_field_name)) {
@@ -53,11 +55,11 @@ public class GenericEntityPersistence {
                 props.put(name, field::get);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to access field value", e);
+            throw new NoSuchElementException("Failed to access field value", e);
         }
 
         if (requireNonEmpty && props.isEmpty())
-            throw new IllegalArgumentException("Entity must have at least one non-ID field");
+            throw new IllegalStateException("Entity must have at least one non-ID field");
 
         return props;
     }
@@ -111,8 +113,9 @@ public class GenericEntityPersistence {
         var props = buildPropertyMapWithoutId(entity, id_field_name, true);
 
         // Build the SQL insert statement
-        String placeholders = String.join(", ", Collections.nCopies(props.size(), "?"));
         String columnList = String.join(", ", props.keySet());
+        String placeholders = String.join(", ", Collections.nCopies(props.size(), "?"));
+
         var sql = "INSERT INTO " + table_name + " (" + columnList + ")" + " VALUES" + " (" + placeholders + ")";
 
         // Execute the insert and get the generated ID
@@ -130,23 +133,7 @@ public class GenericEntityPersistence {
         return entity;
     }
 
-/*
-    public static String makeUpdateSetClause(Map<String, FieldGetter> props) {
-        if(props.isEmpty()) throw new IllegalArgumentException("Can not build empty sql set clause");
 
-        return props.keySet().stream()
-            .map(key -> key + " = ?")
-            .collect(Collectors.joining(", "));
-    }
- */
-    /*
-    private static long convertToLongPrimitive(Object value) {
-        if (value instanceof Number v)
-            return v.longValue();
-
-        throw new IllegalArgumentException("Argument must be instance of number");
-    }
-     */
 
     /**
      * Generic method to update an entity in the specified table based on its ID field. The method builds an SQL UPDATE
@@ -170,7 +157,7 @@ public class GenericEntityPersistence {
         TableNameSanitizer.validateSafeTableName(table_name);
 
         // Build a map of property names to their getter functions, excluding the ID field
-        Map<String, FieldGetter> props = buildPropertyMapWithoutId(entity, id_field_name, true);
+        LinkedHashMap<String, FieldGetter> props = buildPropertyMapWithoutId(entity, id_field_name, true);
 
         // cache entity id and property values before executing the query
         Object entityId = getEntityId(entity, id_field_name);
