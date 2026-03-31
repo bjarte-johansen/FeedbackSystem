@@ -1,6 +1,6 @@
 package root.database;
 
-import root.AppConfig;
+import root.app.AppConfig;
 
 public class Bugs {
     public static String getDefaultEntityIdName(){

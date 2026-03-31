@@ -5,6 +5,10 @@ import root.interfaces.IUserVerificationRecord;
 
 import java.time.Instant;
 
+/**
+ * TODO: NOT WORKING YET
+ */
+
 public class UserVerificationRecord implements IUserVerificationRecord {
 
     private Long id = 0L;

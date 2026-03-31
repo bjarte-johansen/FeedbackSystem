@@ -1,6 +1,7 @@
 package root.models;
 
-import root.utils.NorwegianTimeAgoTextFormatter;
+import root.includes.NorwegianTimeAgoTextFormatter;
+import root.interfaces.IReview;
 
 import java.time.Instant;
 

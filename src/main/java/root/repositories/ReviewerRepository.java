@@ -1,7 +1,7 @@
 package root.repositories;
 
 import root.ProxyRepository;
-import root.models.IReviewer;
+import root.interfaces.IReviewer;
 import root.models.Reviewer;
 
 import java.util.Optional; /**

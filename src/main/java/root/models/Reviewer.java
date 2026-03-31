@@ -1,5 +1,7 @@
 package root.models;
 
+import root.interfaces.IReviewer;
+
 import java.time.Instant;
 
 public class Reviewer implements IReviewer {

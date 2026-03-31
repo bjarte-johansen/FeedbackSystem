@@ -1,7 +1,6 @@
 package root.repositories;
 
 import root.ProxyRepository;
-import root.models.QueryOptions;
 import root.models.Review;
 
 import java.util.List;

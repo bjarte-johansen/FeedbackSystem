@@ -1,10 +1,11 @@
-package root.utils;
+package root.includes;
 
 
 /**
  * written by ChatGPT, modified by Bjarte Johansen, 2026
  */
 
+@Deprecated
 public class StringFormatter {
     public static String format(String fmt, Object... args) {
         return stringf(fmt, args);

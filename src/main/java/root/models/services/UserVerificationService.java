@@ -1,10 +1,12 @@
-package root.models;
+package root.models.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.interfaces.IUserVerificationService;
+import root.models.UserVerificationRecord;
+import root.includes.VerificationDigitsGenerator;
 import root.repositories.ReviewerRepository;
-import root.repositories.ReviewerRepositoryCustomImpl;
+
 import java.time.Instant;
 import java.util.Objects;
 

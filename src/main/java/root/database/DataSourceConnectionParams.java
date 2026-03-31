@@ -1,20 +1,10 @@
 package root.database;
 
-public class DataSourceConnectionParams
+public record DataSourceConnectionParams(String url, String username, String password, String defaultSchema)
 {
-    public String url;
-    public String username;
-    public String password;
-
-    public DataSourceConnectionParams(String url, String username, String password)
-    {
-        this.url = url;
-        this.username = username;
-        this.password = password;
-    }
-
+    @Override
     public String toString()
     {
-        return "DataSourceConnectionParams{url='" + url + "', username='" + username + "', password='[HIDDEN]'}";
+        return "DataSourceConnectionParams{url='" + url + "', username='" + username + "', password='[HIDDEN]', defaultSchema='" + defaultSchema + "'}";
     }
 }

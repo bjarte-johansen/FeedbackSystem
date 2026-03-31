@@ -68,6 +68,12 @@ public class DB {
     }
  */
 
+    /**
+     * Prints database metadata information to the console, including product name, version, driver details,
+     * and table/column information.
+     * @throws Exception
+     */
+
     public static void printMetaData() throws Exception {
         DB.with(conn -> {
             DatabaseMetaData metaData = conn.getMetaData();

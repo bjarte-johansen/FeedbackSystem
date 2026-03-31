@@ -13,7 +13,7 @@ import java.util.List;
 @Component
 public class FantasyRepoTest {
     @Autowired
-    FantasyRepository repo = RepositoryProxyConstructor.create(FantasyRepository.class);
+    FantasyRepository repo;// = RepositoryProxyConstructor.create(FantasyRepository.class);
 
     public static void report(String action, List<?> entities) {
         Logger.logf("%s: found list of %d entities", action, entities.size());

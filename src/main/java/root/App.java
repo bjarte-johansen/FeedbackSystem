@@ -6,18 +6,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
+import root.app.AppTextBanner;
+import root.common.utils.KissWordWrapper;
 import root.quicktests.DatabaseManager;
 
 import root.logger.Logger;
 
 import java.io.InputStream;
-import java.sql.Connection;
 import java.util.*;
-
-class FeedbackRequestContext{
-    public static ThreadLocal<Connection> CONN = new ThreadLocal<Connection>();
-    public static ThreadLocal<Integer> TENANT_ID = new ThreadLocal<Integer>();
-}
 
 @SpringBootApplication
 public class App{
@@ -95,101 +91,22 @@ public class App{
         app.run(args);
     }
 
-    public static String wordwrap(String s, int maxColumnWidth) {
-        StringBuilder out = new StringBuilder(s.length());
-        int col = 0;
 
-        for (String word : s.split(" ")) {
-            int len = word.length();
-
-            if (col != 0 && col + 1 + len > maxColumnWidth) {
-                out.append('\n');
-                col = 0;
-            }
-
-            if (col != 0) {
-                out.append(' ');
-                col++;
-            }
-
-            out.append(word);
-            col += len;
-        }
-
-        return out.toString();
-    }
 
 
     @Bean
     @Order(0)
     CommandLineRunner startup(){
         return (args) -> {
-            String tmp = """
-██████╗ ███████╗██╗   ██╗██╗███████╗██╗    ██╗
-██╔══██╗██╔════╝██║   ██║██║██╔════╝██║    ██║
-██████╔╝█████╗  ██║   ██║██║█████╗  ██║ █╗ ██║ 
-██╔══██╗██╔══╝  ╚██╗ ██╔╝██║██╔══╝  ██║███╗██║
-██║  ██║███████╗ ╚████╔╝ ██║███████╗╚███╔███╔╝
-╚═╝  ╚═╝╚══════╝  ╚═══╝  ╚═╝╚══════╝ ╚══╝╚══╝
-
-Version: 1.0.0, DAT109 Project, 2026
-Developed by: Bjarte Johansen, Fahad Ahmed, Marcus Lowenstein, Øyvind Nordeide, 
-Prince Nixon Alaoysius, Ahmad Ahmed.
-System: ReView Feedback Engine
-""";
-            // TODO: rette navn i reviewbanneren, jeg skrev de etter hukommelse.
-
-            Logger.log("-".repeat(80));
-            Logger.log("-".repeat(80));
-
-            Logger.log("");
-            Logger.log("");
-
-            Logger.log(tmp);
-
-            Logger.log("");
-            Logger.log("");
-
-            Logger.log("-".repeat(80));
-            Logger.log("-".repeat(80));
-            Logger.log("-".repeat(80));
-            Logger.log("");
-
-            Logger.log(wordwrap(RepositoryProxyConstructor.getDeveloperWarningMessages(), 80));
-
-            Logger.log("");
-            Logger.log("-".repeat(80));
-            Logger.log("-".repeat(80));
-            Logger.log("-".repeat(80));
-            Logger.log("");
-            Logger.log("");
-        };
-    }
-
-    @Bean
-    CommandLineRunner showSources(ConfigurableApplicationContext ctx) {
-        return args -> {
-            /*
-            var env = ctx.getEnvironment();
-            var sources = ((org.springframework.core.env.AbstractEnvironment) env)
-                .getPropertySources();
-
-            for (var s : sources) {
-                System.out.println("SOURCE: " + s.getName());
-            }
-
-            System.out.println("ActiveProfiles: " + Arrays.toString(env.getActiveProfiles()));
-            */
+            AppTextBanner.print();
         };
     }
 
     @Bean
     CommandLineRunner dbTestRunner(DatabaseManager databaseManager) {
         return args -> {
-            //showApplicationProperties();
-
+            // reset demo data on startup
             databaseManager.resetDemoData();
-            //dbTest.run();
         };
     }
 }

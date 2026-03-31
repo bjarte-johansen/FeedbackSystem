@@ -3,6 +3,7 @@ package root.unused;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
+@Deprecated
 public class CallerPrintStream extends PrintStream {
     final private OutputStream oldOut;
     private static final StackWalker WALKER =

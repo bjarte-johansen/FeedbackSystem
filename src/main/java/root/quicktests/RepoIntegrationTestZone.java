@@ -8,8 +8,7 @@ import root.database.FSQL;
 import root.database.FSQLQuery;
 import root.database.SqlFactory;
 import root.logger.Logger;
-import root.models.FNV1A64HashGenerator;
-import root.models.IReview;
+import root.interfaces.IReview;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 
@@ -18,7 +17,7 @@ import java.util.List;
 @Component
 public class RepoIntegrationTestZone {
     @Autowired
-    ReviewRepository repo;
+    ReviewRepository reviewRepo;
 
     public void execTest() throws Exception {
         Review review = new Review();
@@ -29,7 +28,7 @@ public class RepoIntegrationTestZone {
             review.setTitle("My review title");
             review.setScore(4);
 
-            repo.save(review);
+            reviewRepo.save(review);
         }
 
         String sql = SqlFactory.createUpdateSql(
@@ -56,7 +55,7 @@ public class RepoIntegrationTestZone {
 
         {
             Logger.warn("ACTUALLY USING findByExternalId");
-            List<Review> reviews = repo.findByExternalId("/product/69");
+            List<Review> reviews = reviewRepo.findByExternalId("/product/69");
 
             for (IReview r : reviews) {
                 System.out.println("Fetched review: " + r.getComment() + " with score: " + r.getScore());
@@ -65,8 +64,8 @@ public class RepoIntegrationTestZone {
     }
 
 
-    public static void testProxy() throws Exception {
-        ReviewRepository repo = RepositoryProxyConstructor.create(ReviewRepository.class);
+    public void testProxy() throws Exception {
+        //ReviewRepository repo = RepositoryProxyConstructor.create(ReviewRepository.class);
 
         try (var scope = Logger.scope("Testing proxy repository...")) {
             Logger.log("Created proxy repository for reviews");
@@ -77,26 +76,26 @@ public class RepoIntegrationTestZone {
             r1.setTitle("Proxy review title");
             r1.setScore(4);
             //r1.setTenantId(1L);
-            repo.save(r1);
+            reviewRepo.save(r1);
         }
 
         {
-            var results = repo.findAll();
+            var results = reviewRepo.findAll();
             printEntities(results, "review");
 
-            repo.delete(results.getFirst());
+            reviewRepo.delete(results.getFirst());
         }
 
         {
-            var resultsByScoreAndExternalId = repo.findByScoreAndExternalId(4, "2");
+            var resultsByScoreAndExternalId = reviewRepo.findByScoreAndExternalId(4, "2");
             printEntities(resultsByScoreAndExternalId, "reviews by author and external id");
 
-            var results = repo.findAll();
-            repo.deleteAll(results);
+            var results = reviewRepo.findAll();
+            reviewRepo.deleteAll(results);
         }
     }
 
-    public static void printEntities(List<?> els, String... strings) {
+    public void printEntities(List<?> els, String... strings) {
         String entityName = (strings != null && strings.length > 0) ? strings[0] : "Object";
         Logger.log("Found " + els.size() + " (" + entityName + ")");
 

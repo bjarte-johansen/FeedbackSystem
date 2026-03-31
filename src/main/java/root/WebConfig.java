@@ -4,6 +4,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * TODO: this file only works on localhost, it messes with paths on TomEe, must fix
+ */
+
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 

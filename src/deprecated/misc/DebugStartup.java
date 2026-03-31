@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 
+@Deprecated
 @Component
 public class DebugStartup {
     @PostConstruct

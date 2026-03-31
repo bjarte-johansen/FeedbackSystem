@@ -9,6 +9,7 @@ import java.util.List;
 /**
  * Tenant Repository Interface
  */
+@Deprecated
 public interface TenantRepos extends ProxyRepository<Tenant, Integer> {
     /**
      * WARNING: This method will return all reviews for the tenant, which could be a large amount of data. Use with caution.

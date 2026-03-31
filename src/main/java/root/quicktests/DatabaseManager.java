@@ -3,7 +3,7 @@ package root.quicktests;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import root.AppConfig;
+import root.app.AppConfig;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.common.utils.RandomPastInstant;

@@ -71,6 +71,6 @@ public class FSQLCachedFieldColumnLookup {
      * @throws Exception if there is an error accessing the class fields or ResultSet metadata
      */
     public static FSQLColumnMapping[] build(Class<?> clazz, ResultSet rs) throws Exception {
-        return _buildColumnIndexToFieldMap(clazz, rs.getMetaData(), CaseConverter::underscoreToPascal);
+        return _buildColumnIndexToFieldMap(clazz, rs.getMetaData(), CachedCaseConverter::underscoreToPascal);
     }
 }

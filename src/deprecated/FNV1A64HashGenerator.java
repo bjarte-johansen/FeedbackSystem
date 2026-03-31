@@ -11,6 +11,7 @@ Notes:
     collision risk low for typical IDs/emails but not cryptographic
  */
 
+@Deprecated
 public class FNV1A64HashGenerator {
     /**
      * Generate a 64-bit FNV-1a hash of the input string.

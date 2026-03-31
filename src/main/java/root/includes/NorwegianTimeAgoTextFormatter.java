@@ -1,4 +1,4 @@
-package root.utils;
+package root.includes;
 
 public class NorwegianTimeAgoTextFormatter {
 

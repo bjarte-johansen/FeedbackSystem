@@ -15,8 +15,17 @@ import static root.common.utils.Preconditions.checkArgument;
 import static root.common.utils.Preconditions.checkNotNull;
 
 
+/**
+ * A simple connection pool implementation that manages a pool of database connections. It creates new connections
+ * on demand up to a specified maximum limit and reuses them when they are returned to the pool.
+ */
+
 public class DataSource {
 
+    /**
+     * This class wraps a real Connection and intercepts the close() method to return the connection to the pool
+     * instead of actually closing it.
+     */
     static class PooledConnection {
         public static Connection wrap(Connection real) {
             InvocationHandler h = (proxy, method, args) -> {
@@ -46,15 +55,28 @@ public class DataSource {
         }
     }
 
-    private static int MAX_TOTAL_CONNECTION_COUNT = 10;
+    // connection pool & settings
     private static final AtomicInteger TOTAL_CONNECTION_COUNT = new AtomicInteger(0);
-    private static final boolean LOG_POOL_CHANGES_TO_CONSOLE = false;
+    private static int MAX_TOTAL_CONNECTION_COUNT = 30;
     private static final BlockingQueue<Connection> CONNECTION_POOL = new ArrayBlockingQueue<>(MAX_TOTAL_CONNECTION_COUNT);
 
-    public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test","h184905", "pass");
-    public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public","h184905", "pass");
 
+    // enable to log pool messages
+    private static final boolean LOG_POOL_CHANGES_TO_CONSOLE = false;
+
+
+    public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test","h184905", "pass", "test");
+    public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public","h184905", "pass", "public");
+
+    // we just use a single set of connection params for simplicity, but it can be extended to support multiple sets
+    // of params (fex for different tenants/schemas) if needed
     private static DataSourceConnectionParams currentDataSourceParams = TEST;
+
+    // this field MUST be reset after each connection is returned to the pool, otherwise it will leak to
+    // other connections that are checked out from the pool and cause incorrect behavior. It is used to set the
+    // schema for the connection when it is checked out from the pool, so that different threads can use different
+    // schemas if needed.
+    public static ThreadLocal<String> THREAD_LOCAL_SCHEMA = new ThreadLocal<>();
 
 
     /*
@@ -119,7 +141,8 @@ public class DataSource {
         }
 
         try {
-            Connection conn = DriverManager.getConnection(params.url, params.username, params.password);
+            Connection conn = DriverManager.getConnection(params.url(), params.username(), params.password());
+            conn.setSchema(params.defaultSchema());
 
             logMessage("Connection Created, available connections: " + getAvailableCount() + "/" + getTotalCount());
 
@@ -137,13 +160,25 @@ public class DataSource {
             conn = createConnection(params);
         }
 
+        // set the schema for the connection based on the thread-local value
+        String schema = THREAD_LOCAL_SCHEMA.get();
+        if(schema != null) {
+            conn.setSchema(schema);
+        }
+
         logMessage("Connection <<-- Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
 
         return PooledConnection.wrap(conn);
     }
 
     private static void enqueueConnection(Connection conn) throws SQLException {
+        // unwrap the connection to get the real connection object
         conn = conn.unwrap(Connection.class);
+
+        // reset schema
+        conn.setSchema(currentDataSourceParams.defaultSchema());
+
+        // return the connection to the pool
         CONNECTION_POOL.add(conn);  // return to pool
 
         logMessage("Connection -->> Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
@@ -160,6 +195,17 @@ public class DataSource {
         }
 
         return getConnection(currentDataSourceParams);
+    }
+
+    public static Connection getConnection(String schema) throws Exception {
+        if(currentDataSourceParams == null) {
+            throw new IllegalStateException("DataSource has no default datasource parameters.");
+        }
+
+        var conn = getConnection(currentDataSourceParams);
+        conn.setSchema(schema);
+
+        return conn;
     }
 
     public static Connection getConnection(DataSourceConnectionParams params) throws SQLException {

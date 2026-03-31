@@ -1,4 +1,6 @@
-package root.database;
+package root.database.deprecated;
+
+import root.database.FSQLUtils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Constructor;

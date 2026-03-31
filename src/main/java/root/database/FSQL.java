@@ -56,6 +56,7 @@ public class FSQL {
             case Boolean b -> ps.setBoolean(index, b);
             case Double d -> ps.setDouble(index, d);
             case Instant t -> ps.setTimestamp(index, java.sql.Timestamp.from(t));
+            case null -> ps.setNull(index, java.sql.Types.NULL);
             default -> ps.setObject(index, v);
         }
     }

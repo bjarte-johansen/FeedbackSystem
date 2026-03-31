@@ -1,4 +1,4 @@
-package root.models;
+package root.includes;
 
 import java.security.SecureRandom;
 
@@ -7,7 +7,7 @@ import java.security.SecureRandom;
  * Utility class for generating random numeric strings, often used as verification digits.
  */
 
-class VerificationDigitsGenerator {
+public class VerificationDigitsGenerator {
     private static final SecureRandom secureRandom = new SecureRandom();
 
 

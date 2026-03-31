@@ -51,7 +51,7 @@ public class GenericEntityPersistence {
 
                 field.setAccessible(true);
 
-                name = CaseConverter.camelToSnake(name);
+                name = CachedCaseConverter.camelToSnake(name);
                 props.put(name, field::get);
             }
         } catch (Exception e) {

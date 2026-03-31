@@ -4,8 +4,10 @@ import root.logger.Logger;
 
 import java.sql.*;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.lang.reflect.Array;
+import java.util.function.UnaryOperator;
 
 
 /**
@@ -60,6 +62,9 @@ public class FSQLQuery {
     private boolean ownsConnection = false;
 
     private boolean overrideDebugSql = false;
+
+    //public ThreadLocal<BiFunction<FSQLQuery, String, String>> onThreadBeforeQueryExecution;
+    //public ThreadLocal<Consumer<FSQLQuery>> onAfterQueryExecution;
 
 
     private FSQLQuery(Connection conn, String sql, boolean ownsConnection) {
@@ -138,7 +143,7 @@ public class FSQLQuery {
         __bindArgs(ps, Arrays.asList(args));
     }
 
-    @SuppressWarnings("unchecked")
+    //@SuppressWarnings("unchecked")
     protected static void __bindArgs(PreparedStatement ps, List<Object> args) throws SQLException {
         int i = 1;
         for(var arg : args){
@@ -165,7 +170,11 @@ public class FSQLQuery {
                 }
             }
             else {
-                FSQL.bind(ps, i++, arg);
+                if(arg == null){
+                    FSQL.bindNull(ps, i++);
+                }else {
+                    FSQL.bind(ps, i++, arg);
+                }
             }
         }
     }

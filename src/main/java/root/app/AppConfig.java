@@ -1,4 +1,4 @@
-package root;
+package root.app;
 
 public class AppConfig {
     public static final String DEFAULT_ENTITY_ID_NAME = "id";

@@ -3,6 +3,7 @@ package root.unused;
 import static root.common.utils.Preconditions.checkArgument;
 import static root.common.utils.Preconditions.checkNotNull;
 
+@Deprecated
 class FSQLConditions {
     public String[] expressions;
 

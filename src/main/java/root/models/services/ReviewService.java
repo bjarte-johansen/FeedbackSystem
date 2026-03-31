@@ -1,8 +1,9 @@
-package root.models;
+package root.models.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.interfaces.IReviewService;
+import root.models.Review;
 import root.repositories.ReviewRepository;
 
 import java.util.List;

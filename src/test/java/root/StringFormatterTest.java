@@ -2,8 +2,9 @@ package root;
 
 import org.junit.jupiter.api.Test;
 
-import static root.utils.StringFormatter.stringf;
+import static root.includes.StringFormatter.stringf;
 
+@Deprecated
 public class StringFormatterTest {
     @Test
     public void logTest() {

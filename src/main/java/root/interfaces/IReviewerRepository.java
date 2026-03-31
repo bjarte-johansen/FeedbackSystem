@@ -1,7 +1,5 @@
 package root.interfaces;
 
-import root.models.IReviewer;
-
 import java.util.Optional;
 
 public interface IReviewerRepository {
