@@ -22,6 +22,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
 
+import static root.common.utils.Preconditions.checkArgument;
+
 //import static root.database.SPIImpl.insert_review;
 
 @Component
@@ -68,18 +70,9 @@ public class DatabaseManager {
     }
 
     private void validateReposReferences(){
-        if(tenantRepo == null){
-            if(DEBUG) Logger.log("tenantRepo is null");
-            throw new RuntimeException("tenantRepo is null");
-        }
-        if(reviewerRepo == null){
-            if(DEBUG) Logger.log("reviewerRepo is null");
-            throw new RuntimeException("reviewerRepo is null");
-        }
-        if(reviewRepo == null) {
-            if(DEBUG) Logger.log("reviewRepo is null");
-            throw new RuntimeException("ReviewRepo is null");
-        }
+        checkArgument(tenantRepo != null, "tenantRepo is null");
+        checkArgument(reviewRepo != null, "reviewerRepo is null");
+        checkArgument(reviewerRepo != null, "reviewRepo is null");
     }
 
 

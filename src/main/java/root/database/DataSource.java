@@ -196,7 +196,7 @@ public class DataSource {
 
         return getConnection(currentDataSourceParams);
     }
-
+/*
     public static Connection getConnection(String schema) throws Exception {
         if(currentDataSourceParams == null) {
             throw new IllegalStateException("DataSource has no default datasource parameters.");
@@ -207,8 +207,8 @@ public class DataSource {
 
         return conn;
     }
-
-    public static Connection getConnection(DataSourceConnectionParams params) throws SQLException {
+*/
+    private static Connection getConnection(DataSourceConnectionParams params) throws SQLException {
         return dequeueConnection(params);
     }
 }
