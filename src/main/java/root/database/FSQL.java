@@ -10,6 +10,7 @@ import static root.common.utils.Preconditions.checkArgument;
 
 
 public class FSQL {
+    public static final boolean SHOW_SQL_MAPPING_ERRORS = false;
     public static final boolean DEBUG_SQL = true;
 
 

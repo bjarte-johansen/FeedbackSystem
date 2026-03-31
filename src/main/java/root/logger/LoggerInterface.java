@@ -6,5 +6,5 @@ public interface LoggerInterface {
     void info(Object... args);
     void warn(Object... args);
     void error(Object... args);
-    LogProxy tab();
+    //LogProxy tab();
 }

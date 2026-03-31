@@ -48,7 +48,7 @@ public class TestA0Review {
 
     @BeforeEach
     public void beforeEach(TestInfo info) throws Exception {
-        __logger = Logger.scope("TestA0Review.beforeEach");
+        __logger = Logger.scope("BEGIN TEST TestA0Review.beforeEach");
 
         databaseManager.clean();
     }
@@ -65,13 +65,16 @@ public class TestA0Review {
         databaseManager.clean();
 
         __logger.close();
-        //Logger.log("@AfterEach, DB cleaned");
-        System.out.println("-".repeat(40));
+
+        Logger.log("END OF TEST");
+        Logger.log("");
+        Logger.log("");
+
+        //System.out.println("-".repeat(40));
     }
 
     protected void insertReview1() throws Exception {
         Review r = new Review();
-        r.setTenantId(1L);
         r.setExternalId("/product/2");
         r.setAuthorId(1L);
         r.setAuthorName("John Doe");
@@ -117,23 +120,24 @@ public class TestA0Review {
 
         // insert a review
         Review rw = new Review();
-        rw.setTenantId(1L);
         rw.setExternalId("/product/2");
         rw.setAuthorId(1L);
         rw.setAuthorName("John Doe");
         rw.setScore(123);
-        //rw.setTitle("title");
+        rw.setTitle("title");
         rw.setComment("abc def");
         reviewRepo.save(rw);
 
         // assert that the first review has the expected values
         var r = reviewRepo.findById(rw.getId()).orElse(null);
-        assertEquals(1L, r.getTenantId());
+        Assertions.assertNotNull(r);
+
         assertEquals("/product/2", r.getExternalId());
         assertEquals(1L, r.getAuthorId());
         assertEquals("John Doe", r.getAuthorName());
         assertEquals(123, r.getScore());
         assertEquals("abc def", r.getComment());
+        assertEquals("title", r.getTitle());
     }
 
 

@@ -39,7 +39,7 @@ public class SyntaxHighlighter {
             }
 
             // ----- SYMBOL -----
-            else if (isSymbol(c)) {
+            else if (isSymbolOrPunct(c)) {
                 append(out, String.valueOf(c), 0, 1, colorScheme.getSymbol());
                 i++;
             }
@@ -73,19 +73,18 @@ public class SyntaxHighlighter {
         return out.toString();
     }
 
-    private static boolean isSymbol(char c) {
-        int type = Character.getType(c);
-        if(type == Character.MATH_SYMBOL
-            || type == Character.CURRENCY_SYMBOL
-            || type == Character.MODIFIER_SYMBOL
-            || type == Character.OTHER_SYMBOL){
-            return true;
-        }
+    private static final int SYMBOL_OR_PUNCT_MASK =
+        (1 << Character.MATH_SYMBOL)
+            | (1 << Character.CURRENCY_SYMBOL)
+            | (1 << Character.MODIFIER_SYMBOL)
+            | (1 << Character.OTHER_SYMBOL)
+            | (1 << Character.DASH_PUNCTUATION)
+            | (1 << Character.START_PUNCTUATION)
+            | (1 << Character.END_PUNCTUATION)
+            | (1 << Character.CONNECTOR_PUNCTUATION)
+            | (1 << Character.OTHER_PUNCTUATION);
 
-        return switch (c) {
-            case '=', '+', '-', '*', '/', '[', ']', '{', '}',
-                 '(', ')', '<', '>', ',', ':', ';' -> true;
-            default -> false;
-        };
+    public static boolean isSymbolOrPunct(char c) {
+        return (SYMBOL_OR_PUNCT_MASK & (1 << Character.getType(c))) != 0;
     }
 }

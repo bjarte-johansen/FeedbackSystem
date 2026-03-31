@@ -4,10 +4,9 @@ import root.logger.Logger;
 
 import java.sql.*;
 import java.util.*;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.lang.reflect.Array;
-import java.util.function.UnaryOperator;
 
 
 /**
@@ -52,6 +51,7 @@ public class FSQLQuery {
         }
     }
 
+    private static final boolean OVERRIDE_DEBUG_SQL = false;
     private static final int DEFAULT_CAPACITY = 32;
     private static final String REPLACED_WITH_INTERNAL_SQL = null;
 
@@ -61,7 +61,7 @@ public class FSQLQuery {
     private final HashMap<String, Object> namedArgs = new HashMap<String,Object>(DEFAULT_CAPACITY);
     private boolean ownsConnection = false;
 
-    private boolean overrideDebugSql = false;
+    private boolean debugSql = false;
 
     //public ThreadLocal<BiFunction<FSQLQuery, String, String>> onThreadBeforeQueryExecution;
     //public ThreadLocal<Consumer<FSQLQuery>> onAfterQueryExecution;
@@ -193,12 +193,12 @@ public class FSQLQuery {
     }
 
     public FSQLQuery debug(){
-        this.overrideDebugSql = true;
+        this.debugSql = true;
         return this;
     }
 
     public FSQLQuery debug(boolean activate) {
-        this.overrideDebugSql = activate;
+        this.debugSql = activate;
         return this;
     }
 
@@ -219,7 +219,7 @@ public class FSQLQuery {
         // set activeSql to input if provided, otherwise use original
         String activeSql = (inputSql != null) ? inputSql : this.sql;
 
-        if(overrideDebugSql) {
+        if(debugSql || OVERRIDE_DEBUG_SQL) {
             try (var ignore = Logger.scope("Attempt Query::prepareSql")) {
                 Logger.log("Raw: " + activeSql);
                 Logger.log("Arguments: " + args.toString());
@@ -230,7 +230,7 @@ public class FSQLQuery {
         NamedSql.Parsed parsed = NamedSql.parse(activeSql, this.namedArgs, args);
 
         // log
-        if(overrideDebugSql) {
+        if(debugSql || OVERRIDE_DEBUG_SQL) {
             try (var ignore = Logger.scope("Parsed Query::prepareSql")) {
                 Logger.log("Raw: " + activeSql);
                 Logger.log("Parsed: " + parsed.sql);
@@ -373,6 +373,37 @@ public class FSQLQuery {
                         : Optional.empty();
                 }
             }
+        });
+    }
+
+    public void fetchCallback(Consumer<ResultSet> resultSetConsumer) throws Exception {
+        execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
+                ps.executeQuery();
+
+                try (ResultSet rs = ps.getResultSet()) {
+                    resultSetConsumer.accept(rs);
+                }
+            }
+
+            return null;
+        });
+    }
+
+    public void fetchCallback(BiConsumer<ResultSet, Integer> resultSetConsumer) throws Exception {
+        execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
+                ps.executeQuery();
+
+                try (ResultSet rs = ps.getResultSet()) {
+                    int i = 0;
+                    while (rs.next()) {
+                        resultSetConsumer.accept(rs, i++);
+                    }
+                }
+            }
+
+            return null;
         });
     }
 

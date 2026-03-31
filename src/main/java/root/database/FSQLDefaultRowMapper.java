@@ -1,5 +1,7 @@
 package root.database;
 
+import root.logger.Logger;
+
 import java.sql.ResultSet;
 
 public class FSQLDefaultRowMapper {
@@ -16,7 +18,8 @@ public class FSQLDefaultRowMapper {
                 }
                 cm.setter.write(cm.field, o, v);
             }else{
-                System.out.println("WARNING [FSQLDefaultRowMapper]: No mapping for column " + i + ", column name: " + rs.getMetaData().getColumnName(i) + ", type: " + rs.getMetaData().getColumnTypeName(i));
+                if(FSQL.SHOW_SQL_MAPPING_ERRORS)
+                    Logger.log("WARNING [FSQLDefaultRowMapper]: No mapping for column " + i + ", column name: " + rs.getMetaData().getColumnName(i) + ", type: " + rs.getMetaData().getColumnTypeName(i));
             }
         }
 

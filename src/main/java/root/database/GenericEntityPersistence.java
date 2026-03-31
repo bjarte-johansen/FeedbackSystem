@@ -10,7 +10,7 @@ import static root.common.utils.Preconditions.checkArgument;
 
 
 public class GenericEntityPersistence {
-    private static final boolean DEBUG_SQL = false;
+    public static boolean DEBUG_SQL = false;
 
     public static String DEFAULT_ID_NAME = "id";
     private final static ConcurrentHashMap<Class<?>, LinkedHashMap<String, FieldGetter>> PROPERTY_MAP_CACHE = new ConcurrentHashMap<>();
@@ -20,7 +20,15 @@ public class GenericEntityPersistence {
         Object get(Object entity) throws Exception;
     }
 
-
+    public static boolean setDebugSql(boolean debug) {
+        boolean prev = DEBUG_SQL;
+        DEBUG_SQL = debug;
+        return prev;
+    }
+    /*
+    public static boolean getDebugSql(){
+        return DEBUG_SQL;
+    }*/
 
     public static void setDefaultIdName(String id_name) {
         DEFAULT_ID_NAME = id_name;

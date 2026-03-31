@@ -1,19 +1,48 @@
 package root.logger;
 
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
+
+/*
+ansi functions
+ */
+/*
+    public static class AnsiStringUtils {
+        private static final Pattern ANSI = Pattern.compile("\\u001B\\[[0-9;?]*[ -/]*[@-~]");
+
+        public static String strip(String s) {
+            return ANSI.matcher(s).replaceAll("");
+        }
+        public static int length(String s) {
+            return strip(s).length();
+        }
+    }
+*/
+
+class AnsiColors {
+    public static final String GREEN        = "\u001B[32m";
+    public static final String DARK_GRAY    = "\u001B[90m";
+    public static final String LIGHT_GRAY   = "\u001B[37m";
+    public static final String RESET        = "\u001B[0m";
+    public static final String UNDERLINE    = "\u001B[4m";
+    public static final String BOLD         = "\u001B[1m";
+    public static final String REVERSE      = "\u001B[7m";
+}
 
 public class Logger {
     protected static LoggerConfiguration cfg = new LoggerConfiguration();
 
     public static ThreadLocal<Integer> depth = ThreadLocal.withInitial(() -> 0);
     public static ConcurrentHashMap<Integer, String> indentCache = new ConcurrentHashMap<>();
-    public static ConcurrentHashMap<Integer, String> SpaceCharCache = new ConcurrentHashMap<>();
+
 
     private static final String newlineString = System.lineSeparator();
     private static final String tabString = "\t";
@@ -22,14 +51,7 @@ public class Logger {
     private static final String BLOCK_BACKGROUND_RESET = "\033[0m";
 
     public static int nextPrintIndent = 0;
-
-    public static final String GREEN        = "\u001B[32m";
-    public static final String DARK_GRAY    = "\u001B[90m";
-    public static final String LIGHT_GRAY   = "\u001B[37m";
-    public static final String RESET        = "\u001B[0m";
-    public static final String UNDERLINE    = "\u001B[4m";
-    public static final String BOLD         = "\u001B[1m";
-    public static final String REVERSE      = "\u001B[7m";
+    public static int nextCallerDepth = 0;
 
     public static final int EVENT_DEBUG = 0;
     public static final int EVENT_INFO = 1;
@@ -48,68 +70,13 @@ public class Logger {
         EVENT_ERROR, "[error]"
     );
 
-    public static class MagicParameterTemplateProcessor {
-        private static LinkedHashMap<String, Function<LoggerStackFrame, String>> PARAM_PROCESSOR_MAP = null;
-
-        private static LinkedHashMap<String, Function<LoggerStackFrame, String>> getOrCreateParamProcessingMap(){
-            if(PARAM_PROCESSOR_MAP == null) {
-                PARAM_PROCESSOR_MAP = new LinkedHashMap<>();
-                PARAM_PROCESSOR_MAP.put("@classMethod", LoggerStackFrame::getClassAndMethod);
-                PARAM_PROCESSOR_MAP.put("@class", LoggerStackFrame::getSimpleName);
-                PARAM_PROCESSOR_MAP.put("@method", LoggerStackFrame::getMethodName);
-                PARAM_PROCESSOR_MAP.put("@link", (F) -> F.getSourceLink(" @ "));
-                PARAM_PROCESSOR_MAP.put("@line", (F) -> String.valueOf(F.getLineNumber()));
-                PARAM_PROCESSOR_MAP.put("@file", LoggerStackFrame::getFileName);
-            }
-
-            return PARAM_PROCESSOR_MAP;
-        }
-        private static boolean matchString(String src, int fromSrcIndex, String other){
-            return src.regionMatches(true, fromSrcIndex, other, 0, other.length());
-        }
-
-        public static <T> String format(String fmt, LoggerStackFrame F) {
-            if(fmt == null || fmt.isEmpty()) return "";
-
-            StringBuilder sb = new StringBuilder(fmt.length() + 64);
-
-            // TODO: optimize by scanning for '@' first and only doing region matches when found, to avoid unnecessary
-            //  regionMatches calls when fmt is long and has few parameters (AKA theres no need to append characters one
-            //  by one when there are no parameters, the common case for short formats like "@classMethod" or "@link")
-
-
-            LinkedHashMap<String, Function<LoggerStackFrame, String>> paramProcessors = getOrCreateParamProcessingMap();
-
-            outer:
-            for (int i = 0, n = fmt.length(); i < n; ) {
-                char ch = fmt.charAt(i);
-
-                if (ch == '@') {
-                    for(var entry : paramProcessors.entrySet()) {
-                        String key = entry.getKey();
-                        if (matchString(fmt, i, key)) {
-                            sb.append(entry.getValue().apply(F));
-                            i += key.length();
-                            continue outer;
-                        }
-                    }
-                }
-
-                sb.append(ch);
-                i++;
-            }
-
-            return sb.toString();
-        }
-    }
-
 
     /*
         Indent-handling in setup of try-with entering scope
     */
 
-    public static String colorize(String s, String color) {
-        return color + s + RESET;
+    public static String colorize(String s, String ansiColorCode) {
+        return ansiColorCode + s + AnsiColors.RESET;
     }
 
 
@@ -137,7 +104,7 @@ public class Logger {
             if(s != null) {
                 System.out.print(getIndentPrefixStr());
                 //System.out.println(colorize(s, LIGHT_GRAY));
-                System.out.println(BLOCK_HEADER_BACKGROUND + colorize(s, GREEN ) + ";" + BLOCK_BACKGROUND_RESET);
+                System.out.println(BLOCK_HEADER_BACKGROUND + colorize(s, AnsiColors.GREEN ) + ";" + BLOCK_BACKGROUND_RESET);
             }
         }
 
@@ -153,7 +120,7 @@ public class Logger {
 
                 // magic logging
                 String s = switch (cfg.FORMAT_TYPE) {
-                    case LoggerFormatType.BEGIN_END -> colorize("### ", GREEN) + colorize("LEAVE", LIGHT_GRAY);
+                    case LoggerFormatType.BEGIN_END -> colorize("### ", AnsiColors.GREEN) + colorize("LEAVE", AnsiColors.LIGHT_GRAY);
                     case LoggerFormatType.BLOCK, LoggerFormatType.TITLED_BLOCK -> "}";
                     default -> null;
                 };
@@ -186,38 +153,11 @@ public class Logger {
     }
 
 
-    /*
-    ansi functions
-     */
-/*
-    public static class AnsiStringUtils {
-        private static final Pattern ANSI = Pattern.compile("\\u001B\\[[0-9;?]*[ -/]*[@-~]");
 
-        public static String strip(String s) {
-            return ANSI.matcher(s).replaceAll("");
-        }
-        public static int length(String s) {
-            return strip(s).length();
-        }
-    }
-*/
 
     //
 
-    /*
-    @Deprecated
-    private static String padRightAnsiString(String s, int new_width, char pad_char) {
-        return padRight(s, AnsiStringUtils.length(s), new_width, pad_char);
-    }
-     */
 
-    static String padRight(String s, int old_width, int new_width, char pad_char) {
-        if(s == null) return "";
-        int c = new_width - old_width;
-        if(c <= 0) return s;
-
-        return s + SpaceCharCache.getOrDefault(c, ("" + pad_char).repeat(c));
-    }
 
 
     /**
@@ -249,14 +189,16 @@ public class Logger {
             StringBuilder out = new StringBuilder(512);
 
             if(cfg.USE_MAGIC_LOGGING) {
-                var callerFrame = LoggerStackFrame.createFromCurrentStack(1 + frameDepthOffset);
-                magicOut = DARK_GRAY + MagicParameterTemplateProcessor.format("@classMethod @link", callerFrame) + RESET;
+                var callerFrame = LoggerStackFrame.createFromCurrentStack(1 + frameDepthOffset + nextCallerDepth);
+                nextCallerDepth = 0;
+
+                magicOut = AnsiColors.DARK_GRAY + MagicParameterTemplateProcessor.format("@classMethod @link", callerFrame) + AnsiColors.RESET;
             }
 
             if(cfg.LAYOUT_ADJUST_MAGIC_RIGHT && !magicOut.isEmpty()) {
                 int totalWidth = 104;
 
-                userOut = padRight(userOut, inputLength, totalWidth, ' ');
+                userOut = StringUtils.padRight(userOut, inputLength, totalWidth, ' ');
 
                 // $tab?$userOut?$magicOut$nl
                 out.append(indentStr);
@@ -368,17 +310,40 @@ public class Logger {
     public static void warnf(Object... args) { put(EVENT_WARN, format(args)); }
     public static void errorf(Object... args) { put(EVENT_ERROR, format(args)); }
 
-    public static LoggerImpl logProxy = null;
+    //protected static final LoggerImpl LOGGER_INSTANCE = new LoggerImpl();
 
-    public static LoggerImpl tab(){
+    protected static MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+    protected static LoggerInterface LOGGER_PROXY = (LoggerInterface) Proxy.newProxyInstance(
+        LoggerInterface.class.getClassLoader(),
+        new Class[]{LoggerInterface.class},
+        (proxy, method, args) -> {
+            MethodHandle mh = LOOKUP.findStatic(
+                Logger.class,
+                    method.getName(),
+                    MethodType.methodType(method.getReturnType(), method.getParameterTypes())
+                );
+            return mh.invokeWithArguments(args == null ? new Object[0] : args);
+            //return method.invoke(LOGGER_INSTANCE, args);
+        }
+    );
+
+
+    protected static LoggerInterface getLoggerImpl(){
+        return LOGGER_PROXY;
+    }
+
+    public static LoggerInterface tab(){
         return tab(1);
     }
-    public static LoggerImpl tab(int n){
+
+    public static LoggerInterface tab(int n){
         nextPrintIndent += n;
-        if(logProxy == null) {
-            logProxy = new LoggerImpl();
-        }
-        return logProxy;
+        return LOGGER_PROXY;
+    }
+
+    public static LoggerInterface caller(int depth) {
+        Logger.nextCallerDepth = depth;
+        return LOGGER_PROXY;
     }
 }
 

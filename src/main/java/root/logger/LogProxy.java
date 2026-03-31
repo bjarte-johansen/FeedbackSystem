@@ -7,15 +7,16 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ConcurrentHashMap;
 
-class LogProxy {
+@Deprecated
+public class LogProxy {
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
     private static final ConcurrentHashMap<Method, MethodHandle> CACHE = new ConcurrentHashMap<>();
 
     @SuppressWarnings("unchecked")
-    static <T> T create(Class<T> itf, Class<?> target) {
+    static <T> T create(Class<T> iface, Class<?> target) {
         return (T) Proxy.newProxyInstance(
-            itf.getClassLoader(),
-            new Class[]{itf},
+            iface.getClassLoader(),
+            new Class[]{iface},
             (proxy, method, args) -> {
                 MethodHandle mh = CACHE.computeIfAbsent(method, m -> {
                     try {
@@ -38,8 +39,10 @@ class LogProxy {
                     ? mh.invokeExact()
                     : mh.invokeWithArguments(args);
 
-                // return proxy for chaining (tab())
-                if (method.getReturnType().isInterface()) return proxy;
+                // return proxy for chaining
+                if (method.getReturnType().isInterface())
+                    return proxy;
+
                 return result;
             }
         );

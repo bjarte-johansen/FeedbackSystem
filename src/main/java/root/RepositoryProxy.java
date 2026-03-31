@@ -14,6 +14,7 @@ import static root.database.TableNameSanitizer.checkSafeTableName;
 
 class RepositoryProxy<T> implements InvocationHandler {
     private static final String DEFAULT_ID_FIELD_NAME = "id";
+    private static final boolean DEBUG_SQL = false;
 
     @FunctionalInterface
     interface ThrowingFn {
@@ -252,7 +253,9 @@ class RepositoryProxy<T> implements InvocationHandler {
         return DB.with(conn -> {
             Object entity = args[0];
 
+            var oldDebugValue = GenericEntityPersistence.setDebugSql(DEBUG_SQL);
             GenericEntityPersistence.genericInsertAndUpdateId(conn, __TABLE_NAME, entity, "id");
+            GenericEntityPersistence.setDebugSql(oldDebugValue);
 
             // return result
             Class<?> returnType = method.getReturnType();
@@ -269,7 +272,9 @@ class RepositoryProxy<T> implements InvocationHandler {
         return DB.with(conn -> {
             Object entity = args[0];
 
+            var oldDebugValue = GenericEntityPersistence.setDebugSql(DEBUG_SQL);
             int affectedRows = GenericEntityPersistence.genericUpdate(conn, __TABLE_NAME, entity, "id");
+            GenericEntityPersistence.setDebugSql(oldDebugValue);
 
             // return result
             Class<?> returnType = method.getReturnType();
@@ -296,6 +301,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
             // create query & return result(s) based on return type
             FSQLQuery q = FSQLQuery.create(sql)
+                .debug(DEBUG_SQL)
                 .bind(args);
 
             // return result
@@ -312,6 +318,7 @@ class RepositoryProxy<T> implements InvocationHandler {
         return DB.with(conn -> {
             // create query & return result(s) based on return type
             var list = FSQLQuery.create(conn, "SELECT * FROM " + __TABLE_NAME)
+                .debug(DEBUG_SQL)
                 .fetchAll(__MODEL_CLASS);
 
             Class<?> returnType = method.getReturnType();
@@ -334,6 +341,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
             var result = FSQLQuery.create(conn, "SELECT * FROM " + __TABLE_NAME + " WHERE id = ?")
                 .bind( entityId )
+                .debug(DEBUG_SQL)
                 .fetchOne(__MODEL_CLASS);
 
             Class<?> returnType = method.getReturnType();
@@ -356,6 +364,7 @@ class RepositoryProxy<T> implements InvocationHandler {
             String sql = "SELECT COUNT(*) FROM " + __TABLE_NAME;
 
             long found = FSQLQuery.create(conn, sql)
+                .debug(DEBUG_SQL)
                 .selectCount();
 
             Class<?> returnType = method.getReturnType();
@@ -373,6 +382,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
             long found = FSQLQuery.create(conn, sql)
                 .bindArray(args)
+                .debug(DEBUG_SQL)
                 .selectCount();
 
             Class<?> returnType = method.getReturnType();
@@ -394,6 +404,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
             boolean exists = FSQLQuery.create(conn, sql)
                 .bind(entityId)
+                .debug(DEBUG_SQL)
                 .selectExists();
 
             Class<?> returnType = method.getReturnType();
@@ -407,7 +418,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
             boolean exists = FSQLQuery.create(conn, sql)
                 .bindArray( args )
-                //.debug()
+                .debug(DEBUG_SQL)
                 .selectExists();
 
             Class<?> returnType = method.getReturnType();
@@ -429,6 +440,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
             int affectedRows = FSQLQuery.create(conn, sql)
                 .bind( entityId )
+                .debug(DEBUG_SQL)
                 .delete();
 
             Class<?> returnType = method.getReturnType();
@@ -447,6 +459,7 @@ class RepositoryProxy<T> implements InvocationHandler {
             String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id = ?";
             int affectedRows = FSQLQuery.create(conn, sql)
                 .bind( entityId )
+                .debug(DEBUG_SQL)
                 .delete();
 
             Class<?> returnType = method.getReturnType();
@@ -460,6 +473,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
             int affectedRows = FSQLQuery.create(conn, sql)
                 .bindArray( args )
+                .debug(DEBUG_SQL)
                 .delete();
 
             Class<?> returnType = method.getReturnType();
@@ -492,6 +506,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
         int affectedRows = FSQLQuery.create(sql)
             .bindArray(ids)
+            .debug(DEBUG_SQL)
             .delete();
 
         // return result
@@ -512,6 +527,7 @@ class RepositoryProxy<T> implements InvocationHandler {
 
         int affectedRows = FSQLQuery.create(sql)
             .bind(ids)
+            .debug(DEBUG_SQL)
             .delete();
 
         // return result

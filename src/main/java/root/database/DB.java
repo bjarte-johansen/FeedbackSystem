@@ -6,9 +6,24 @@ import java.sql.*;
 import java.util.function.Consumer;
 
 public class DB {
+    /**
+     * Functional interface representing a consumer that accepts a database connection and returns a result. This is used
+     * as a parameter type for the with() method to allow executing database operations with a managed connection.
+     * @param <R>
+     */
+
     public interface ConnectionConsumer<R>{
         R run(Connection connection) throws Exception;
     }
+
+
+    /**
+     * Utility method to execute a database operation with a managed connection. The provided function is executed
+     * with a connection that is automatically closed after the operation completes, ensuring proper resource management.
+     * @param fn
+     * @return
+     * @param <R>
+     */
 
     public static <R> R with(ConnectionConsumer<R> fn) {
         try (Connection connection = DataSource.getConnection()) {
@@ -19,54 +34,6 @@ public class DB {
         }
     }
 
-/*
-    private static volatile String QUOTE = null;
-
-    public static String getQuoteSymbol(){
-        String q = QUOTE;
-        if(q != null) return q;
-
-        synchronized (DB.class) {
-            if(QUOTE == null){
-                try {
-                    with(conn -> {
-                        QUOTE = conn.getMetaData().getIdentifierQuoteString().trim();
-                        return null;
-                    });
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to get identifier quote string from database metadata.");
-                }
-            }
-            return QUOTE;
-        }
-    }
-*/
-    /*
-    public static String quoteIdentifier(String s) {
-        String q = getQuoteSymbol();
-        if(q.isEmpty()) return s;
-
-        return q + s + q;
-    }
-     */
-/*
-    public static Connection getConnection(){
-        try {
-            //Logger.log("CHANGE getConnection ENV TO PROD/TEXT BASED ON ENV SETTINGS");
-
-            return DataSource.getConnection(DataSource.TEST);
-        } catch (Exception e){
-            throw new RuntimeException(e);
-        }
-    }
-*/
-
-/*
-    public static NamedSql.Parsed prepareSql(String sql, Map<String, Object> params, Object... args) {
-        NamedSql.Parsed parsed = NamedSql.parse(sql, params, args);
-        return parsed;
-    }
- */
 
     /**
      * Prints database metadata information to the console, including product name, version, driver details,

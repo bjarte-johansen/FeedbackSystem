@@ -15,6 +15,8 @@ public class LoggerStackFrame {
         return walker.walk(s -> s.skip(depth + 2).findFirst().map(LoggerStackFrame::new).orElse(null));
     }
 
+    private static <T> T getOrDefault(T v, T def) { return (v != null) ? v : def;}
+
     public String getClassName() {
         return frame.getClassName();
     }
@@ -32,15 +34,14 @@ public class LoggerStackFrame {
         return frame.getLineNumber();
     }
     public String getSimpleName() { return extractSimpleName(); }
-    public String getSourceLink(String prefix) { return prefix + "(" + getFileName() + ":" + getLineNumber() + ")"; }
-    public String getSourceLink() { return "(" + getFileName() + ":" + getLineNumber() + ")";
-    }
+    public String getSourceLink(String prefix) { return getOrDefault(prefix, "") + "(" + getFileName() + ":" + getLineNumber() + ")"; }
+    public String getSourceLink() { return getSourceLink(""); }
 
     protected String extractSimpleName(){
         /*
-        if (hasDeclaringClass()) {
-            return this..getDeclaringClass().getSimpleName();
-        }*/
+        if (hasDeclaringClass())
+            return this.getDeclaringClass().getSimpleName();
+         */
 
         String className = this.getClassName();
         int lastDotIndex = className.lastIndexOf('.');
@@ -51,12 +52,15 @@ public class LoggerStackFrame {
     }
 
     public String toString() {
-        return "LMStackFrame{" +
+        return "LoggerStackFrame{" +
             "className='" + getClassName() + '\'' +
             ", simpleClassName='" + getSimpleName() + '\'' +
             ", methodName='" + getMethodName() + '\'' +
             ", fileName='" + getFileName() + '\'' +
             ", lineNumber=" + getLineNumber() +
+            ", sourceLink='" + getSourceLink() + '\'' +
+            ", classAndMethod='" + getClassAndMethod() + '\'' +
+            ", classMethodAndSource='" + getClassAndMethod() + " " + getSourceLink() + '\'' +
             '}';
     }
 }

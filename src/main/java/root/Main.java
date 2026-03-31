@@ -43,11 +43,26 @@ public class Main {
         System.out.println();
     }
 
+    public static void testLogger(){
+        try(var ignore = Logger.scope("Testing Logger...")) {
+            Logger.log("This is a log message.");
+            Logger.warn("This is a warning message.");
+            Logger.error("This is an error message.");
+            Logger.tab(1).log("This is a tab message.");
+            Logger.caller(4).log("This is the caller functions information.");
+        }
+    }
+
     public static void main(String[] args) throws Throwable{
+        testLogger();
+        if(true) return;
+
         boolean bPrintMetaData = true;
 
         if(bPrintMetaData)
             DB.printMetaData();
+
+
 
         DataSource.warmp(0, DataSource.TEST);
 
