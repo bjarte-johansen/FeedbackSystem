@@ -10,6 +10,9 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
 
 /*
 ansi functions
@@ -50,6 +53,9 @@ public class Logger {
     private static final String BLOCK_HEADER_BACKGROUND = "\033[48;2;40;40;40m";   // background
     private static final String BLOCK_BACKGROUND_RESET = "\033[0m";
 
+    private static final ConcurrentLinkedDeque<Integer> scopeConfigQueue = new ConcurrentLinkedDeque<>();
+    private static final ConcurrentLinkedDeque<LoggerScope> scopeStack = new ConcurrentLinkedDeque<>();
+
     public static int nextPrintIndent = 0;
     public static int nextCallerDepth = 0;
 
@@ -78,14 +84,31 @@ public class Logger {
     public static String colorize(String s, String ansiColorCode) {
         return ansiColorCode + s + AnsiColors.RESET;
     }
-
-
+/*
+    public static LoggerScope scopeSurroundingBlock(String title, boolean verbose) {
+        var newScope = new TestLoggerScope(title, verbose);
+        scopeStack.add(newScope);
+        newScope.open();
+        return newScope;
+    }
+ */
     public static LoggerScope scope(String title) {
         return scope(title, 1, true);
     }
     public static LoggerScope scope(String title, boolean verbose) {
         return scope(title, 1, verbose);
     }
+
+    public static LoggerScope scope(String title, BiConsumer<String, Integer> fnEnter, BiConsumer<String, Integer> fnLeave){
+        fnEnter.accept(title, depth.get());
+        enter();
+
+        return () -> {
+            leave();
+            fnLeave.accept(title, depth.get());
+        };
+    }
+
     public static LoggerScope scope(String title, int depth, boolean verbose) {
         // magic logging
         if (cfg.USE_MAGIC_LOGGING && verbose) {
@@ -125,10 +148,17 @@ public class Logger {
                     default -> null;
                 };
 
+                if(s != null) {
+                    System.out.print(getIndentPrefixStr());
+                    //System.out.println(colorize(s, LIGHT_GRAY));
+                    System.out.println(BLOCK_HEADER_BACKGROUND + colorize(s, AnsiColors.GREEN ) + ";" + BLOCK_BACKGROUND_RESET);
+                }
+/*
                 if (s != null) {
                     System.out.print(getIndentPrefixStr());
                     System.out.println(s);
                 }
+ */
 
                 if (cfg.FORMAT_EXTRA_LINE_AFTER_BLOCK) {
                     System.out.println();

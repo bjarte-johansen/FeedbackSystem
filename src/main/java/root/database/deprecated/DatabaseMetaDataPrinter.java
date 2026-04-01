@@ -1,38 +1,10 @@
-package root.database;
+package root.database.deprecated;
 
-import root.logger.Logger;
+import root.database.DataSource;
 
 import java.sql.*;
-import java.util.function.Consumer;
 
-public class DB {
-    /**
-     * Functional interface representing a consumer that accepts a database connection and returns a result. This is used
-     * as a parameter type for the with() method to allow executing database operations with a managed connection.
-     * @param <R>
-     */
-
-    public interface ConnectionConsumer<R>{
-        R run(Connection connection) throws Exception;
-    }
-
-
-    /**
-     * Utility method to execute a database operation with a managed connection. The provided function is executed
-     * with a connection that is automatically closed after the operation completes, ensuring proper resource management.
-     * @param fn
-     * @return
-     * @param <R>
-     */
-
-    public static <R> R with(ConnectionConsumer<R> fn) {
-        try (Connection connection = DataSource.getConnection()) {
-            return fn.run(connection);
-        } catch (Exception e) {
-            Logger.log("An exception occurred while executing a database operation: " + e.getMessage());
-            throw new RuntimeException(e);
-        }
-    }
+public class DatabaseMetaDataPrinter {
 
 
     /**
@@ -42,7 +14,7 @@ public class DB {
      */
 
     public static void printMetaData() throws Exception {
-        DB.with(conn -> {
+        DataSource.with(conn -> {
             DatabaseMetaData metaData = conn.getMetaData();
 
             System.out.println("Database Product Name: " + metaData.getDatabaseProductName());

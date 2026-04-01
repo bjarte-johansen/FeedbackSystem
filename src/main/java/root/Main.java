@@ -1,11 +1,10 @@
 package root;
 
 import root.database.*;
+import root.database.deprecated.DatabaseMetaDataPrinter;
 import root.logger.*;
 import root.models.Review;
-import root.quicktests.DatabaseManager;
 import root.quicktests.FantasyRepoTest;
-import root.quicktests.RepoIntegrationTestZone;
 import root.repositories.TenantRepository;
 
 import static root.common.utils.Preconditions.checkArgument;
@@ -44,6 +43,18 @@ public class Main {
     }
 
     public static void testLogger(){
+        try(var ignore = Logger.scope(
+            "myBlock",
+            (title, depth) -> System.out.println("# enter scope: " + title + ", depth: " + depth),
+            (title, depth) -> System.out.println("# exit scope: " + title + ", depth: " + depth + "\n")
+        )) {
+            Logger.log("This is a log message.");
+            Logger.warn("This is a warning message.");
+            Logger.error("This is an error message.");
+            Logger.tab(1).log("This is a tab message.");
+            Logger.caller(4).log("This is the caller functions information.");
+        }
+
         try(var ignore = Logger.scope("Testing Logger...")) {
             Logger.log("This is a log message.");
             Logger.warn("This is a warning message.");
@@ -60,11 +71,11 @@ public class Main {
         boolean bPrintMetaData = true;
 
         if(bPrintMetaData)
-            DB.printMetaData();
+            DatabaseMetaDataPrinter.printMetaData();
 
 
 
-        DataSource.warmp(0, DataSource.TEST);
+        DataSource.warm(0, DataSource.TEST);
 
 
         EntityMeta meta = EntityMeta.create(Review.class);

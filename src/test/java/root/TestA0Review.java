@@ -16,7 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 
 @SpringBootTest
-public class TestA0Review {
+public class TestA0Review extends TestA0Base{
     LoggerScope __logger;
 
     @Autowired
@@ -37,49 +37,20 @@ public class TestA0Review {
         System.setProperty("APP_ENV", "test");
     }
 
-    /**
-     * Sets up the test environment before each test by creating a new logger scope for the test and cleaning the
-     * database to ensure a consistent starting point for each test.
-     *
-     * @param info the TestInfo object that provides information about the current test, such as its display name and
-     * tags
-     * @throws Exception any
-     */
 
-    @BeforeEach
-    public void beforeEach(TestInfo info) throws Exception {
-        __logger = Logger.scope("BEGIN TEST TestA0Review.beforeEach");
-
-        databaseManager.clean();
-    }
-
-    /**
-     * Cleans the database after each test by calling the DBTest.clean() method, which truncates the reviews, reviewers,
-     * and tenants tables and restarts their identity sequences. It also closes the logger scope and prints a separator
-     * line for better readability of the test output.
-     *
-     * @throws Exception any
-     */
-    @AfterEach
-    public void afterEach() throws Exception {
-        databaseManager.clean();
-
-        __logger.close();
-
-        Logger.log("END OF TEST");
-        Logger.log("");
-        Logger.log("");
-
-        //System.out.println("-".repeat(40));
-    }
 
     protected void insertReview1() throws Exception {
+        insertReview1(1);
+    }
+    protected void insertReview1(int suffix) throws Exception {
         Review r = new Review();
-        r.setExternalId("/product/2");
+        r.setExternalId("/product/2" + suffix);
         r.setAuthorId(1L);
-        r.setAuthorName("John Doe");
+        r.setAuthorName("John Doe" + suffix);
         r.setScore(123);
-        r.setComment("abc def");
+        r.setComment("abc def" + suffix);
+        r.setTitle("title" + suffix);
+        r.setStatus(Review.STATUS_APPROVED);
         r.setCreatedAt(RandomPastInstant.generate(java.time.Duration.ofDays(1), java.time.Duration.ofDays(30)));
         reviewRepo.save(r);
     }
@@ -154,6 +125,7 @@ public class TestA0Review {
 
         int n = 10;
         for (int i = 0; i < n; i++) {
+            Logger.log("Inserting review " + (i + 1));
             insertReview1();
             assertEquals(i + 1, reviewRepo.findAll().getLast().getId());
         }

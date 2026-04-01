@@ -1,5 +1,7 @@
 package root.logger;
 
+import java.util.Objects;
+
 public class LoggerStackFrame {
     static public String DEFAULT_SOURCE_LINK_PREFIX = "@";
     static public String DEFAULT_CLASS_METHOD_DELIMITER = "::";
@@ -27,14 +29,10 @@ public class LoggerStackFrame {
     public String getMethodName() {
         return frame.getMethodName();
     }
-    public String getFileName() {
-        return frame.getFileName();
-    }
-    public int getLineNumber() {
-        return frame.getLineNumber();
-    }
+    public String getFileName() { return frame.getFileName(); }
+    public int getLineNumber() { return frame.getLineNumber(); }
     public String getSimpleName() { return extractSimpleName(); }
-    public String getSourceLink(String prefix) { return getOrDefault(prefix, "") + "(" + getFileName() + ":" + getLineNumber() + ")"; }
+    public String getSourceLink(String prefix) { return Objects.requireNonNullElse(prefix, "") + "(" + getFileName() + ":" + getLineNumber() + ")"; }
     public String getSourceLink() { return getSourceLink(""); }
 
     protected String extractSimpleName(){

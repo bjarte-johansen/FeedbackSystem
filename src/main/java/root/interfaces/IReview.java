@@ -3,6 +3,9 @@ package root.interfaces;
 import java.time.Instant; /***********************************************/
 
 public interface IReview extends HasId {
+    int getStatus();
+    void setStatus(int status);
+
     // external resource ID (e.g., from a third-party app/website, any string is allowed)
     String getExternalId();
     void setExternalId(String externalId);

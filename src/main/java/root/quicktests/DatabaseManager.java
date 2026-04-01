@@ -60,12 +60,9 @@ public class DatabaseManager {
         validateReposReferences();
 
         try(var ignore = Logger.scope("Inserting demo data...", DEBUG)) {
-            DB.with(conn -> {
-                insertTenants(conn);
-                insertAuthors(conn);
-                insertDemoRatings(conn);
-                return null;
-            });
+            insertTenants();
+            insertAuthors();
+            insertDemoRatings();
         }
     }
 
@@ -77,7 +74,7 @@ public class DatabaseManager {
 
 
 
-    private void insertTenants(Connection conn) throws Exception {
+    private void insertTenants() throws Exception {
 
         try (var p = Logger.scope("Inserting tenant", DEBUG)) {
             Tenant tenant = new Tenant();
@@ -96,7 +93,7 @@ public class DatabaseManager {
         }
     }
 
-    private void insertAuthors(Connection conn) throws SQLException, Exception {
+    private void insertAuthors() throws SQLException, Exception {
         // TODO: move to
         var passwordHashForPasswordPass = PasswordService.hash("pass", "salt");
 
@@ -128,7 +125,7 @@ public class DatabaseManager {
         return r;
     }
 
-    private void insertDemoRatings(Connection conn) throws SQLException, Exception {
+    private void insertDemoRatings() throws SQLException, Exception {
         try(var p = Logger.scope("Inserting demo ratings", DEBUG)) {
             String path1 = "/product/1";
             String path2 = "/product/2";

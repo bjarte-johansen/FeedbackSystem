@@ -23,6 +23,36 @@ import static root.common.utils.Preconditions.checkNotNull;
 public class DataSource {
 
     /**
+     * Functional interface representing a consumer that accepts a database connection and returns a result. This is used
+     * as a parameter type for the with() method to allow executing database operations with a managed connection.
+     * @param <R>
+     */
+
+    public interface ConnectionConsumer<R>{
+        R run(Connection connection) throws Exception;
+    }
+
+
+    /**
+     * Utility method to execute a database operation with a managed connection. The provided function is executed
+     * with a connection that is automatically closed after the operation completes, ensuring proper resource management.
+     * @param fn
+     * @return
+     * @param <R>
+     */
+
+    public static <R> R with(ConnectionConsumer<R> fn) {
+        try (Connection connection = getConnection()) {
+            return fn.run(connection);
+        } catch (Exception e) {
+            Logger.log("An exception occurred while executing a database operation: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
+    /**
      * This class wraps a real Connection and intercepts the close() method to return the connection to the pool
      * instead of actually closing it.
      */
@@ -62,7 +92,7 @@ public class DataSource {
 
 
     // enable to log pool messages
-    private static final boolean LOG_POOL_CHANGES_TO_CONSOLE = false;
+    private static final boolean LOG_MESSAGES_TO_CONSOLE = false;
 
 
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test","h184905", "pass", "test");
@@ -103,6 +133,11 @@ public class DataSource {
     }
     */
 
+
+    /*
+     * usage statistics and logging
+     */
+
     public static int getTotalCount(){
         return TOTAL_CONNECTION_COUNT.get();
     }
@@ -113,13 +148,29 @@ public class DataSource {
         return getTotalCount() - getAvailableCount();
     }
 
+
+
+    /*
+    logging
+     */
     private static void logMessage(String msg) {
-        if(LOG_POOL_CHANGES_TO_CONSOLE) {
+        if(LOG_MESSAGES_TO_CONSOLE) {
             Logger.log(msg);
         }
     }
 
-    public static void warmp(int numberOfConnections, DataSourceConnectionParams params) throws SQLException {
+
+    /**
+     * Pre-populates the connection pool with a specified number of connections. This can be used to warm up the pool
+     * at application startup to reduce latency for the first few connection requests. The method creates new
+     * connections using the provided parameters and adds them to the pool, up to the maximum total connection limit.
+     *
+     * @param numberOfConnections
+     * @param params
+     * @throws SQLException
+     */
+
+    public static void warm(int numberOfConnections, DataSourceConnectionParams params) throws SQLException {
         MAX_TOTAL_CONNECTION_COUNT = (int) Math.min(MAX_TOTAL_CONNECTION_COUNT, numberOfConnections);
 
         for(int i=0; i < numberOfConnections; i++) {
@@ -131,6 +182,14 @@ public class DataSource {
     }
 
 
+    /**
+     * Creates a new database connection using the provided parameters. This method is called when a new connection
+     * is needed and the pool is empty.
+     *
+     * @param params
+     * @return
+     * @throws SQLException
+     */
 
     private static Connection createConnection(DataSourceConnectionParams params) throws SQLException {
         int newCount = TOTAL_CONNECTION_COUNT.incrementAndGet();
@@ -153,6 +212,17 @@ public class DataSource {
         }
     }
 
+    /**
+     * Retrieves a connection from the pool. If the pool is empty, it creates a new connection using the provided parameters.
+     * The method also sets the schema for the connection based on the thread-local value before returning it. The returned
+     * connection is wrapped in a PooledConnection proxy that intercepts the close() method to return the connection to the pool
+     * instead of actually closing it.
+     *
+     * @param params
+     * @return
+     * @throws SQLException
+     */
+
     private static Connection dequeueConnection(DataSourceConnectionParams params) throws SQLException {
         Connection conn = CONNECTION_POOL.poll();
 
@@ -162,24 +232,32 @@ public class DataSource {
 
         // set the schema for the connection based on the thread-local value
         String schema = THREAD_LOCAL_SCHEMA.get();
-        if(schema != null) {
-            conn.setSchema(schema);
-        }
+        conn.setSchema((schema != null) ? schema : params.defaultSchema());
 
         logMessage("Connection <<-- Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
 
         return PooledConnection.wrap(conn);
     }
 
+
+    /**
+     * Returns a connection to the pool. This method is called when a connection is closed (via the PooledConnection proxy).
+     * The method unwraps the connection to get the real connection object, resets the schema to the default value, and adds
+     * it back to the pool for reuse.
+     *
+     * @param conn
+     * @throws SQLException
+     */
+
     private static void enqueueConnection(Connection conn) throws SQLException {
         // unwrap the connection to get the real connection object
         conn = conn.unwrap(Connection.class);
 
-        // reset schema
+        // set back to default/old schema
         conn.setSchema(currentDataSourceParams.defaultSchema());
 
         // return the connection to the pool
-        CONNECTION_POOL.add(conn);  // return to pool
+        CONNECTION_POOL.add(conn);
 
         logMessage("Connection -->> Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
     }
@@ -190,24 +268,11 @@ public class DataSource {
      */
 
     public static Connection getConnection() throws Exception {
-        if(currentDataSourceParams == null) {
-            throw new IllegalStateException("DataSource has no default datasource parameters.");
-        }
+        checkArgument(currentDataSourceParams != null, "DataSource has no default datasource parameters.");
 
         return getConnection(currentDataSourceParams);
     }
-/*
-    public static Connection getConnection(String schema) throws Exception {
-        if(currentDataSourceParams == null) {
-            throw new IllegalStateException("DataSource has no default datasource parameters.");
-        }
 
-        var conn = getConnection(currentDataSourceParams);
-        conn.setSchema(schema);
-
-        return conn;
-    }
-*/
     private static Connection getConnection(DataSourceConnectionParams params) throws SQLException {
         return dequeueConnection(params);
     }

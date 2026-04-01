@@ -1,7 +1,6 @@
 package root;
 
 import root.database.*;
-import root.logger.Logger;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
@@ -12,7 +11,7 @@ import java.util.function.Function;
 
 import static root.database.TableNameSanitizer.checkSafeTableName;
 
-class RepositoryProxy<T> implements InvocationHandler {
+class RepositoryProxyImpl<T> implements InvocationHandler {
     private static final String DEFAULT_ID_FIELD_NAME = "id";
     private static final boolean DEBUG_SQL = false;
 
@@ -51,7 +50,7 @@ class RepositoryProxy<T> implements InvocationHandler {
     }
 
     @SuppressWarnings("unchecked")
-    RepositoryProxy(Object target, Map<String, Object> options) {
+    RepositoryProxyImpl(Object target, Map<String, Object> options) {
         this.target = target;
         this.options = options != null ? options : new HashMap<String, Object>();
 
@@ -250,7 +249,7 @@ class RepositoryProxy<T> implements InvocationHandler {
      */
 
     private Object handleCreate(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             Object entity = args[0];
 
             var oldDebugValue = GenericEntityPersistence.setDebugSql(DEBUG_SQL);
@@ -269,7 +268,7 @@ class RepositoryProxy<T> implements InvocationHandler {
     }
 
     private Object handleUpdate(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             Object entity = args[0];
 
             var oldDebugValue = GenericEntityPersistence.setDebugSql(DEBUG_SQL);
@@ -315,7 +314,7 @@ class RepositoryProxy<T> implements InvocationHandler {
     }
 
     private Object handleFindAll(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             // create query & return result(s) based on return type
             var list = FSQLQuery.create(conn, "SELECT * FROM " + __TABLE_NAME)
                 .debug(DEBUG_SQL)
@@ -336,7 +335,7 @@ class RepositoryProxy<T> implements InvocationHandler {
     }
 
     public Object handleFindById(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             long entityId = convertToLongValueExactOrThrow(args[0]);
 
             var result = FSQLQuery.create(conn, "SELECT * FROM " + __TABLE_NAME + " WHERE id = ?")
@@ -360,7 +359,7 @@ class RepositoryProxy<T> implements InvocationHandler {
      */
 
     public Object handleCount(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             String sql = "SELECT COUNT(*) FROM " + __TABLE_NAME;
 
             long found = FSQLQuery.create(conn, sql)
@@ -373,7 +372,7 @@ class RepositoryProxy<T> implements InvocationHandler {
     }
 
     public Object handleCountBy(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             if(methodNameScanner.whereStr == null || methodNameScanner.whereStr.isEmpty()) {
                 throw new IllegalArgumentException("Invalid countBy method name: " + method.getName());
             }
@@ -397,7 +396,7 @@ class RepositoryProxy<T> implements InvocationHandler {
      */
 
     public Object handleExistsById(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             long entityId = convertToLongValueExactOrThrow(args[0]);
 
             String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE id = ?";
@@ -413,7 +412,7 @@ class RepositoryProxy<T> implements InvocationHandler {
     }
 
     public Object handleExistsBy(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
             boolean exists = FSQLQuery.create(conn, sql)
@@ -433,7 +432,7 @@ class RepositoryProxy<T> implements InvocationHandler {
      */
 
     public Object handleDeleteById(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             long entityId = convertToLongValueExactOrThrow(args[0]);
 
             String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id = ?";
@@ -449,7 +448,7 @@ class RepositoryProxy<T> implements InvocationHandler {
     }
 
     private Object handleDelete(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             checkArgumentInstanceOf(args[0], __MODEL_CLASS);
 
             // setup
@@ -468,7 +467,7 @@ class RepositoryProxy<T> implements InvocationHandler {
     }
 
     private Object handleDeleteBy(Method method, Object[] args) throws Exception {
-        return DB.with(conn -> {
+        return DataSource.with(conn -> {
             String sql = "DELETE FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
             int affectedRows = FSQLQuery.create(conn, sql)

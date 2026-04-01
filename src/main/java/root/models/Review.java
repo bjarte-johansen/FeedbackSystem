@@ -6,43 +6,55 @@ import root.interfaces.IReview;
 import java.time.Instant;
 
 public class Review implements IReview {
+    public static int STATUS_PENDING = 0;
+    public static int STATUS_APPROVED = 1;
+    public static int STATUS_REJECTED = 2;
 
-    private Long id = null;
-    private String externalId = "";
+    private Long id;
+    private String externalId;
     private long authorId;
-    private String authorName = "";
+    private String authorName;
     private int score;
-    private String title = "";
-    private String comment = "";
-    private Instant createdAt = Instant.now();
+    private String title;
+    private String comment;
+    private Instant createdAt;
+    private int status = STATUS_PENDING;
 
     public Review() {}
-
+/*
     public Review(
+        int status,
         String externalId,
         long authorId,
         String authorName,
         int score,
+        String title,
         String comment,
         Instant createdAt
     ) {
+        this.status = status;
         this.externalId = externalId; // ensures hash update
         this.authorId = authorId;
         this.authorName = authorName;
         this.score = score;
+        this.title = title;
         this.comment = comment;
-        this.createdAt = Instant.now();
+        this.createdAt = createdAt;
     }
 
     public Review(
+        int status,
         String externalId,
         long authorId,
         String authorName,
         int score,
+        String title,
         String comment
     ) {
-        this(externalId, authorId, authorName, score, comment, Instant.now());
+        this(status, externalId, authorId, authorName, score, title, comment, Instant.now());
     }
+
+ */
 
     @Override
     public Long getId() {
@@ -53,6 +65,14 @@ public class Review implements IReview {
     public void setId(long id) {
         this.id = id;
     }
+
+
+    @Override
+    public int getStatus(){ return this.status; }
+
+    @Override
+    public void setStatus(int status){ this.status = status; }
+
 
     @Override
     public String getExternalId() {
@@ -132,10 +152,24 @@ public class Review implements IReview {
                 ", score=" + score +
                 ", title='" + title + '\'' +
                 ", comment='" + comment + '\'' +
+                ", status=" + statusToString(status) +
                 ", createdAt=" + createdAt +
                 ')';
     }
 
+
+    /*
+
+     */
+
+    public static String statusToString(int status) {
+        return switch (status) {
+            case 0 -> "PENDING";
+            case 1 -> "APPROVED";
+            case 2 -> "REJECTED";
+            default -> "UNKNOWN";
+        };
+    }
 
     /**
      * Returns a human-readable string representing how long ago the review was created, formatted in Norwegian.

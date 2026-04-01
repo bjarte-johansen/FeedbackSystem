@@ -2,11 +2,7 @@ package root.quicktests;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import root.RepositoryProxyConstructor;
-import root.database.DB;
-import root.database.FSQL;
-import root.database.FSQLQuery;
-import root.database.SqlFactory;
+import root.database.*;
 import root.logger.Logger;
 import root.interfaces.IReview;
 import root.models.Review;
@@ -43,7 +39,7 @@ public class RepoIntegrationTestZone {
             )
         );
 
-        DB.with(conn -> {
+        DataSource.with(conn -> {
             FSQLQuery.create(conn, sql)
                 .bindNamed("comment", "Im updated")
                 .bindNamed("score", 4)

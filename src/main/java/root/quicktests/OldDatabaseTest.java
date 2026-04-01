@@ -2,7 +2,7 @@ package root.quicktests;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import root.database.DB;
+import root.database.DataSource;
 import root.logger.Logger;
 import root.models.Reviewer;
 import root.models.services.PasswordService;
@@ -32,7 +32,7 @@ class OldDatabaseTest {
     public void run() throws Exception {
         try (var ignore = Logger.scope("Running DBTest...", DEBUG)) {
 
-            DB.with(conn -> {
+            DataSource.with(conn -> {
                 //resetDemoData();
 
                 // fetch and print ratings

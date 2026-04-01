@@ -2,7 +2,6 @@ package root;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import root.logger.Logger;
 import root.repofun.FantasyRepository;
 import root.repositories.*;
 
@@ -105,7 +104,7 @@ public class RepositoryProxyConstructor {
             return (T) Proxy.newProxyInstance(
                 repoInterfaceClass.getClassLoader(),
                 new Class[]{repoInterfaceClass},
-                new RepositoryProxy<T>(repoImpl, options)
+                new RepositoryProxyImpl<T>(repoImpl, options)
             );
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -17,6 +17,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 public class TestA0Base {
+    public class LoggerScopeWrapper implements LoggerScope {
+        private final String blockName;
+
+        public LoggerScopeWrapper(String blockName) {
+            this.blockName = blockName;
+            loggerEnterExitBlock("enter", blockName);
+        }
+
+        @Override
+        public void close() {
+            loggerEnterExitBlock("exit", blockName);
+        }
+    }
+
+    public static int ENTER_EXIT_BLOCK_WIDTH = 80;
+
     LoggerScope __logger;
 
     @Autowired
@@ -35,7 +51,7 @@ public class TestA0Base {
     @BeforeAll
     static void init() throws Exception {
         System.setProperty("APP_ENV", "test");
-
+/*
         String env = System.getenv().getOrDefault("APP_ENV", "prod");
 
         Properties p = new Properties();
@@ -47,6 +63,20 @@ public class TestA0Base {
             Logger.log("db.user", p.getProperty("db.user"));
             Logger.log("db.pass", p.getProperty("db.pass"));
         }
+ */
+    }
+
+    public static void loggerEnterExitBlock(String action, String blockName) {
+        System.out.println("-".repeat(ENTER_EXIT_BLOCK_WIDTH));
+        System.out.println(("-".repeat(8) + " ".repeat(4) + action + " : " + blockName + " ".repeat(4) + "-".repeat(ENTER_EXIT_BLOCK_WIDTH)).substring(0, 80));
+        System.out.println("-".repeat(ENTER_EXIT_BLOCK_WIDTH));
+    }
+
+    public static void loggerEnterBlock(String blockName, int depth) {
+        loggerEnterExitBlock("BEGIN", blockName);
+    }
+    public static void loggerExitBlock(String blockName, int depth) {
+        loggerEnterExitBlock("END", blockName);
     }
 
     /**
@@ -60,7 +90,14 @@ public class TestA0Base {
 
     @BeforeEach
     public void beforeEach(TestInfo info) throws Exception {
-        __logger = Logger.scope("TestA0Review.beforeEach");
+
+        //loggerEnterExitBlock("enter", info.getDisplayName());
+
+        __logger = Logger.scope(
+            "myBlock",
+            TestA0Base::loggerEnterBlock,
+            TestA0Base::loggerExitBlock
+        );
 
         databaseManager.clean();
     }
@@ -73,10 +110,9 @@ public class TestA0Base {
      * @throws Exception any
      */
     @AfterEach
-    public void afterEach() throws Exception {
+    public void afterEach(TestInfo info) throws Exception {
         databaseManager.clean();
 
         __logger.close();
-        System.out.println("-".repeat(40));
     }
 }

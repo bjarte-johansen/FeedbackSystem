@@ -3,17 +3,17 @@ package root;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import root.app.AppTextBanner;
-import root.common.utils.KissWordWrapper;
+import root.database.DataSource;
 import root.quicktests.DatabaseManager;
 
 import root.logger.Logger;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.function.Consumer;
 
 @SpringBootApplication
 public class App{
@@ -105,6 +105,32 @@ public class App{
     @Bean
     CommandLineRunner dbTestRunner(DatabaseManager databaseManager) {
         return args -> {
+            Consumer<String> addStatusFieldForReview = (String schema) -> {
+                try {
+                    DataSource.with(conn -> {
+                        try(var st = conn.createStatement()){
+                            st.execute("""
+                                ALTER TABLE review
+                                ADD COLUMN IF NOT EXISTS status SMALLINT NOT NULL DEFAULT 0
+                                """);
+                            st.execute("""
+                                CREATE INDEX IF NOT EXISTS idx_review_status
+                                ON review(status);
+                                """);
+                        }
+
+                        return null;
+                    });
+
+                } catch (Exception e) {
+                    Logger.error("Failed to modify database", e);
+                }
+            };
+
+            // for(String schema in schemas){
+                addStatusFieldForReview.accept("test");
+            //}
+
             // reset demo data on startup
             databaseManager.resetDemoData();
         };

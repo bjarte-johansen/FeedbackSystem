@@ -11,6 +11,8 @@ import root.database.DataSource;
 
 import java.io.IOException;
 
+import static root.common.utils.Preconditions.checkArgument;
+
 @Component("myRequestContextFilter")
 @Order(1)
 public class RequestContextFilter extends OncePerRequestFilter {
@@ -33,38 +35,43 @@ public class RequestContextFilter extends OncePerRequestFilter {
         }
     }
 
+    private String resolveTenantSchema(HttpServletRequest req){
+        //int id = resolveTenantId(req, true);
+        return "test";
+    }
+
     @Override
     protected void doFilterInternal(
         HttpServletRequest req,
         HttpServletResponse res,
         FilterChain chain) throws ServletException, IOException {
 
-        int tenantId = -1;
         requestFilterCount++;
 
+        String tenant_schema = resolveTenantSchema(req);
+        checkArgument(tenant_schema != null && !tenant_schema.isBlank(), "Unable to find tenant schema, aborting request");
+
         try {
-            // BEFORE request
+            // BEFORE request (always runs)
 
             System.out.println("beforeRequest (" + requestFilterCount + ")");
             System.out.println("Request URI: " + req.getRequestURI());
+            System.out.println("Tenant schema set to " + tenant_schema);
+            //System.out.println(req);
 
-            tenantId = resolveTenantId(req, false);
-            if(tenantId > -1) {
-                DataSource.THREAD_LOCAL_SCHEMA.set("test");
-            }
+            // set schema for connections
+            DataSource.THREAD_LOCAL_SCHEMA.set(tenant_schema);
 
-            System.out.println(req);
-
+            // runs controller route and other filters (if any)
+            // ex @GetMapping("/") in will run after this line if route is "/"
             chain.doFilter(req, res);
 
         } finally {
             // AFTER request (always runs)
 
-            System.out.println("afterRequest (" + requestFilterCount + ")");
+            System.out.println("afterRequest (" + requestFilterCount + ")\n\n");
 
-            if(tenantId > -1) {
-                DataSource.THREAD_LOCAL_SCHEMA.remove();
-            }
+            DataSource.THREAD_LOCAL_SCHEMA.remove();
         }
     }
 }

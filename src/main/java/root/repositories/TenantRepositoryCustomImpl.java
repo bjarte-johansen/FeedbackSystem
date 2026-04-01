@@ -2,11 +2,7 @@ package root.repositories;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-import root.RepositoryProxyConstructor;
-import root.database.DB;
-import root.database.GenericEntityPersistence;
 import root.models.Review;
-import root.models.Tenant;
 
 import java.util.List;
 
