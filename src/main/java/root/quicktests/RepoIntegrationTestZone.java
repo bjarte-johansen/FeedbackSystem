@@ -39,7 +39,7 @@ public class RepoIntegrationTestZone {
             )
         );
 
-        DataSource.with(conn -> {
+        DataSourceManager.with(conn -> {
             FSQLQuery.create(conn, sql)
                 .bindNamed("comment", "Im updated")
                 .bindNamed("score", 4)

@@ -34,6 +34,12 @@ public interface IReview extends HasId {
     Instant getCreatedAt();
     void setCreatedAt(Instant createdAt);
 
+    int getDislikeCount();
+    void setDislikeCount(int dislikeCount);
+
+    int getLikeCount();
+    void setLikeCount(int likeCount);
+
     //Map<String, Object> getAttributes();
     //void setAttributes(Map<String, Object> attributes);
 }

@@ -44,13 +44,15 @@ public class TestA0Review extends TestA0Base{
     }
     protected void insertReview1(int suffix) throws Exception {
         Review r = new Review();
+        r.setStatus(Review.REVIEW_STATUS_APPROVED);
         r.setExternalId("/product/2" + suffix);
         r.setAuthorId(1L);
         r.setAuthorName("John Doe" + suffix);
         r.setScore(123);
         r.setComment("abc def" + suffix);
         r.setTitle("title" + suffix);
-        r.setStatus(Review.STATUS_APPROVED);
+        r.setLikeCount(0);
+        r.setDislikeCount(0);
         r.setCreatedAt(RandomPastInstant.generate(java.time.Duration.ofDays(1), java.time.Duration.ofDays(30)));
         reviewRepo.save(r);
     }

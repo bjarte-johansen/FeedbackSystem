@@ -5,6 +5,7 @@ import root.database.*;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -249,44 +250,45 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
      */
 
     private Object handleCreate(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            Object entity = args[0];
+        Object entity = args[0];
 
+        DataSourceManager.withVoid(conn -> {
             var oldDebugValue = GenericEntityPersistence.setDebugSql(DEBUG_SQL);
             GenericEntityPersistence.genericInsertAndUpdateId(conn, __TABLE_NAME, entity, "id");
             GenericEntityPersistence.setDebugSql(oldDebugValue);
-
-            // return result
-            Class<?> returnType = method.getReturnType();
-            if (returnType.isAssignableFrom(__MODEL_CLASS)) return entity;
-            if (returnType == void.class || returnType == Void.class) return null;
-            if (returnType == int.class || returnType == long.class) return FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME);
-            if (returnType == Integer.class || returnType == Long.class) return FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME);
-
-            throw new Exception("Unsupported return type " + returnType);
         });
+
+        // return result
+        Class<?> returnType = method.getReturnType();
+        if (returnType.isAssignableFrom(__MODEL_CLASS)) return entity;
+        if (returnType == void.class || returnType == Void.class) return null;
+        if (returnType == int.class || returnType == long.class) return FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME);
+        if (returnType == Integer.class || returnType == Long.class) return FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME);
+
+        throw new Exception("Unsupported return type " + returnType);
     }
 
     private Object handleUpdate(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            Object entity = args[0];
+        Object entity = args[0];
 
+        int affectedRows = DataSourceManager.with(conn -> {
             var oldDebugValue = GenericEntityPersistence.setDebugSql(DEBUG_SQL);
-            int affectedRows = GenericEntityPersistence.genericUpdate(conn, __TABLE_NAME, entity, "id");
+            int n = GenericEntityPersistence.genericUpdate(conn, __TABLE_NAME, entity, "id");
             GenericEntityPersistence.setDebugSql(oldDebugValue);
-
-            // return result
-            Class<?> returnType = method.getReturnType();
-            if (returnType.isAssignableFrom(entity.getClass())) return entity;
-
-            if (returnType == int.class || returnType == Integer.class) return (int) affectedRows;
-            if (returnType == long.class || returnType == Long.class) return (long) affectedRows;
-
-            if (returnType == boolean.class || returnType == Boolean.class) return affectedRows > 0;
-            if (returnType == void.class || returnType == Void.class) return null;
-
-            throw new Exception("Unsupported return type " + returnType + "(" + returnType.getSimpleName() + "), found (" + ((Object) entity).getClass().getSimpleName() + ")");
+            return n;
         });
+
+        // return result
+        Class<?> returnType = method.getReturnType();
+        if (returnType.isAssignableFrom(entity.getClass())) return entity;
+
+        if (returnType == int.class || returnType == Integer.class) return (int) affectedRows;
+        if (returnType == long.class || returnType == Long.class) return (long) affectedRows;
+
+        if (returnType == boolean.class || returnType == Boolean.class) return affectedRows > 0;
+        if (returnType == void.class || returnType == Void.class) return null;
+
+        throw new Exception("Unsupported return type " + returnType + "(" + returnType.getSimpleName() + "), found (" + ((Object) entity).getClass().getSimpleName() + ")");
     }
 
 
@@ -296,60 +298,56 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
      */
 
     private Object handleFindBy(Method method, Object[] args) throws Exception {
-            String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
+        String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
-            // create query & return result(s) based on return type
-            FSQLQuery q = FSQLQuery.create(sql)
-                .debug(DEBUG_SQL)
-                .bind(args);
+        // create query & return result(s) based on return type
+        FSQLQuery q = FSQLQuery.create(sql)
+            .debug(DEBUG_SQL)
+            .bind(args);
 
-            // return result
-            Class<?> returnType = method.getReturnType();
-            // TODO: support more return types (e.g. Stream, Iterable, array, etc.)
-            if (Collection.class.isAssignableFrom(returnType)) return q.fetchAll(__MODEL_CLASS);
-            if (returnType == Optional.class) return q.fetchOne(__MODEL_CLASS);
-            if (returnType.isAssignableFrom(__MODEL_CLASS)) return q.fetchOne(__MODEL_CLASS).orElse(null);
+        // return result
+        Class<?> returnType = method.getReturnType();
+        // TODO: support more return types (e.g. Stream, Iterable, array, etc.)
+        if (Collection.class.isAssignableFrom(returnType)) return q.fetchAll(__MODEL_CLASS);
+        if (returnType == Optional.class) return q.fetchOne(__MODEL_CLASS);
+        if (returnType.isAssignableFrom(__MODEL_CLASS)) return q.fetchOne(__MODEL_CLASS).orElse(null);
 
-            throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
+        throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
     }
 
     private Object handleFindAll(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            // create query & return result(s) based on return type
-            var list = FSQLQuery.create(conn, "SELECT * FROM " + __TABLE_NAME)
-                .debug(DEBUG_SQL)
-                .fetchAll(__MODEL_CLASS);
+        // create query & return result(s) based on return type
+        var list = FSQLQuery.create("SELECT * FROM " + __TABLE_NAME)
+            .debug(DEBUG_SQL)
+            .fetchAll(__MODEL_CLASS);
 
-            Class<?> returnType = method.getReturnType();
-            if (returnType == HashSet.class) return new HashSet<>(list);
-            if (returnType == LinkedHashSet.class) return new LinkedHashSet<>(list);
-            if (returnType == TreeSet.class) return toTreeSet(list);
-            if (returnType == Set.class) return new LinkedHashSet<>(list);
-            if (Collection.class.isAssignableFrom(returnType)) return list;
-            if (Iterable.class.isAssignableFrom(returnType)) return list;
-            if (returnType.isArray()) return list.toArray( (Object[]) java.lang.reflect.Array.newInstance(__MODEL_CLASS, list.size()) );
-            if (returnType == java.util.stream.Stream.class) return list.stream();
+        Class<?> returnType = method.getReturnType();
+        if (returnType == HashSet.class) return new HashSet<>(list);
+        if (returnType == LinkedHashSet.class) return new LinkedHashSet<>(list);
+        if (returnType == TreeSet.class) return toTreeSet(list);
+        if (returnType == Set.class) return new LinkedHashSet<>(list);
+        if (Collection.class.isAssignableFrom(returnType)) return list;
+        if (Iterable.class.isAssignableFrom(returnType)) return list;
+        if (returnType.isArray()) return list.toArray( (Object[]) java.lang.reflect.Array.newInstance(__MODEL_CLASS, list.size()) );
+        if (returnType == java.util.stream.Stream.class) return list.stream();
 
-            throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
-        });
+        throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
     }
 
     public Object handleFindById(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            long entityId = convertToLongValueExactOrThrow(args[0]);
+        long entityId = convertToLongValueExactOrThrow(args[0]);
 
-            var result = FSQLQuery.create(conn, "SELECT * FROM " + __TABLE_NAME + " WHERE id = ?")
-                .bind( entityId )
-                .debug(DEBUG_SQL)
-                .fetchOne(__MODEL_CLASS);
+        var result = FSQLQuery.create("SELECT * FROM " + __TABLE_NAME + " WHERE id = ?")
+            .bind( entityId )
+            .debug(DEBUG_SQL)
+            .fetchOne(__MODEL_CLASS);
 
-            Class<?> returnType = method.getReturnType();
-            if(returnType == Optional.class) return result;
-            if(returnType == __MODEL_CLASS) return result.orElse(null);
-            if(returnType == void.class || returnType == Void.class) return null;
+        Class<?> returnType = method.getReturnType();
+        if(returnType == Optional.class) return result;
+        if(returnType == __MODEL_CLASS) return result.orElse(null);
+        if(returnType == void.class || returnType == Void.class) return null;
 
-            throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
-        });
+        throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
     }
 
 
@@ -359,34 +357,30 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
      */
 
     public Object handleCount(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            String sql = "SELECT COUNT(*) FROM " + __TABLE_NAME;
+        String sql = "SELECT COUNT(*) FROM " + __TABLE_NAME;
 
-            long found = FSQLQuery.create(conn, sql)
-                .debug(DEBUG_SQL)
-                .selectCount();
+        long found = FSQLQuery.create(sql)
+            .debug(DEBUG_SQL)
+            .selectCount();
 
-            Class<?> returnType = method.getReturnType();
-            return getIntReturnValue(returnType, (int) found);
-        });
+        Class<?> returnType = method.getReturnType();
+        return getIntReturnValue(returnType, (int) found);
     }
 
     public Object handleCountBy(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            if(methodNameScanner.whereStr == null || methodNameScanner.whereStr.isEmpty()) {
-                throw new IllegalArgumentException("Invalid countBy method name: " + method.getName());
-            }
+        if(methodNameScanner.whereStr == null || methodNameScanner.whereStr.isEmpty()) {
+            throw new IllegalArgumentException("Invalid countBy method name: " + method.getName());
+        }
 
-            String sql = "SELECT COUNT(*) FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
+        String sql = "SELECT COUNT(*) FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
-            long found = FSQLQuery.create(conn, sql)
-                .bindArray(args)
-                .debug(DEBUG_SQL)
-                .selectCount();
+        long found = FSQLQuery.create(sql)
+            .bindArray(args)
+            .debug(DEBUG_SQL)
+            .selectCount();
 
-            Class<?> returnType = method.getReturnType();
-            return getIntReturnValue(returnType, (int) found);
-        });
+        Class<?> returnType = method.getReturnType();
+        return getIntReturnValue(returnType, (int) found);
     }
 
 
@@ -396,33 +390,29 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
      */
 
     public Object handleExistsById(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            long entityId = convertToLongValueExactOrThrow(args[0]);
+        long entityId = convertToLongValueExactOrThrow(args[0]);
 
-            String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE id = ?";
+        String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE id = ?";
 
-            boolean exists = FSQLQuery.create(conn, sql)
-                .bind(entityId)
-                .debug(DEBUG_SQL)
-                .selectExists();
+        boolean exists = FSQLQuery.create(sql)
+            .bind(entityId)
+            .debug(DEBUG_SQL)
+            .selectExists();
 
-            Class<?> returnType = method.getReturnType();
-            return getBooleanReturnValue(returnType, exists);
-        });
+        Class<?> returnType = method.getReturnType();
+        return getBooleanReturnValue(returnType, exists);
     }
 
     public Object handleExistsBy(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
+        String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
-            boolean exists = FSQLQuery.create(conn, sql)
-                .bindArray( args )
-                .debug(DEBUG_SQL)
-                .selectExists();
+        boolean exists = FSQLQuery.create(sql)
+            .bindArray( args )
+            .debug(DEBUG_SQL)
+            .selectExists();
 
-            Class<?> returnType = method.getReturnType();
-            return getBooleanReturnValue(returnType, exists);
-        });
+        Class<?> returnType = method.getReturnType();
+        return getBooleanReturnValue(returnType, exists);
     }
 
 
@@ -432,52 +422,46 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
      */
 
     public Object handleDeleteById(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            long entityId = convertToLongValueExactOrThrow(args[0]);
+        long entityId = convertToLongValueExactOrThrow(args[0]);
 
-            String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id = ?";
+        String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id = ?";
 
-            int affectedRows = FSQLQuery.create(conn, sql)
-                .bind( entityId )
-                .debug(DEBUG_SQL)
-                .delete();
+        int affectedRows = FSQLQuery.create(sql)
+            .bind( entityId )
+            .debug(DEBUG_SQL)
+            .delete();
 
-            Class<?> returnType = method.getReturnType();
-            return getAffectedRowsReturnValue(returnType, affectedRows);
-        });
+        Class<?> returnType = method.getReturnType();
+        return getAffectedRowsReturnValue(returnType, affectedRows);
     }
 
     private Object handleDelete(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            checkArgumentInstanceOf(args[0], __MODEL_CLASS);
+        checkArgumentInstanceOf(args[0], __MODEL_CLASS);
 
-            // setup
-            Object entity = args[0];
-            long entityId = convertToLongValueExactOrThrow(FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME));
+        // setup
+        Object entity = args[0];
+        long entityId = convertToLongValueExactOrThrow(FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME));
 
-            String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id = ?";
-            int affectedRows = FSQLQuery.create(conn, sql)
-                .bind( entityId )
-                .debug(DEBUG_SQL)
-                .delete();
+        String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id = ?";
+        int affectedRows = FSQLQuery.create(sql)
+            .bind( entityId )
+            .debug(DEBUG_SQL)
+            .delete();
 
-            Class<?> returnType = method.getReturnType();
-            return getAffectedRowsReturnValue(returnType, affectedRows);
-        });
+        Class<?> returnType = method.getReturnType();
+        return getAffectedRowsReturnValue(returnType, affectedRows);
     }
 
     private Object handleDeleteBy(Method method, Object[] args) throws Exception {
-        return DataSource.with(conn -> {
-            String sql = "DELETE FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
+        String sql = "DELETE FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
-            int affectedRows = FSQLQuery.create(conn, sql)
-                .bindArray( args )
-                .debug(DEBUG_SQL)
-                .delete();
+        int affectedRows = FSQLQuery.create(sql)
+            .bindArray( args )
+            .debug(DEBUG_SQL)
+            .delete();
 
-            Class<?> returnType = method.getReturnType();
-            return getAffectedRowsReturnValue(returnType, affectedRows);
-        });
+        Class<?> returnType = method.getReturnType();
+        return getAffectedRowsReturnValue(returnType, affectedRows);
     }
 
 

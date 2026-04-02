@@ -1,9 +1,9 @@
 package root.database.deprecated;
 
-import root.database.DataSource;
 
 import java.sql.*;
 
+@Deprecated
 public class DatabaseMetaDataPrinter {
 
 
@@ -12,7 +12,7 @@ public class DatabaseMetaDataPrinter {
      * and table/column information.
      * @throws Exception
      */
-
+/*
     public static void printMetaData() throws Exception {
         DataSource.with(conn -> {
             DatabaseMetaData metaData = conn.getMetaData();
@@ -43,4 +43,6 @@ public class DatabaseMetaDataPrinter {
             return null;
         });
     }
+
+ */
 }

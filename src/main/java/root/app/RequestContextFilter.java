@@ -7,7 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import root.database.DataSource;
+import root.database.DataSourceManager;
+import root.logger.Logger;
 
 import java.io.IOException;
 
@@ -40,27 +41,35 @@ public class RequestContextFilter extends OncePerRequestFilter {
         return "test";
     }
 
+
     @Override
     protected void doFilterInternal(
         HttpServletRequest req,
         HttpServletResponse res,
         FilterChain chain) throws ServletException, IOException {
 
+        String tenantSchema;
+        boolean USE_TEST_TENANT = true;
+
         requestFilterCount++;
 
-        String tenant_schema = resolveTenantSchema(req);
-        checkArgument(tenant_schema != null && !tenant_schema.isBlank(), "Unable to find tenant schema, aborting request");
+        if(USE_TEST_TENANT){
+            tenantSchema = "test";
+        }else {
+            tenantSchema = resolveTenantSchema(req);
+        }
+        checkArgument(tenantSchema != null && !tenantSchema.isBlank(), "Unable to find tenant schema, aborting request");
+
+        // open a logging block for this request, so all logs within this block will be grouped together with the
+        // request URI and filter count for easier debugging
+        var logBlock = Logger.scope("Request, " + req.getRequestURI() + " (" + requestFilterCount + ")");
+        Logger.log("Received request for tenant schema: " + tenantSchema);
 
         try {
             // BEFORE request (always runs)
 
-            System.out.println("beforeRequest (" + requestFilterCount + ")");
-            System.out.println("Request URI: " + req.getRequestURI());
-            System.out.println("Tenant schema set to " + tenant_schema);
-            //System.out.println(req);
-
             // set schema for connections
-            DataSource.THREAD_LOCAL_SCHEMA.set(tenant_schema);
+            AppRequestContext.setTenantSchemaForThread(tenantSchema);
 
             // runs controller route and other filters (if any)
             // ex @GetMapping("/") in will run after this line if route is "/"
@@ -68,10 +77,9 @@ public class RequestContextFilter extends OncePerRequestFilter {
 
         } finally {
             // AFTER request (always runs)
+            AppRequestContext.clearTenantSchemaForThread();
 
-            System.out.println("afterRequest (" + requestFilterCount + ")\n\n");
-
-            DataSource.THREAD_LOCAL_SCHEMA.remove();
+            logBlock.close();
         }
     }
 }

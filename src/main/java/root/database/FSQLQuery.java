@@ -205,9 +205,11 @@ public class FSQLQuery {
     private <T> T execute(QueryExecutor<T> executor) throws Exception {
         if(ownsConnection){
             Connection oldConn = conn;
-            conn = DataSource.getConnection();
-            var result = executor.run(conn);
+
+            conn = DataSourceManager.getConnection();
+            T result = executor.run(conn);
             conn.close();
+
             conn = oldConn;
             return result;
         }else {

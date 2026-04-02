@@ -6,9 +6,10 @@ import root.interfaces.IReview;
 import java.time.Instant;
 
 public class Review implements IReview {
-    public static int STATUS_PENDING = 0;
-    public static int STATUS_APPROVED = 1;
-    public static int STATUS_REJECTED = 2;
+    public static int REVIEW_STATUS_APPROVED = 0;
+    public static int REVIEW_STATUS_PENDING = 1;
+    public static int REVIEW_STATUS_REJECTED = 2;
+    public static int REVIEW_STATUS_TEST = 3;
 
     private Long id;
     private String externalId;
@@ -18,43 +19,11 @@ public class Review implements IReview {
     private String title;
     private String comment;
     private Instant createdAt;
-    private int status = STATUS_PENDING;
+    private int status = REVIEW_STATUS_PENDING;
+    private int likeCount = 0;
+    private int dislikeCount = 0;
 
     public Review() {}
-/*
-    public Review(
-        int status,
-        String externalId,
-        long authorId,
-        String authorName,
-        int score,
-        String title,
-        String comment,
-        Instant createdAt
-    ) {
-        this.status = status;
-        this.externalId = externalId; // ensures hash update
-        this.authorId = authorId;
-        this.authorName = authorName;
-        this.score = score;
-        this.title = title;
-        this.comment = comment;
-        this.createdAt = createdAt;
-    }
-
-    public Review(
-        int status,
-        String externalId,
-        long authorId,
-        String authorName,
-        int score,
-        String title,
-        String comment
-    ) {
-        this(status, externalId, authorId, authorName, score, title, comment, Instant.now());
-    }
-
- */
 
     @Override
     public Long getId() {
@@ -143,6 +112,26 @@ public class Review implements IReview {
     }
 
     @Override
+    public int getDislikeCount() {
+        return dislikeCount;
+    }
+
+    @Override
+    public void setDislikeCount(int dislikeCount) {
+        this.dislikeCount = dislikeCount;
+    }
+
+    @Override
+    public int getLikeCount() {
+        return likeCount;
+    }
+
+    @Override
+    public void setLikeCount(int likeCount) {
+        this.likeCount = likeCount;
+    }
+
+    @Override
     public String toString() {
         return "Review(" +
                 "id=" + id +
@@ -153,6 +142,8 @@ public class Review implements IReview {
                 ", title='" + title + '\'' +
                 ", comment='" + comment + '\'' +
                 ", status=" + statusToString(status) +
+                ", likeCount=" + likeCount +
+                ", dislikeCount=" + dislikeCount +
                 ", createdAt=" + createdAt +
                 ')';
     }

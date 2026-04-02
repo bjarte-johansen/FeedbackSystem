@@ -24,4 +24,7 @@ public interface ReviewRepository extends ProxyRepository<Review, Long> {
     long countByExternalId(String externalId) throws Exception;
 
     //List<Review> findByTenantId(long tenantId) throws Exception;
+
+    void updateReviewLikeCount(long reviewId, int likeCount) throws Exception;
+    void updateReviewDislikeCount(long reviewId, int dislikeCount) throws Exception;
 }

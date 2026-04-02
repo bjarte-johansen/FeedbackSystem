@@ -2,7 +2,6 @@ package root.quicktests;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import root.database.DataSource;
 import root.logger.Logger;
 import root.models.Reviewer;
 import root.models.services.PasswordService;
@@ -11,7 +10,6 @@ import root.repositories.ReviewerRepository;
 import root.repositories.TenantRepository;
 import root.includes.PasswordSaltGenerator;
 
-import java.sql.Connection;
 import java.time.Instant;
 import java.util.List;
 
@@ -32,14 +30,8 @@ class OldDatabaseTest {
     public void run() throws Exception {
         try (var ignore = Logger.scope("Running DBTest...", DEBUG)) {
 
-            DataSource.with(conn -> {
-                //resetDemoData();
-
-                // fetch and print ratings
-                if (DEBUG) fetchAndPrintReviews(conn);
-
-                return null;
-            });
+            // fetch and print ratings
+            if (DEBUG) fetchAndPrintReviews();
 
             // end print
             if (DEBUG) System.out.println("DB Test ran ok");
@@ -68,7 +60,7 @@ class OldDatabaseTest {
         return reviewer;
     }
 
-    private void fetchAndPrintReviews(Connection conn) throws Exception {
+    private void fetchAndPrintReviews() throws Exception {
         var reviews = reviewRepo.findAll();
 
         printList(reviews, "PrintList Reviews (" + reviews.size() + ")");

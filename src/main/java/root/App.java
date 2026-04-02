@@ -5,82 +5,26 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
+import root.app.AppConfig;
+import root.app.AppContext;
+import root.app.AppRequestContext;
 import root.app.AppTextBanner;
-import root.database.DataSource;
+import root.database.CustomDataSource;
+import root.database.DataSourceManager;
 import root.quicktests.DatabaseManager;
 
 import root.logger.Logger;
 
 import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @SpringBootApplication
 public class App{
-
-
-    public static class PropertyFile{
-        private final Properties props = new Properties();
-
-        public PropertyFile() throws Exception {
-        }
-
-        public PropertyFile(String name) throws Exception {
-            load(name);
-        }
-
-        public void load(String name){
-            try (InputStream is = App.class
-                .getClassLoader()
-                .getResourceAsStream(name)) {
-
-                props.load(is);
-            }catch(Exception e) {
-                Logger.error("Failed to load property file: " + name, e);
-                throw new RuntimeException(e);
-            }
-        }
-
-        public boolean hasProperty(String key) {
-            return props.containsKey(key);
-        }
-        public String getProperty(String key) {
-            return props.getProperty(key);
-        }
-        public String getProperty(String key, String defaultVal) {
-            return props.getProperty(key, defaultVal);
-        }
-        public Set<String> stringPropertyNames() {
-            return props.stringPropertyNames();
-        }
-        public Set<String> sortedStringPropertyNames() {
-            Set<String> keys = new TreeSet<>(props.stringPropertyNames());
-            return keys;
-        }
-    }
-
-    public static void showApplicationProperties() throws Exception{
-        var props = new PropertyFile("application.properties");
-
-        try(var ignore = Logger.scope("Loaded application.properties:")) {
-            List<String> keys = new ArrayList<>(props.sortedStringPropertyNames());
-
-            for (String key : keys) {
-                String val = (String) props.getProperty(key);
-                Logger.logf("Property: %s = %s", key, val);
-            }
-        }
-
-        {
-            var appProfileProps = new PropertyFile("application-" + props.getProperty("active.profile")+ ".properties");
-            List<String> keys = new ArrayList<>(appProfileProps.sortedStringPropertyNames());
-
-            for (String key : keys) {
-                String val = (String) appProfileProps.getProperty(key);
-                Logger.logf("Property: %s = %s", key, val);
-            }
-        }
-    }
+    private static AppContext appContext;
 
     public static void main(String[] args) throws Exception {
         SpringApplication app = new SpringApplication(App.class);
@@ -91,48 +35,76 @@ public class App{
         app.run(args);
     }
 
+    public static void initAppContext() {
+        if(appContext != null) {
+            Logger.warn("AppContext is already initialized, skipping re-initialization");
+            return;
+        }
+        appContext = new AppContext();
+    }
 
+    @FunctionalInterface
+    public interface DatabasePatcherFunction{
+        void run(Connection c, java.sql.Statement st, String schema) throws Exception;
+    }
 
+    @FunctionalInterface
+    public interface ThrowingRunnable{
+        void run() throws Exception;
+    }
+
+    public static void logExec(ThrowingRunnable runnable, String title) throws Exception {
+        try(var _ = Logger.scope(title != null ? title : "{unnamed block}")) {
+            runnable.run();
+        }
+    }
 
     @Bean
     @Order(0)
     CommandLineRunner startup(){
+
         return (args) -> {
-            AppTextBanner.print();
+            Logger.log("running app startup tasks...");
+
+            initAppContext();
         };
     }
 
+
     @Bean
-    CommandLineRunner dbTestRunner(DatabaseManager databaseManager) {
+    @Order(1)
+    CommandLineRunner dbPatcher(DatabaseManager databaseManager) throws SQLException, Exception {
+        // create lambda patcher
+        DatabasePatcherFunction patchAddStatusFieldForReview = (c, st, schema) -> {
+            st.execute("ALTER TABLE review ADD COLUMN IF NOT EXISTS status SMALLINT NOT NULL DEFAULT 0");
+            st.execute("CREATE INDEX IF NOT EXISTS idx_review_status ON review (status)");
+        };
+
+        // create lambda patcher
+        DatabasePatcherFunction patchAddStatusIndexDescSortedForReview = (c, st, schema) -> {
+            st.execute("CREATE INDEX IF NOT EXISTS idx_review_status_1_created ON review(created_at DESC) WHERE status = 1");
+        };
+
+        // return lambda executer that runs the patchers
         return args -> {
-            Consumer<String> addStatusFieldForReview = (String schema) -> {
-                try {
-                    DataSource.with(conn -> {
-                        try(var st = conn.createStatement()){
-                            st.execute("""
-                                ALTER TABLE review
-                                ADD COLUMN IF NOT EXISTS status SMALLINT NOT NULL DEFAULT 0
-                                """);
-                            st.execute("""
-                                CREATE INDEX IF NOT EXISTS idx_review_status
-                                ON review(status);
-                                """);
-                        }
+            logExec(() -> {
+                // TODO: bug here, its implemented twice that we do the test schema for some reason, need to investigate and fix this
 
-                        return null;
-                    });
+                // for(var schema : schemaList) {
+                try(var ignore = AppRequestContext.withTenantSchemaForThread("test")) {
+                    try (var conn = DataSourceManager.getConnection()) {
+                        patchAddStatusFieldForReview.run(conn, conn.createStatement(), "test");
+                        patchAddStatusIndexDescSortedForReview.run(conn, conn.createStatement(), "test");
+                    }
 
-                } catch (Exception e) {
-                    Logger.error("Failed to modify database", e);
+                    // reset demo data on startup
+                    databaseManager.resetDemoData();
+
                 }
-            };
-
-            // for(String schema in schemas){
-                addStatusFieldForReview.accept("test");
-            //}
-
-            // reset demo data on startup
-            databaseManager.resetDemoData();
+                // }
+            },
+            "Database Patching"
+            );
         };
     }
 }

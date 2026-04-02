@@ -14,25 +14,36 @@ import java.util.regex.Pattern;
  */
 
 public class AppRequestContext {
-    private static final Pattern VALID = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
-    private static ThreadLocal<String> TENANT_SCHEMA = new ThreadLocal<String>();
+    private static final Pattern VALID_SCHEMA_NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
+    public static ThreadLocal<String> TENANT_SCHEMA = new ThreadLocal<String>();
 
-    public static void setTenantSchema(String tenantSchema){
-        if (!VALID.matcher(tenantSchema).matches())
-            throw new IllegalArgumentException("Invalid schema");
-
-
-        TENANT_SCHEMA.set(tenantSchema);
+    public static void validateTenantSchema(String schemaName) {
+        if (!VALID_SCHEMA_NAME_PATTERN.matcher(schemaName).matches())
+            throw new IllegalArgumentException("Invalid schema name: " + schemaName);
     }
-    public static void clearTenantSchema(){
+
+    public static void setTenantSchemaForThread(String schemaName){
+        validateTenantSchema(schemaName);
+        TENANT_SCHEMA.set(schemaName);
+    }
+
+    public static void clearTenantSchemaForThread(){
         TENANT_SCHEMA.remove();
     }
 
-    public static String buildTenantSchemaSql(){
-        String tenantSchema = TENANT_SCHEMA.get();
-        if(tenantSchema == null) {
-            throw new IllegalStateException("Tenant schema is not set in the current request context.");
-        }
-        return "SET search_path TO " + tenantSchema;
+    public static AutoCloseable withTenantSchemaForThread(String tenantSchema) {
+        validateTenantSchema(tenantSchema);
+
+        String previousSchema = TENANT_SCHEMA.get();
+        TENANT_SCHEMA.set(tenantSchema);
+
+        return () -> {
+            if (previousSchema == null) {
+                TENANT_SCHEMA.remove();
+            } else {
+                TENANT_SCHEMA.set(previousSchema);
+            }
+        };
     }
 }
+

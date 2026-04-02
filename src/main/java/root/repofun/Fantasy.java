@@ -16,11 +16,6 @@ public class Fantasy implements HasId {
     public Fantasy() {
     }
 
-    public Fantasy(Long id, String text) {
-        this.id = id;
-        this.text = text;
-    }
-
     @Override
     public Long getId() { return id; }
 

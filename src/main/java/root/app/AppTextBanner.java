@@ -4,27 +4,44 @@ import root.RepositoryProxyConstructor;
 import root.common.utils.KissWordWrapper;
 import root.logger.Logger;
 
-public class AppTextBanner {
-    public static void print(){
-        String tmp = """
-██████╗ ███████╗██╗   ██╗██╗███████╗██╗    ██╗
-██╔══██╗██╔════╝██║   ██║██║██╔════╝██║    ██║
-██████╔╝█████╗  ██║   ██║██║█████╗  ██║ █╗ ██║ 
-██╔══██╗██╔══╝  ╚██╗ ██╔╝██║██╔══╝  ██║███╗██║
-██║  ██║███████╗ ╚████╔╝ ██║███████╗╚███╔███╔╝
-╚═╝  ╚═╝╚══════╝  ╚═══╝  ╚═╝╚══════╝ ╚══╝╚══╝
 
-Version: 1.0.0, DAT109 Project, 2026
-Developed by: Bjarte Johansen, Fahad Ahmed, Marcus Lowenstein, Øyvind Nordeide, 
-Prince Nixon Alaoysius, Ahmad Ahmed.
-System: ReView Feedback Engine
-""";
+/**
+ * This class is responsible for printing the banner and warning messages when the application starts.
+ * It uses a multi-line string to define the banner and prints it to the console using the
+ * Logger class. It also includes methods for printing dashed lines and empty lines for formatting purposes.
+ * The banner includes the project name, version, and developer information, as well as a warning message about the project's current state.
+ * The print() method is called at the start of the application to display the banner and warnings to the user.
+ *
+ * TODO: update the banner with the correct project name and developer information, and add any additional warnings or messages as needed.
+ */
+
+public class AppTextBanner {
+    static String headerText = """
+        ██████╗ ███████╗██╗   ██╗██╗███████╗██╗    ██╗
+        ██╔══██╗██╔════╝██║   ██║██║██╔════╝██║    ██║
+        ██████╔╝█████╗  ██║   ██║██║█████╗  ██║ █╗ ██║ 
+        ██╔══██╗██╔══╝  ╚██╗ ██╔╝██║██╔══╝  ██║███╗██║
+        ██║  ██║███████╗ ╚████╔╝ ██║███████╗╚███╔███╔╝
+        ╚═╝  ╚═╝╚══════╝  ╚═══╝  ╚═╝╚══════╝ ╚══╝╚══╝
+        
+        Version: 1.0.0, DAT109 Project, 2026
+        Developed by: Bjarte Johansen, Fahad Ahmed, Marcus Lowenstein, Øyvind Nordeide, 
+        Prince Nixon Alaoysius, Ahmad Ahmed.
+        System: ReView Feedback Engine
+        """;
+
+
+    /**
+     * Prints the application banner and warning messages to the console.
+     */
+    public static void print(){
+
         // TODO: rette navn i reviewbanneren, jeg skrev de etter hukommelse.
 
         printDashedLines(2);
         printEmptyLines(2);
 
-        Logger.log(tmp);
+        Logger.log(headerText);
 
         printEmptyLines(2);
         printDashedLines(3);
