@@ -1,13 +1,13 @@
 package root.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import root.beans.FormatUtils;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.logger.Logger;
@@ -101,6 +101,7 @@ public class DefaultController {
         // add things like title etc
         ControllerHelper.setupModel(model);
 
+        // add externalId to model for display in JSP and for use in form submission for new reviews
         model.addAttribute("reviewFormExternalId__DEBUG__", externalId);
 
         //String externalId = extractExternalIdFromRequest(req);
@@ -112,40 +113,12 @@ public class DefaultController {
         model.addAttribute("reviews", reviews);
         model.addAttribute("externalId", externalId);
 
-        // TODO BEGIN: get scores for aggregate display of score distribution and average score
-        var jspScoreObject = new LinkedHashMap<String, String>();
-
-
-
-        var scoreStats = new ScoreStatsHelper();
-
-        var scoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId);
-        Logger.log("Review score stats for /product/1: " + scoreMap);
-
-        // int totalScoreCount = scoreMap.values().stream().mapToInt(Integer::intValue).sum();
-        float averageScore = 0.0f;
-        int totalScoreCount = 0;
-        for(int i=1; i<=5; i++) {
-            int count = scoreMap.getOrDefault(i, 0);
-            averageScore += count * i;
-            totalScoreCount += count;
-        }
-        averageScore = averageScore / reviews.size();
-        scoreStats.setAverageScore(averageScore);
-        scoreStats.setTotalScoreCount(totalScoreCount);
-
-        for(int i=5; i>=1; i--) {
-            int count = scoreMap.getOrDefault(i, 0);
-            Double pct = totalScoreCount > 0 ? ((double) count / totalScoreCount) * 100.0 : 0.0;
-            scoreStats.getScoreDistribution().put(i, pct);
-            scoreStats.getScoreCounts().put(i, count);
-            //Logger.log("5 Stjerner: " + scoreMap.getOrDefault(i, 0) + ", andel: " + pct + "%");
-        }
-
+        // get score stats for the given externalId and add to model
+        var scoreStats = getScoreStatsHelper(externalId);
         model.addAttribute("scoreStats", scoreStats);
 
+        // add a simple function to format double values to 2 decimals for display in JSP
         Function<Double, String> dblFormatter = v -> String.format(Locale.US, "%.2f", v);
-
         model.addAttribute("dblFormatter2", dblFormatter);
 
         // TODO END: get scores for aggregate display of score distribution and average score
@@ -154,6 +127,35 @@ public class DefaultController {
         model.addAttribute("tenantId", 1);
 
         return "index";
+    }
+
+    private ScoreStatsHelper getScoreStatsHelper(String externalId) throws Exception {
+        var scoreStats = new ScoreStatsHelper();
+
+        var scoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId);
+        Logger.log("Review score stats for /product/1: " + scoreMap);
+
+        // int totalScoreCount = scoreMap.values().stream().mapToInt(Integer::intValue).sum();
+        double totalScoreSum = 0.0f;
+        int totalScoreCount = 0;
+        for(int i=1; i<=5; i++) {
+            int hits = scoreMap.getOrDefault(i, 0);
+            totalScoreSum += hits * i;
+            totalScoreCount += hits;
+        }
+        double averageScore = (double) totalScoreSum / (double) totalScoreCount;
+        scoreStats.setAverageScore(averageScore);
+        scoreStats.setTotalScoreCount(totalScoreCount);
+
+        for(int i=5; i>=1; i--) {
+            int hits = scoreMap.getOrDefault(i, 0);
+            Double pct = totalScoreCount > 0 ? ((double) hits / totalScoreCount) * 100.0 : 0.0;
+            scoreStats.getScoreDistribution().put(i, pct);
+            scoreStats.getScoreCounts().put(i, totalScoreCount);
+            //Logger.log("5 Stjerner: " + scoreMap.getOrDefault(i, 0) + ", andel: " + pct + "%");
+        }
+
+        return scoreStats;
     }
 
 
