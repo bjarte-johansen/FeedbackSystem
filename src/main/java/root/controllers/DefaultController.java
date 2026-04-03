@@ -1,30 +1,31 @@
 package root.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import root.RepositoryProxyConstructor;
+import root.beans.FormatUtils;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
+import root.logger.Logger;
 import root.models.Review;
 import root.models.Reviewer;
 import root.repositories.ReviewerRepository;
 import root.repositories.ReviewRepository;
 
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 //import root.models.repositories.JdbcReviewRepository;
 
 
 @Controller
 public class DefaultController {
-    private static final Logger log = LoggerFactory.getLogger(DefaultController.class);
+    //private static final Logger log = new Logger();
 
     @Autowired
     ReviewRepository reviewRepo;
@@ -32,24 +33,122 @@ public class DefaultController {
     @Autowired
     ReviewerRepository reviewerRepo;
 
-    @GetMapping("/error")
-    public String error()  {
-        return "error";
-    }
-
-    @GetMapping("/")
-    public String index(Model model) throws Exception{
-
-        List<Review> reviews = reviewRepo.findAll();
-
-        ControllerHelper.setupModel(model);
-        model.addAttribute("reviews", reviews);
-
-        // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
+    private void addDefaultNewReviewFormValues(Model model){
         model.addAttribute("displayNameSuggestion", FunnyUserNameGenerator.generate());
         model.addAttribute("titleSuggestion", IpsumLoremGenerator.generate(2 + (int)(Math.random() * 4)).replace(".", ""));
         model.addAttribute("commentSuggestion", IpsumLoremGenerator.generate(7 + (int)(Math.random() * 15)));
         model.addAttribute("scoreSuggestion", 1 + new Random().nextInt(5));
+    }
+
+    private void addUniqueExternalIdsToModel(Model model) throws Exception{
+        List<String> uniqueExternalIds = reviewRepo.findUniqueExternalIds();
+        model.addAttribute("uniqueExternalIds", uniqueExternalIds);
+    }
+
+    @GetMapping("/error")
+    public String error()  {
+
+        return "error";
+
+    }
+
+    @GetMapping("/")
+    public String index(Model model) throws Exception{
+        // find all unique externalIds for reviews to display in the dropdown for quick navigation
+        // TODO: remove for production code
+        addUniqueExternalIdsToModel(model);
+
+        // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
+        // TODO: remove for production code
+        addDefaultNewReviewFormValues(model);
+
+        // add things like title etc
+        ControllerHelper.setupModel(model);
+
+        List<Review> reviews = reviewRepo.findAll();
+        model.addAttribute("reviews", reviews);
+
+        // TODO: set to 1 for testing only
+        model.addAttribute("tenantId", 1);
+
+        return "index";
+    }
+
+    private String extractExternalIdFromRequest(HttpServletRequest req) {
+        String path = (String) req.getAttribute(
+            org.springframework.web.servlet.HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+
+        String bestMatch = (String) req.getAttribute(
+            org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+
+        String externalId = new org.springframework.util.AntPathMatcher()
+            .extractPathWithinPattern(bestMatch, path);
+
+        return externalId;
+    }
+
+
+    @GetMapping("/show-reviews")
+    public String showReviews(@RequestParam String externalId, Model model, HttpServletRequest req) throws Exception{
+        // find all unique externalIds for reviews to display in the dropdown for quick navigation
+        // TODO: remove for production code
+        addUniqueExternalIdsToModel(model);
+
+        // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
+        // TODO: remove for production code
+        addDefaultNewReviewFormValues(model);
+
+        // add things like title etc
+        ControllerHelper.setupModel(model);
+
+        model.addAttribute("reviewFormExternalId__DEBUG__", externalId);
+
+        //String externalId = extractExternalIdFromRequest(req);
+        //externalId = URLDecoder.decode(externalId, StandardCharsets.UTF_8);
+        //Logger.log("External ID extracted from request: " + externalId);
+
+        // find relevant reviews
+        List<Review> reviews = reviewRepo.findByExternalId(externalId);
+        model.addAttribute("reviews", reviews);
+        model.addAttribute("externalId", externalId);
+
+        // TODO BEGIN: get scores for aggregate display of score distribution and average score
+        var jspScoreObject = new LinkedHashMap<String, String>();
+
+
+
+        var scoreStats = new ScoreStatsHelper();
+
+        var scoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId);
+        Logger.log("Review score stats for /product/1: " + scoreMap);
+
+        // int totalScoreCount = scoreMap.values().stream().mapToInt(Integer::intValue).sum();
+        float averageScore = 0.0f;
+        int totalScoreCount = 0;
+        for(int i=1; i<=5; i++) {
+            int count = scoreMap.getOrDefault(i, 0);
+            averageScore += count * i;
+            totalScoreCount += count;
+        }
+        averageScore = averageScore / reviews.size();
+        scoreStats.setAverageScore(averageScore);
+        scoreStats.setTotalScoreCount(totalScoreCount);
+
+        for(int i=5; i>=1; i--) {
+            int count = scoreMap.getOrDefault(i, 0);
+            Double pct = totalScoreCount > 0 ? ((double) count / totalScoreCount) * 100.0 : 0.0;
+            scoreStats.getScoreDistribution().put(i, pct);
+            scoreStats.getScoreCounts().put(i, count);
+            //Logger.log("5 Stjerner: " + scoreMap.getOrDefault(i, 0) + ", andel: " + pct + "%");
+        }
+
+        model.addAttribute("scoreStats", scoreStats);
+
+        Function<Double, String> dblFormatter = v -> String.format(Locale.US, "%.2f", v);
+
+        model.addAttribute("dblFormatter2", dblFormatter);
+
+        // TODO END: get scores for aggregate display of score distribution and average score
 
         // TODO: set to 1 for testing only
         model.addAttribute("tenantId", 1);

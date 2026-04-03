@@ -6,6 +6,7 @@ import java.util.List;
 public class QueryOptions{
     private int paginatorOffset;
     private int paginatorLimit;
+
     private ArrayList<QueryOrder> order = new ArrayList<>();
 
     int getPaginatorOffset(){

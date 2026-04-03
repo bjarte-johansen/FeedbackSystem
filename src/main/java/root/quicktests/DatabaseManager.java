@@ -109,8 +109,9 @@ public class DatabaseManager {
         reviewers.forEach(reviewerRepo::save);
     }
 
-    private Review insertReview(String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
+    private Review insertReview(int status, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
         Review r = new Review();
+        r.setStatus(status);
         r.setExternalId(external_id);
         r.setAuthorId(author_id);
         r.setAuthorName(displayName);
@@ -129,6 +130,7 @@ public class DatabaseManager {
         try(var p = Logger.scope("Inserting demo ratings", DEBUG)) {
             String path1 = "/product/1";
             String path2 = "/product/2";
+            String path3 = "en-litt-annen-sti";
 
             var period = new FSQLPairRecord<>(
                 Duration.ofDays(3),
@@ -141,10 +143,22 @@ public class DatabaseManager {
             Supplier<Instant> createdAt = () -> RandomPastInstant.generate(period.first(), period.second());
 
             List<Review> reviews = List.of(
-                insertReview(path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
-                insertReview(path1, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
-                insertReview(path1, username.get(), 3L, title.get(), comment.get(), 3, createdAt.get()),
-                insertReview(path2, username.get(), 3L, title.get(), comment.get(), 4, createdAt.get())
+                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 3L, title.get(), comment.get(), 3, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 4, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 2, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
+
+                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 2, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 5, createdAt.get()),
+
+                insertReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 1L, title.get(), comment.get(), 1, createdAt.get()),
+                insertReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 3L, title.get(), comment.get(), 4, createdAt.get())
             );
         }
     }

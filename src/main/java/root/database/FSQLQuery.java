@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.lang.reflect.Array;
+import java.util.function.Function;
 
 
 /**
@@ -378,17 +379,17 @@ public class FSQLQuery {
         });
     }
 
-    public void fetchCallback(Consumer<ResultSet> resultSetConsumer) throws Exception {
-        execute(r -> {
+    public <R> R fetchCallback(Function<ResultSet, R> resultSetConsumer) throws Exception {
+        return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ps.executeQuery();
 
                 try (ResultSet rs = ps.getResultSet()) {
-                    resultSetConsumer.accept(rs);
+                    return resultSetConsumer.apply(rs);
+                }catch(Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
-
-            return null;
         });
     }
 

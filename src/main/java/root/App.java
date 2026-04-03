@@ -11,9 +11,11 @@ import root.app.AppRequestContext;
 import root.app.AppTextBanner;
 import root.database.CustomDataSource;
 import root.database.DataSourceManager;
+import root.models.Review;
 import root.quicktests.DatabaseManager;
 
 import root.logger.Logger;
+import root.repositories.ReviewRepository;
 
 import java.io.InputStream;
 import java.sql.Connection;
@@ -61,7 +63,7 @@ public class App{
 
     @Bean
     @Order(0)
-    CommandLineRunner startup(){
+    CommandLineRunner startup(ReviewRepository reviewRepo) throws Exception {
 
         return (args) -> {
             Logger.log("running app startup tasks...");

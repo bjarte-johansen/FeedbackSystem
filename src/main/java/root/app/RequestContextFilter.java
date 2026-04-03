@@ -65,6 +65,10 @@ public class RequestContextFilter extends OncePerRequestFilter {
         var logBlock = Logger.scope("Request, " + req.getRequestURI() + " (" + requestFilterCount + ")");
         Logger.log("Received request for tenant schema: " + tenantSchema);
 
+        for(var entry : req.getParameterMap().entrySet()) {
+            Logger.log("Request parameter: " + entry.getKey() + " = " + String.join(", ", entry.getValue()));
+        }
+
         try {
             // BEFORE request (always runs)
 

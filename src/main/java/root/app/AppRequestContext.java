@@ -17,13 +17,13 @@ public class AppRequestContext {
     private static final Pattern VALID_SCHEMA_NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
     public static ThreadLocal<String> TENANT_SCHEMA = new ThreadLocal<String>();
 
-    public static void validateTenantSchema(String schemaName) {
+    public static void validateTenantSchemaName(String schemaName) {
         if (!VALID_SCHEMA_NAME_PATTERN.matcher(schemaName).matches())
             throw new IllegalArgumentException("Invalid schema name: " + schemaName);
     }
 
     public static void setTenantSchemaForThread(String schemaName){
-        validateTenantSchema(schemaName);
+        validateTenantSchemaName(schemaName);
         TENANT_SCHEMA.set(schemaName);
     }
 
@@ -32,7 +32,7 @@ public class AppRequestContext {
     }
 
     public static AutoCloseable withTenantSchemaForThread(String tenantSchema) {
-        validateTenantSchema(tenantSchema);
+        validateTenantSchemaName(tenantSchema);
 
         String previousSchema = TENANT_SCHEMA.get();
         TENANT_SCHEMA.set(tenantSchema);

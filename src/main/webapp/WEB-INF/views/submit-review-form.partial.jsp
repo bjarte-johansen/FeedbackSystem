@@ -1,14 +1,23 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
-<div class="box submit-review-form">
-    <h3>Legg til review</h3>
-    <p class="alert alert-info">
-        Benytt "test@test.com" og "pass" som epost og passord for å unngå å måtte verifisere konto.
-    </p>
+<script>
+function toggleReviewForm() {
+    //const form = document.querySelector('.form--submit-review-form');
+    jQuery(".form--submit-review-form").toggle().removeClass("d-none");
+    return false;
+}
+</script>
 
-    <form class="ajax" action="${pageContext.request.contextPath}/submit-review" method="post">
+<div class="box submit-review-form">
+    <h3 onclick="toggleReviewForm();">Legg til review (trykk meg)</h3>
+
+    <form class="ajax form--submit-review-form d-none" action="${pageContext.request.contextPath}/submit-review" method="post">
+        <p class="alert alert-info">
+            Benytt "test@test.com" og "pass" som epost og passord for å unngå å måtte verifisere konto.
+        </p>
+
         <input type="hidden" name="tenantId" value="1">
-        <input type="hidden" name="externalId" value="/product/1">
+        <input type="hidden" name="externalId" value="${reviewFormExternalId__DEBUG__}">
 
         <fieldset class="mb-3">
             <h4>Konto</h4>

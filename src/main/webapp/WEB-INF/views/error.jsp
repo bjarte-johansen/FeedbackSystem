@@ -16,6 +16,10 @@
 <div class="box">
 En feil har oppstått. Prøv igjen senere
 </div>
+<div class="box">
+    Error: ${error}<br>
+    Type: ${type}
+</div>
 
 </body>
 </html>

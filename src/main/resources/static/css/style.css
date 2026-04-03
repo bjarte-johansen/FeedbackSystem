@@ -84,6 +84,14 @@ h1,h2,h3,h4,h5,h6{ margin:4px 0 1.0rem 0; }
 
 /***************************************************/
 
+.clearfix::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+/***************************************************/
+
 /* margin-bottom utilities (bootstrap-like scale) */
 .mb-0 { margin-bottom: 0 !important; }
 .mb-1 { margin-bottom: 0.25rem !important; }
@@ -140,6 +148,25 @@ hr{
 .score-4 { --stars: 4; }
 .score-5 { --stars: 5; }
 
+
+
+/***************************************************/
+
+.testpage--external-id-list{
+    a{
+        display: inline-block;
+        float: left;
+        width: auto;
+        margin-right: 8px;
+        margin-bottom: 4px;
+        border:1px solid #666;
+        padding: 8px;
+        border-radius: 4px;
+        color: #333;
+        text-decoration: none;
+    }
+}
+
 /***************************************************/
 
 .review--list{
@@ -171,32 +198,72 @@ hr{
 
 /***************************************************/
 
-.submit-review-form{
+.submit-review-form {
 
-    .form-group{
-        display:block;
-        margin-bottom:8px;
+    .form-group {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+
+    }
+    .form-group::after {
+        content: "";
+        display: block;
+        clear: both;
     }
 
-    label{
-        display:block;
-        margin-bottom:5px;
-        width:100%;
-        clear:both;
-        font-size:1em;
+    label {
+        display: inline-block;
+        /*margin-bottom: 5px;*/
+        width: 200px;
+        font-size: 1em;
         font-weight: bold;
     }
-    textarea, select, input{
+
+    textarea, select, input {
         box-sizing: border-box;
         border-color: #666;
         border-style: solid;
         border-width: 1px;
-        padding:8px;
-        width:100%;
+        padding: 8px;
+        width: auto;
+        flex: 1;
+
     }
-    textarea{
+
+    textarea {
+        box-sizing: border-box;
         min-height: 100px;
+        flex: 1;
     }
+
+/*
+    &.form-fixed {
+        label {
+            display: block;
+            margin-bottom: 5px;
+            width: 100%;
+            clear: both;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        textarea, select, input {
+            box-sizing: border-box;
+            border-color: #666;
+            border-style: solid;
+            border-width: 1px;
+            padding: 8px;
+            width: 100%;
+        }
+
+        textarea {
+            min-height: 100px;
+        }
+    }
+
+ */
 }
 
 /***************************************************/
