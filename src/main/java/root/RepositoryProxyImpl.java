@@ -1,6 +1,7 @@
 package root;
 
 import root.database.*;
+import root.logger.Logger;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
@@ -97,6 +98,8 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
             Method impl = findMethod(target.getClass(), method);
             if (impl != null) {
                 impl.setAccessible(true);
+                Logger.log("Invoked implemented method: " + impl.getDeclaringClass().getName() + "." + impl.getName());
+                Logger.log("Invoke Args: " + Arrays.toString(args));
                 return impl.invoke(target, args);
             }
         }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import root.app.AppConfig;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.logger.Logger;
@@ -16,9 +17,11 @@ import root.models.Reviewer;
 import root.repositories.ReviewerRepository;
 import root.repositories.ReviewRepository;
 
+import java.awt.*;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.*;
+import java.util.List;
 import java.util.function.Function;
 //import root.models.repositories.JdbcReviewRepository;
 
@@ -45,12 +48,67 @@ public class DefaultController {
         model.addAttribute("uniqueExternalIds", uniqueExternalIds);
     }
 
+    private void addCursorToModel(Model model, List<Review> list){
+        if(!list.isEmpty()) {
+            PageCursor prevCursor = new PageCursor(list.getLast().getId(), list.getFirst().getId(), -1, AppConfig.DEFAULT_MAX_VISIBLE_REVIEWS);
+            model.addAttribute("pagePrevCursor", PageCursorEncoder.encodeCursor(prevCursor));
+
+            PageCursor nextCursor = new PageCursor(list.getFirst().getId(), list.getLast().getId(), 1, AppConfig.DEFAULT_MAX_VISIBLE_REVIEWS);
+            model.addAttribute("pageNextCursor", PageCursorEncoder.encodeCursor(nextCursor));
+        }else{
+            model.addAttribute("pageNextCursor", null);
+            model.addAttribute("pagePrevCursor", null);
+        }
+    }
+
+    private void addTotalReviewsForExternalIdToModel(Model model, String externalId) throws Exception{
+        long totalReviewCount = reviewRepo.countByExternalIdAndStatus(externalId, Review.REVIEW_STATUS_APPROVED);
+        model.addAttribute("totalReviewCount", totalReviewCount);
+    }
+
+    // used to extract the externalId from the request URI for the /reviews/{externalId} route. Must be used
+    // allow for complex routing
+    private String extractExternalIdFromRequest(HttpServletRequest req) {
+        String path = (String) req.getAttribute(
+            org.springframework.web.servlet.HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+
+        String bestMatch = (String) req.getAttribute(
+            org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+
+        String externalId = new org.springframework.util.AntPathMatcher()
+            .extractPathWithinPattern(bestMatch, path);
+
+        return externalId;
+    }
+
+    public List<Review> getCustomReviewsForExternalId(String externalId, String cursor) throws Exception{
+        // add relevant reviews to model
+        List<Review> reviews = null;
+        PageCursor decodedCursor = null;
+        if(cursor != null && !cursor.isBlank()) {
+            decodedCursor = PageCursorEncoder.decodeCursor(cursor);
+            Logger.log("Decoded cursor: " + decodedCursor);
+
+            if(decodedCursor.getDirection() < 0){
+                reviews = reviewRepo.findByExternalIdWithPagination(externalId, decodedCursor.getFirstId(), null, decodedCursor.getLimit(), "id");
+            }else if(decodedCursor.getDirection() > 0){
+                reviews = reviewRepo.findByExternalIdWithPagination(externalId, null, decodedCursor.getLastId(), decodedCursor.getLimit(), "id");
+            }else{
+                reviews = reviewRepo.findByExternalIdWithPagination(externalId, null, 0L, decodedCursor.getLimit(), "id");
+            }
+        }else{
+            reviews = reviewRepo.findByExternalIdWithPagination(externalId, null, 0L, AppConfig.DEFAULT_MAX_VISIBLE_REVIEWS, "id");
+        }
+
+        return reviews;
+    }
+
     @GetMapping("/error")
     public String error()  {
-
         return "error";
-
     }
+
+
 
     @GetMapping("/")
     public String index(Model model) throws Exception{
@@ -65,8 +123,20 @@ public class DefaultController {
         // add things like title etc
         ControllerHelper.setupModel(model);
 
-        List<Review> reviews = reviewRepo.findAll();
+
+        // find first externalId for display in JSP
+        List<String> uniqueExternalIds = reviewRepo.findUniqueExternalIds();
+        String externalId = !uniqueExternalIds.isEmpty() ? uniqueExternalIds.getFirst() : "";
+
+        // add reviews to model for display in JSP
+        List<Review> reviews = getCustomReviewsForExternalId(externalId, null);
         model.addAttribute("reviews", reviews);
+
+        // add total reviews for the given externalId to model for display in JSP
+        addTotalReviewsForExternalIdToModel(model, externalId);
+
+        // add cursor to model for pagination (if needed, not currently used in JSP)
+        addCursorToModel(model, reviews);
 
         // TODO: set to 1 for testing only
         model.addAttribute("tenantId", 1);
@@ -74,22 +144,13 @@ public class DefaultController {
         return "index";
     }
 
-    private String extractExternalIdFromRequest(HttpServletRequest req) {
-        String path = (String) req.getAttribute(
-            org.springframework.web.servlet.HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-
-        String bestMatch = (String) req.getAttribute(
-            org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
-
-        String externalId = new org.springframework.util.AntPathMatcher()
-            .extractPathWithinPattern(bestMatch, path);
-
-        return externalId;
-    }
-
-
     @GetMapping("/show-reviews")
-    public String showReviews(@RequestParam String externalId, Model model, HttpServletRequest req) throws Exception{
+    public String showReviews(
+        @RequestParam String externalId,
+        @RequestParam(defaultValue = "") String cursor,
+        Model model,
+        HttpServletRequest req
+    ) throws Exception{
         // find all unique externalIds for reviews to display in the dropdown for quick navigation
         // TODO: remove for production code
         addUniqueExternalIdsToModel(model);
@@ -101,6 +162,21 @@ public class DefaultController {
         // add things like title etc
         ControllerHelper.setupModel(model);
 
+        if(externalId == null || externalId.isBlank()) {
+            Logger.log("missing externalId, defaulting to empty string");
+            externalId = "";
+        }
+
+        // add reviews to model for display in JSP
+        List<Review> reviews = getCustomReviewsForExternalId(externalId, cursor);
+        model.addAttribute("reviews", reviews);
+
+        // add total reviews for the given externalId to model for display in JSP
+        addTotalReviewsForExternalIdToModel(model, externalId);
+
+        // add cursor to model for pagination (if needed, not currently used in JSP)
+        addCursorToModel(model, reviews);
+
         // add externalId to model for display in JSP and for use in form submission for new reviews
         model.addAttribute("reviewFormExternalId__DEBUG__", externalId);
 
@@ -108,9 +184,7 @@ public class DefaultController {
         //externalId = URLDecoder.decode(externalId, StandardCharsets.UTF_8);
         //Logger.log("External ID extracted from request: " + externalId);
 
-        // find relevant reviews
-        List<Review> reviews = reviewRepo.findByExternalId(externalId);
-        model.addAttribute("reviews", reviews);
+        // add externalId to model for display in JSP and for use in form submission for new reviews
         model.addAttribute("externalId", externalId);
 
         // get score stats for the given externalId and add to model
@@ -133,7 +207,7 @@ public class DefaultController {
         var scoreStats = new ScoreStatsHelper();
 
         var scoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId);
-        Logger.log("Review score stats for /product/1: " + scoreMap);
+        Logger.log("Review score stats: " + scoreMap);
 
         // int totalScoreCount = scoreMap.values().stream().mapToInt(Integer::intValue).sum();
         double totalScoreSum = 0.0f;
@@ -151,8 +225,7 @@ public class DefaultController {
             int hits = scoreMap.getOrDefault(i, 0);
             Double pct = totalScoreCount > 0 ? ((double) hits / totalScoreCount) * 100.0 : 0.0;
             scoreStats.getScoreDistribution().put(i, pct);
-            scoreStats.getScoreCounts().put(i, totalScoreCount);
-            //Logger.log("5 Stjerner: " + scoreMap.getOrDefault(i, 0) + ", andel: " + pct + "%");
+            scoreStats.getScoreCounts().put(i, hits);
         }
 
         return scoreStats;

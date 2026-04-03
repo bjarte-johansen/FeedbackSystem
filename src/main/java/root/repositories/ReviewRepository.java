@@ -34,4 +34,6 @@ public interface ReviewRepository extends ProxyRepository<Review, Long> {
 
     LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId) throws Exception;
     List<String> findUniqueExternalIds() throws Exception;
+    List<Review> findByExternalIdWithPagination(String externalId, Long prevId, Long nextId, int limit, String orderBy) throws Exception;
+    int countByExternalIdAndStatus(String externalId, int status) throws Exception;
 }

@@ -11,6 +11,8 @@ public class AppConfig {
     public static final String DEFAULT_ENTITY_ID_NAME = "id";
     public static final String DEFAULT_IDENTIFIER_QUOTE_STRING = "\"";
 
+    public static int DEFAULT_MAX_VISIBLE_REVIEWS = 3;
+
     // table names
     public static final String REVIEW_TABLE_NAME = "review";
     public static final String REVIEWER_TABLE_NAME = "reviewer";

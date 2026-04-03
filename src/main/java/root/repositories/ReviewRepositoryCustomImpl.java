@@ -19,8 +19,8 @@ public class ReviewRepositoryCustomImpl {
         String sql = "UPDATE review SET likeCount = LEAST(32767, GREATEST(-32768, likeCount + ?)) WHERE id = ?";
         
         FSQLQuery.create(sql)
-            .bind(1, offset)
-            .bind(2, reviewId)
+            .bind(offset)
+            .bind(reviewId)
             .update();
     };
 
@@ -28,8 +28,8 @@ public class ReviewRepositoryCustomImpl {
         String sql = "UPDATE review SET dislikeCount = LEAST(32767, GREATEST(-32768, dislikeCount + ?)) WHERE id = ?";
 
         FSQLQuery.create(sql)
-            .bind(1, offset)
-            .bind(2, reviewId)
+            .bind(offset)
+            .bind(reviewId)
             .update();
     };
 
@@ -44,18 +44,14 @@ public class ReviewRepositoryCustomImpl {
 
 
     LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId) throws Exception{
-        Function<ResultSet, LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
-            try {
-                LinkedHashMap<Integer, Integer> res = new LinkedHashMap<>();
-                while (rs.next()) {
-                    int score = rs.getInt("score");
-                    int count = rs.getInt("count");
-                    res.put(score, count);
-                }
-                return res;
-            }catch(Exception e) {
-                throw new RuntimeException(e);
+        FSQLQuery.ResultSetConsumer<LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
+            LinkedHashMap<Integer, Integer> res = new LinkedHashMap<>();
+            while (rs.next()) {
+                int score = rs.getInt("score");
+                int count = rs.getInt("count");
+                res.put(score, count);
             }
+            return res;
         };
 
         String sql = "SELECT score, COUNT(*) AS count FROM review WHERE ((external_id = ?) AND (status = ?)) GROUP BY score";
@@ -66,19 +62,60 @@ public class ReviewRepositoryCustomImpl {
     };
 
     List<String> findUniqueExternalIds() throws Exception{
-        String sql = "SELECT DISTINCT external_id FROM review";
+        FSQLQuery.ResultSetConsumer<List<String>> fnReadResultSet = (ResultSet rs) -> {
+            List<String> result = new ArrayList<>();
+            int colIndex = rs.findColumn("external_id");
+            while(rs.next()) {
+                result.add(rs.getString(colIndex));
+            }
+            return result;
+        };
 
+        String sql = "SELECT DISTINCT external_id FROM review";
         return FSQLQuery.create(sql)
-            .fetchCallback(rs -> {
-                try {
-                    List<String> result = new ArrayList<>();
-                    while(rs.next()) {
-                        result.add(rs.getString("external_id"));
-                    }
-                    return result;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            .fetchCallback(fnReadResultSet);
+    }
+
+
+    List<Review> findByExternalIdWithPagination(String externalId, Long prevId, Long nextId, int limit, String orderBy) throws Exception{
+        boolean DEBUG_SQL = false;
+        String columns = "id, external_id, author_name, score, title, comment, like_count, dislike_count, status, created_at";
+
+        if(prevId != null){
+            long bindingId = (prevId != null) ? (long) prevId : 0;
+
+            String fmt = "SELECT %s FROM"
+                + " (SELECT %s FROM review WHERE (external_id = ?) AND (id <= ?) ORDER BY id DESC LIMIT ?)"
+                + " ORDER BY id ASC";
+            String sql = String.format(fmt, columns, columns);
+
+            return FSQLQuery.create(sql)
+                .bind(externalId)
+                .bind(bindingId)
+                .bind(limit)
+                .debug(DEBUG_SQL)
+                .fetchAll(Review.class);
+        }else {
+
+            long bindingId = (nextId != null) ? (long) nextId : 0;
+
+            String fmt = "SELECT %s FROM review WHERE (external_id = ?) AND (id >= ?) ORDER BY id ASC LIMIT ?";
+            String sql = String.format(fmt, columns);
+
+            return FSQLQuery.create(sql)
+                .bind(externalId)
+                .bind(bindingId)
+                .bind(limit)
+                .debug(DEBUG_SQL)
+                .fetchAll(Review.class);
+        }
+    };
+
+    int countByExternalIdAndStatus(String externalId, int status) throws Exception{
+        String sql = "SELECT COUNT(*) FROM review WHERE (external_id = ?) AND (status = ?)";
+        return (int) FSQLQuery.create(sql)
+            .bind(externalId)
+            .bind(status)
+            .selectCount();
     }
 }

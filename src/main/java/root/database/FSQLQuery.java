@@ -237,7 +237,7 @@ public class FSQLQuery {
             try (var ignore = Logger.scope("Parsed Query::prepareSql")) {
                 Logger.log("Raw: " + activeSql);
                 Logger.log("Parsed: " + parsed.sql);
-                Logger.log("NewArgs: " + Arrays.toString(parsed.args));
+                Logger.log("Args: " + Arrays.toString(parsed.args));
                 Logger.log("Interpolated: " + FSQLQueryInterpolator.interpolate(parsed.sql, parsed.args));
             }
         }
@@ -379,13 +379,24 @@ public class FSQLQuery {
         });
     }
 
-    public <R> R fetchCallback(Function<ResultSet, R> resultSetConsumer) throws Exception {
+
+    @FunctionalInterface
+    public interface ResultSetConsumer<R> {
+        R accept(ResultSet rs) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ResultSetRowConsumer<R> {
+        R accept(ResultSet rs, int rowIndex) throws Exception;
+    }
+
+    public <R> R fetchCallback(ResultSetConsumer<R> resultSetConsumer) throws Exception {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ps.executeQuery();
 
                 try (ResultSet rs = ps.getResultSet()) {
-                    return resultSetConsumer.apply(rs);
+                    return resultSetConsumer.accept(rs);
                 }catch(Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -393,20 +404,20 @@ public class FSQLQuery {
         });
     }
 
-    public void fetchCallback(BiConsumer<ResultSet, Integer> resultSetConsumer) throws Exception {
-        execute(r -> {
+    public <R> List<R> fetchCallback(ResultSetRowConsumer<R> resultSetConsumer) throws Exception {
+        return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ps.executeQuery();
 
                 try (ResultSet rs = ps.getResultSet()) {
+                    List<R> res = new ArrayList<R>();
                     int i = 0;
                     while (rs.next()) {
-                        resultSetConsumer.accept(rs, i++);
+                        res.add(resultSetConsumer.accept(rs, i++));
                     }
+                    return res;
                 }
             }
-
-            return null;
         });
     }
 
