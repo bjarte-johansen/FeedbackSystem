@@ -42,19 +42,6 @@ public class ReviewRepositoryCustomImpl {
             .update();
     };
 
-    @FunctionalInterface
-    interface ThrowingFunction<T, R> {
-        R apply(T t) throws Exception;
-    }
-    static <T, R> Function<T, R> wrap(ThrowingFunction<T, R> fn) {
-        return t -> {
-            try {
-                return fn.apply(t);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        };
-    }
 
     LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId) throws Exception{
         Function<ResultSet, LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
@@ -75,7 +62,6 @@ public class ReviewRepositoryCustomImpl {
         return FSQLQuery.create(sql)
             .bind(externalId)
             .bind(Review.REVIEW_STATUS_APPROVED)
-            .debug()
             .fetchCallback(fnReadResultSet);
     };
 
