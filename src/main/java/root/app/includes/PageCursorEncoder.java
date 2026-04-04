@@ -1,12 +1,25 @@
-package root.controllers;
+package root.app.includes;
 
-import java.awt.*;
 import java.util.Base64;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class PageCursorEncoder {
     static final ObjectMapper MAPPER = new ObjectMapper();
 
+    public static String encodeCursor(PageCursor c) {
+        return c.getOffset() + "," + c.getLimit();
+    }
+
+    public static PageCursor decodeCursor(String cursor) {
+        String[] parts = cursor.split(",");
+        if (parts.length == 2) {
+            return new PageCursor(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+        }else{
+            return new PageCursor(0, Integer.MAX_VALUE);
+        }
+    }
+
+    /*
     public static String encodeCursor(PageCursor c) {
         try {
             byte[] json = MAPPER.writeValueAsBytes(c);
@@ -24,4 +37,5 @@ public class PageCursorEncoder {
             throw new RuntimeException(e);
         }
     }
+     */
 }

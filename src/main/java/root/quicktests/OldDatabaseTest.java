@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.logger.Logger;
 import root.models.Reviewer;
-import root.models.services.PasswordService;
+import root.services.PasswordService;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewerRepository;
 import root.repositories.TenantRepository;

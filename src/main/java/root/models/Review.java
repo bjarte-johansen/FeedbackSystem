@@ -9,7 +9,8 @@ public class Review implements IReview {
     public static int REVIEW_STATUS_APPROVED = 0;
     public static int REVIEW_STATUS_PENDING = 1;
     public static int REVIEW_STATUS_REJECTED = 2;
-    public static int REVIEW_STATUS_TEST = 3;
+    //public static int REVIEW_STATUS_MATCH_ANY = 3;
+    public static int REVIEW_STATUS_TEST = 4;
 
     private Long id;
     private String externalId;

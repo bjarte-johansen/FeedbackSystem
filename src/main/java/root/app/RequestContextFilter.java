@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import root.database.DataSourceManager;
 import root.logger.Logger;
 
 import java.io.IOException;
@@ -48,6 +47,12 @@ public class RequestContextFilter extends OncePerRequestFilter {
         HttpServletResponse res,
         FilterChain chain) throws ServletException, IOException {
 
+        String uri = req.getRequestURI();
+        if (uri.endsWith(".js") || uri.endsWith(".css") || uri.endsWith(".json")) {
+            chain.doFilter(req, res);
+            return;
+        }
+
         String tenantSchema;
         boolean USE_TEST_TENANT = true;
 
@@ -73,7 +78,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
             // BEFORE request (always runs)
 
             // set schema for connections
-            AppRequestContext.setTenantSchemaForThread(tenantSchema);
+            AppRequestSchema.setSchema(tenantSchema);
 
             // runs controller route and other filters (if any)
             // ex @GetMapping("/") in will run after this line if route is "/"
@@ -81,7 +86,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
 
         } finally {
             // AFTER request (always runs)
-            AppRequestContext.clearTenantSchemaForThread();
+            AppRequestSchema.clearSchema();
 
             logBlock.close();
         }

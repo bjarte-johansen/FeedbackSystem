@@ -10,8 +10,7 @@ import java.time.Instant;
  */
 
 public class UserVerificationRecord implements IUserVerificationRecord {
-
-    private Long id = 0L;
+    private Long id;
     private Long userId = 0L;
     private String verificationCode;
     private Instant expiresAt;

@@ -13,14 +13,6 @@ public class ControllerHelper {
     public String errorMessage = null;
     public String successMessage = null;
 
-    /*
-    private static HttpServletResponse currentResponse() throws Exception{
-        ServletRequestAttributes attr =
-            (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        return attr.getResponse();
-    }
-     */
-
     public static ControllerHelper create(){
         return new ControllerHelper();
     }

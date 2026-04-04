@@ -12,7 +12,7 @@ import root.logger.Logger;
 import root.models.Review;
 import root.models.Reviewer;
 import root.models.Tenant;
-import root.models.services.PasswordService;
+import root.services.PasswordService;
 import root.repositories.*;
 //import root.repositories.TenantRepository;
 
@@ -85,6 +85,7 @@ public class DatabaseManager {
             tenant.setApiKey("tenant-1-api-key");
             tenant.setPasswordHash(PasswordService.hash("tenant-1", "salt"));
             tenant.setPasswordSalt("salt");
+            tenant.setSchemaName("tenant_1");
 
             //TenantRepository tenantRepo = RepositoryProxyConstructor.create(TenantRepository.class);
             tenantRepo.save(tenant);
@@ -109,7 +110,7 @@ public class DatabaseManager {
         reviewers.forEach(reviewerRepo::save);
     }
 
-    private Review insertReview(int status, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
+    private Review createReview(int status, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
         Review r = new Review();
         r.setStatus(status);
         r.setExternalId(external_id);
@@ -119,6 +120,14 @@ public class DatabaseManager {
         r.setComment(comment);
         r.setScore(score);
         r.setCreatedAt(created_at);
+
+        //if(DEBUG) Logger.log("Created review: " + r);
+
+        return r;
+    }
+
+    private Review insertReview(int status, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
+        var r = createReview(status, external_id, displayName, author_id, title, comment, score, created_at);
         reviewRepo.save(r);
 
         if(DEBUG) Logger.log("Inserted review: " + r);
@@ -126,11 +135,27 @@ public class DatabaseManager {
         return r;
     }
 
+    record DurationInterval(Duration first, Duration second) {
+        public DurationInterval offset(Duration dur) {
+            return new DurationInterval(first().plus(dur), second().plus(dur));
+        }
+    }
+
     private void insertDemoRatings() throws SQLException, Exception {
         try(var p = Logger.scope("Inserting demo ratings", DEBUG)) {
             String path1 = "/product/1";
             String path2 = "/product/2";
             String path3 = "en-litt-annen-sti";
+
+            DurationInterval[] durationInterval = new DurationInterval[]{
+                new DurationInterval(Duration.ofDays(1), Duration.ofDays(10)),
+            };
+
+            Supplier<Instant> increasingPastInstant = () -> {
+                var r = RandomPastInstant.generate(durationInterval[0].first(), durationInterval[0].second());
+                durationInterval[0] = durationInterval[0].offset(Duration.ofDays(10));
+                return r;
+            };
 
             var period = new FSQLPairRecord<>(
                 Duration.ofDays(3),
@@ -140,26 +165,33 @@ public class DatabaseManager {
             Supplier<String> username = FunnyUserNameGenerator::generate;
             Supplier<String> title = () -> IpsumLoremGenerator.generate(2 + (int) (Math.random() * 3));
             Supplier<String> comment = () -> Strings.left(IpsumLoremGenerator.generate(10 + (int) (Math.random() * 20)), 255);
-            Supplier<Instant> createdAt = () -> RandomPastInstant.generate(period.first(), period.second());
+            Supplier<Instant> createdAt = increasingPastInstant;
+            //Supplier<Instant> createdAt = () -> RandomPastInstant.generate(period.first(), period.second());
 
             List<Review> reviews = List.of(
-                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 3L, title.get(), comment.get(), 3, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 4, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 2, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 3L, title.get(), comment.get(), 3, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 4, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 2, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 1, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 4, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 3, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, createdAt.get()),
 
-                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 2, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 5, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 2, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 5, createdAt.get()),
 
-                insertReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 1L, title.get(), comment.get(), 1, createdAt.get()),
-                insertReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 3L, title.get(), comment.get(), 4, createdAt.get())
+                createReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 1L, title.get(), comment.get(), 1, createdAt.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 3L, title.get(), comment.get(), 4, createdAt.get())
             );
+
+            reviews.forEach(reviewRepo::save);
         }
     }
 }

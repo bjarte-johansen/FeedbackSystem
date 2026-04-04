@@ -10,12 +10,13 @@ public class Tenant implements ITenant {
     private String email;
     private String passwordHash;
     private String passwordSalt;
+    private String schemaName;
 
     public Tenant() {
-        this("", "", "" , "", "", "");
+        this("", "", "" , "", "", "" , "");
     }
 
-    public Tenant(String name, String domain, String apiKey, String email, String password_hash, String passwordSalt) {
+    public Tenant(String name, String domain, String apiKey, String email, String password_hash, String passwordSalt, String schemaName) {
         this.id = null;
         this.name = name;
         this.domain = domain;
@@ -23,6 +24,7 @@ public class Tenant implements ITenant {
         this.email = email;
         this.passwordHash = password_hash;
         this.passwordSalt = passwordSalt;
+        this.schemaName = schemaName;
     }
 
     @Override
@@ -95,6 +97,10 @@ public class Tenant implements ITenant {
         this.passwordSalt = password_salt;
     }
 
+    public String getSchemaName() { return schemaName; }
+    public void setSchemaName(String schemaName) { this.schemaName = schemaName; }
+
+    @Override
     public String toString()
     {
         return "Tenant{id=" + id + ", name='" + name + "', domain='" + domain + "', api_key='" + apiKey + "', email='" + email + "'}";

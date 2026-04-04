@@ -1,6 +1,7 @@
 package root.repositories;
 
 import root.ProxyRepository;
+import root.app.ReviewQueryOptions;
 import root.models.Review;
 
 import java.util.LinkedHashMap;
@@ -32,8 +33,16 @@ public interface ReviewRepository extends ProxyRepository<Review, Long> {
     void updateReviewDislikeCount(long reviewId, int dislikeCount) throws Exception;
     void updateReviewStatus(long reviewId, int newStatus) throws Exception;
 
+    // stats
     LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId) throws Exception;
+
+    // find unique review ids
     List<String> findUniqueExternalIds() throws Exception;
-    List<Review> findByExternalIdWithPagination(String externalId, Long prevId, Long nextId, int limit, String orderBy) throws Exception;
+
+    // main method to find reviews by external id with pagination and sorting
+    //List<Review> findByExternalIdWithPagination(String externalId, Long prevId, Long nextId, int limit, int statusEnum, int orderByEnum) throws Exception;
+    List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception;
+    List<Review> findByAnyExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception;
+
     int countByExternalIdAndStatus(String externalId, int status) throws Exception;
 }

@@ -11,13 +11,13 @@ function toggleReviewForm() {
 <div class="box submit-review-form">
     <h3 onclick="toggleReviewForm();">Legg til review (trykk meg)</h3>
 
-    <form class="ajax form--submit-review-form d-none" action="${pageContext.request.contextPath}/submit-review" method="post">
+    <form class="ajax reload-on-success form--submit-review-form d-none" action="${pageContext.request.contextPath}/submit-review" method="post">
         <p class="alert alert-info">
-            Benytt "test@test.com" og "pass" som epost og passord for å unngå å måtte verifisere konto.
+            Benytt "test@test.com" og "Abacus556!" som epost og passord for å unngå å måtte verifisere konto.
         </p>
 
         <input type="hidden" name="tenantId" value="1">
-        <input type="hidden" name="externalId" value="${reviewFormExternalId__DEBUG__}">
+        <input type="hidden" name="externalId" value="${externalId}">
 
         <fieldset class="mb-3">
             <h4>Konto</h4>
@@ -29,7 +29,7 @@ function toggleReviewForm() {
 
             <div class="form-group">
                 <label for="password">Passord:</label>
-                <input type="password" id="password" name="password" class="form-control" value="pass">
+                <input type="password" id="password" name="password" class="form-control" value="Abacus556!">
             </div>
         </fieldset>
 

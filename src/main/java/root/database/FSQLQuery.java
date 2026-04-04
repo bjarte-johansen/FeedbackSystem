@@ -221,13 +221,14 @@ public class FSQLQuery {
     private PreparedStatement prepareSql(String inputSql, Object... options) throws Exception {
         // set activeSql to input if provided, otherwise use original
         String activeSql = (inputSql != null) ? inputSql : this.sql;
-
+/*
         if(debugSql || OVERRIDE_DEBUG_SQL) {
             try (var ignore = Logger.scope("Attempt Query::prepareSql")) {
                 Logger.log("Raw: " + activeSql);
                 Logger.log("Arguments: " + args.toString());
             }
         }
+ */
 
         // parse sql
         NamedSql.Parsed parsed = NamedSql.parse(activeSql, this.namedArgs, args);
@@ -235,10 +236,10 @@ public class FSQLQuery {
         // log
         if(debugSql || OVERRIDE_DEBUG_SQL) {
             try (var ignore = Logger.scope("Parsed Query::prepareSql")) {
-                Logger.log("Raw: " + activeSql);
-                Logger.log("Parsed: " + parsed.sql);
-                Logger.log("Args: " + Arrays.toString(parsed.args));
+                //Logger.log("Raw: " + activeSql);
+                //Logger.log("Parsed: " + parsed.sql);
                 Logger.log("Interpolated: " + FSQLQueryInterpolator.interpolate(parsed.sql, parsed.args));
+                Logger.log("Args: " + Arrays.toString(parsed.args));
             }
         }
 

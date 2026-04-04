@@ -74,7 +74,8 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         for (Class<?> cls = c; cls != null; cls = cls.getSuperclass()) {
             for (var mm : cls.getDeclaredMethods()) {
                 if (mm.getName().equals(m.getName()) &&
-                    Arrays.equals(mm.getParameterTypes(), m.getParameterTypes())) {
+                    (mm.getParameterCount() == m.getParameterCount()) &&
+                    (Arrays.equals(mm.getParameterTypes(), m.getParameterTypes()))) {
                     return mm;
                 }
             }
@@ -98,8 +99,8 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
             Method impl = findMethod(target.getClass(), method);
             if (impl != null) {
                 impl.setAccessible(true);
-                Logger.log("Invoked implemented method: " + impl.getDeclaringClass().getName() + "." + impl.getName());
-                Logger.log("Invoke Args: " + Arrays.toString(args));
+                //Logger.log("Invoked implemented method: " + impl.getDeclaringClass().getName() + "." + impl.getName());
+                //Logger.log("Invoke Args: " + Arrays.toString(args));
                 return impl.invoke(target, args);
             }
         }

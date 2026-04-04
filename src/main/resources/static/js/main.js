@@ -15,65 +15,103 @@ let Utils = {
     }
 }
 
+var Review = {
+    utils: {
+        incrementElementTextBy: function(el, delta) {
+            const $el = $(el);
+            const iOldValue = parseInt($el.text()) || 0;
+            $el.text(iOldValue + Number(delta));
+        }
+    },
+    handlers: {
 
-/**
- * Collects form input values based on a selector, returning an array of [name, value] pairs.
- * In part written by chatGPT
- *
- * @param selector
- * @returns Object with input names as keys and their corresponding values
- */
+        // like/dislike events
+        likeReviewDone: function(form, res){
+            console.log("Review.formHandlers.likeReviewDone called");
 
-const collectFormInputs = function(selector) {
-    let vals = $(selector)
-        .filter(el => el.name && !el.disabled)
-        .map(el => {
-            if (el.type === 'checkbox')
-                return [el.name, el.checked];
+            Review.utils.incrementElementTextBy($(form).find(".count"), +1);
+        },
+        dislikeReviewDone: function(form, res) {
+            console.log("Review.formHandlers.dislikeReviewDone called");
 
-            if (el.type === 'radio')
-                return el.checked ? [el.name, el.value] : null;
+            Review.utils.incrementElementTextBy($(form).find(".count"), +1);
+        },
 
-            if (el.tagName === 'SELECT' && el.multiple)
-                return [el.name, [...el.selectedOptions].map(o => o.value)];
+        // review management events
+        deleteReviewDone: function(form, res) {
+            console.log("Review.formHandlers.deleteReviewDone called");
+        },
+        submitReviewDone: function(form, res){
+            console.log("Review.formHandlers.submitReviewDone called");
+        },
 
-            return [el.name, el.value];
-        })
-        .filter(Boolean)
-        .toArray();
+        // status marking events
+        markApprovedReviewDone: function(form, res){
+            console.log("Review.formHandlers.markApprovedReviewDone called");
+        },
+        markRejectedReviewDone: function(form, res){
+            console.log("Review.formHandlers.markRejectedReviewDone called");
+        },
+        markPendingReviewDone: function(form, res){
+            console.log("Review.formHandlers.markPendingReviewDone called");
+        }
+    },
+    invokeHandler: function(name, form, res){
+        const handler = this.handlers[name];
+        if (typeof handler === "function") {
+            handler(form, res);
+            return;
+        }
 
-    return Object.fromEntries(vals);
-}
+        console.warn(`No form handler found for name: ${name}`);
+    }
+
+
+};
 
 document.addEventListener("DOMContentLoaded", function() {
     document.addEventListener("submit", async e => {
-        if (!e.target.matches("form.ajax")) {
-            console.log("Form submission ignored, not matching selector 'form.ajax'");
-            return;
-        }
+        const form = e.target.closest("form");
+        if(!form) return;
+
+        if (!form.matches(".ajax")) return;
         e.preventDefault();
 
-        const f = e.target;
-
-        const res = await fetch(f.action, {
-            method: f.method,
-            body: new FormData(f)
+        const res = await fetch(form.action, {
+            method: (form.method || "POST").toUpperCase(),
+            body: new FormData(form)
         });
 
+        const key = "[FormPoster]";
+
         // status
-        console.log(res.status, res.statusText);
-        console.log(res.ok); // true/false
+        console.log(key, res.status, res.ok, res.statusText);
 
-        // headers
-        //console.log([...res.headers.entries()]);
-
-        // body (choose ONE)
-        const text = await res.text();
-        if (text && text.length > 0) {
-            console.log("response.text(): " + text);
+        const ct = res.headers.get("content-type") || "";
+        let text = null;
+        if (ct.includes("text") || ct.includes("html")) {
+            text = await res.clone().text();
+            if (text && text.length > 0) {
+                console.log(key, "text:", text);
+            }
         }
 
-        location.reload();
+        if(!res.ok) {
+            console.warn(key, "Form submission failed with status " + res.status);
+            return;
+        }
+
+        console.log(key, "Form submission succeeded");
+
+        if(form.matches(".reload-on-success")) {
+            location.reload();
+            return;
+        }
+
+        if (form.dataset.handler){
+            const fn = Review.handlers[form.dataset.handler];
+            if(fn) fn(form, res);
+        }
     });
 
     console.log("main.js loaded");

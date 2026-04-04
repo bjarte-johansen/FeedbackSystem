@@ -9,6 +9,7 @@ import root.repositories.ReviewRepository;
 import java.util.List;
 import java.util.Optional;
 
+@Deprecated
 @Service
 class ReviewService implements IReviewService {
     @Autowired

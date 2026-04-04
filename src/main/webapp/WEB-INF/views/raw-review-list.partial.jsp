@@ -10,9 +10,10 @@
         </thead>
         <tbody>
             <c:forEach var="review" items="${reviews}">
+
             <tr>
                 <td>${review.id}</td>
-                <td>${review}</td>
+                <td>toString() equals ${review}</td>
                 <td>
                     <button>Delete</button>
                     <button>Approve</button>

@@ -13,26 +13,26 @@ import java.util.regex.Pattern;
  * and the application sets the search_path to the appropriate schema for each request (or connection).
  */
 
-public class AppRequestContext {
+public class AppRequestSchema {
     private static final Pattern VALID_SCHEMA_NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
     public static ThreadLocal<String> TENANT_SCHEMA = new ThreadLocal<String>();
 
-    public static void validateTenantSchemaName(String schemaName) {
+    public static void validateSchema(String schemaName) {
         if (!VALID_SCHEMA_NAME_PATTERN.matcher(schemaName).matches())
             throw new IllegalArgumentException("Invalid schema name: " + schemaName);
     }
 
-    public static void setTenantSchemaForThread(String schemaName){
-        validateTenantSchemaName(schemaName);
+    public static void setSchema(String schemaName){
+        validateSchema(schemaName);
         TENANT_SCHEMA.set(schemaName);
     }
 
-    public static void clearTenantSchemaForThread(){
+    public static void clearSchema(){
         TENANT_SCHEMA.remove();
     }
 
-    public static AutoCloseable withTenantSchemaForThread(String tenantSchema) {
-        validateTenantSchemaName(tenantSchema);
+    public static AutoCloseable withThreadSchema(String tenantSchema) {
+        validateSchema(tenantSchema);
 
         String previousSchema = TENANT_SCHEMA.get();
         TENANT_SCHEMA.set(tenantSchema);
