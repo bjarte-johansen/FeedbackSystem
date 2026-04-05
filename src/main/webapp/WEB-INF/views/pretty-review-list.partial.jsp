@@ -3,14 +3,14 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <div class="box review--list">
-    <h3>Fint formaterte reviews (${totalReviewCount})</h3>
+    <h3>Omtaler (${totalReviewCount})</h3>
 
     <div class="box">
         <h3>Sammendrag</h3>
 
         <div class="mb-2">
             Snittkarakter: ${dblFormatter2.apply(scoreStats.averageScore)} / 5<br>
-            Antall omtalelser: ${scoreStats.totalScoreCount}
+            Antall omtalelser: ${scoreStats.totalCount}
         </div>
 
         <c:forEach var="scoreCount" items="${scoreStats.scoreCounts}">
@@ -69,10 +69,23 @@
 
             <!--<a href="" class="btn btn-secondary">Fjern</a>-->
 
-            <form class="ajax reload-on-success" action="${pageContext.request.contextPath}/api/delete-review/${tenantId}/${review.id}" method="post">
+            <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/delete-review/${tenantId}/${review.id}" method="post">
                 <input type="hidden" name="_method" value="delete">
                 <button type="submit">Delete</button>
             </form>
+
+            <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-approved/${tenantId}/${review.id}" method="post">
+                <button type="submit">Approve</button>
+            </form>
+
+            <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-rejected/${tenantId}/${review.id}" method="post">
+                <button type="submit">Reject</button>
+            </form>
+
+            <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-pending/${tenantId}/${review.id}" method="post">
+                <button type="submit">Mark ending</button>
+            </form>
+
         </div>
     </c:forEach>
 

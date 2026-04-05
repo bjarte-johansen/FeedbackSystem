@@ -147,14 +147,24 @@ public class DatabaseManager {
             String path2 = "/product/2";
             String path3 = "en-litt-annen-sti";
 
+            int[] firstDay = {-365 * 2};
+
+            /*
             DurationInterval[] durationInterval = new DurationInterval[]{
                 new DurationInterval(Duration.ofDays(1), Duration.ofDays(10)),
             };
-
             Supplier<Instant> increasingPastInstant = () -> {
                 var r = RandomPastInstant.generate(durationInterval[0].first(), durationInterval[0].second());
-                durationInterval[0] = durationInterval[0].offset(Duration.ofDays(10));
+                durationInterval[0] = durationInterval[0].offset(Duration.ofDays(+10));
                 return r;
+            };
+            */
+
+            Supplier<Instant> increasingPastInstant = () -> {
+                return Instant.now().plus(Duration.ofDays(firstDay[0] += 30));
+                //var r = RandomPastInstant.generate(durationInterval[0].first(), durationInterval[0].second());
+                //durationInterval[0] = durationInterval[0].offset(Duration.ofDays(+10));
+                //return r;
             };
 
             var period = new FSQLPairRecord<>(

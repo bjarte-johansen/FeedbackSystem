@@ -29,11 +29,13 @@ var Review = {
         likeReviewDone: function(form, res){
             console.log("Review.formHandlers.likeReviewDone called");
 
+            if(res.status !== 200) return;
             Review.utils.incrementElementTextBy($(form).find(".count"), +1);
         },
         dislikeReviewDone: function(form, res) {
             console.log("Review.formHandlers.dislikeReviewDone called");
 
+            if(res.status !== 200) return;
             Review.utils.incrementElementTextBy($(form).find(".count"), +1);
         },
 

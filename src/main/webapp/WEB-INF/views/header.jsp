@@ -3,7 +3,6 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ page import="java.time.*, java.time.format.*" %>
 <%@ page import="java.util.Date" %>
-
 <!DOCTYPE html>
 <html lang="no">
 <head>

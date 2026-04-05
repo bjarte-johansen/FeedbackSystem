@@ -5,6 +5,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
+import root.app.AppConfig;
 import root.app.AppContext;
 import root.database.*;
 import root.logger.*;
@@ -64,7 +65,9 @@ public class Main {
         //var bean = ctx.getBean(FantasyRepository.class); // @Autowired works
 
         appContext = new AppContext();
-        appContext.initSingleTenantConnectionProvider();
+        appContext.initSingleTenantConnectionProvider(
+            new CustomDataSource(AppConfig.TEST)
+        );
 
         FantasyRepoTest fantasyRepoTest = ctx.getBean(FantasyRepoTest.class);
         fantasyRepoTest.run();

@@ -6,24 +6,22 @@ import root.database.FSQLQuery;
 import root.models.Review;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 @Repository
 public class ReviewRepositoryCustomImpl {
     // This class can be used to implement custom methods for the ReviewRepository if needed.
 
-    void updateReviewLikeCount(long reviewId, int offset) throws Exception{
+    void addVoteUp(long reviewId, int offset) throws Exception{
         String sql = "UPDATE review SET like_count = LEAST(32767, GREATEST(-32768, like_count + ?)) WHERE id = ?";
-        
+
         FSQLQuery.create(sql)
             .bind(offset)
             .bind(reviewId)
             .update();
     };
 
-    void updateReviewDislikeCount(long reviewId, int offset) throws Exception{
+    void addVoteDown(long reviewId, int offset) throws Exception{
         String sql = "UPDATE review SET dislike_count = LEAST(32767, GREATEST(-32768, dislike_count + ?)) WHERE id = ?";
 
         FSQLQuery.create(sql)
@@ -78,35 +76,52 @@ public class ReviewRepositoryCustomImpl {
     List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception{
         boolean DEBUG_SQL = false;
 
+        Set<Integer> searchableReviewStatusEnums = Set.of(
+            Review.REVIEW_STATUS_APPROVED,
+            Review.REVIEW_STATUS_PENDING,
+            Review.REVIEW_STATUS_REJECTED
+        );
+
         String columnStr = "id, external_id, author_name, score, title, comment, like_count, dislike_count, status, created_at";
 
-        String whereStr = "(external_id = ?)";
-        if(options.getStatusEnum() == Review.REVIEW_STATUS_APPROVED){
-            whereStr += " AND (status = " + Review.REVIEW_STATUS_APPROVED + ")";
-        }
-        else if(options.getStatusEnum() == Review.REVIEW_STATUS_PENDING) {
-            whereStr += " AND (status = " + Review.REVIEW_STATUS_PENDING + ")";
-        }
-        else if(options.getStatusEnum() == Review.REVIEW_STATUS_REJECTED){
-            whereStr += " AND (status = " + Review.REVIEW_STATUS_REJECTED + ")";
+        // make condition list
+        ArrayList<String> conditionExprList = new ArrayList<>();
+        conditionExprList.add("(external_id = ?)");
+
+        if(searchableReviewStatusEnums.contains(getStatusEnum(options))){
+            conditionExprList.add("(status = " + options.getStatusEnum() + ")");
         }
 
+        // make where expr-list sql
+        String whereStr = String.join(" AND ", conditionExprList);
+
+        // make limit/offset sql
         String limitOffsetSql = options.buildLimitOffsetSql();
         if(!limitOffsetSql.isEmpty()) {
             limitOffsetSql = " " + limitOffsetSql;
         }
 
+        // make order by sql
         String orderBySql = options.buildOrderBySql();
         if(!orderBySql.isEmpty()) {
             orderBySql = " ORDER BY " + orderBySql;
         }
 
+        // make query and execute
         String sql = "SELECT " + columnStr + " FROM review WHERE " + whereStr + orderBySql + limitOffsetSql;
 
         return FSQLQuery.create(sql)
-            .bind(externalId)
             .debug(DEBUG_SQL)
+            .bindIf(externalId != null, externalId)
             .fetchAll(Review.class);
+    }
+
+    List<Review> findByAnyExternalIdWithPagination(ReviewQueryOptions options) throws Exception{
+        return findByExternalIdWithPagination(null, options);
+    }
+
+    private static int getStatusEnum(ReviewQueryOptions options) {
+        return options.getStatusEnum();
     }
 
     int countByExternalIdAndStatus(String externalId, int status) throws Exception{

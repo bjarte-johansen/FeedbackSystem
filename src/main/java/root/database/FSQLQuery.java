@@ -94,10 +94,19 @@ public class FSQLQuery {
      */
 
     public FSQLQuery bind(Object... values) {
+        if(values != null && values.length > 1) {
+            throw new RuntimeException("More than one argument provided to bind method. If you want to bind multiple values, use bindArray or bind(Iterable) methods.");
+        }
+
         if(values != null && values.length > 0) {
             bind( Arrays.asList(values) );
         }
         return this;
+    }
+
+    public FSQLQuery bindIf(boolean cond, Object... values) {
+        if(!cond) return this;
+        return bind(values);
     }
 
     public FSQLQuery bindArray(Object[] values) {
@@ -107,6 +116,11 @@ public class FSQLQuery {
         return this;
     }
 
+    public FSQLQuery bindArrayIf(boolean cond, Object[] values) {
+        if(!cond) return this;
+        return bindArray(values);
+    }
+
     public FSQLQuery bind(Iterable<?> values){
         if(values != null) {
             values.forEach(value -> bind(value));
@@ -114,11 +128,21 @@ public class FSQLQuery {
         return this;
     }
 
+    public FSQLQuery bindIf(boolean cond, Iterable<?> values){
+        if(!cond) return this;
+        return bind(values);
+    }
+
     public FSQLQuery bind(List<?> values){
         if(values != null) {
             args.addAll( values );
         }
         return this;
+    }
+
+    public FSQLQuery bindIf(boolean cond, List<?> values){
+        if(!cond) return this;
+        return bind(values);
     }
 
     public FSQLQuery bindNamed(String name, Object value) {
@@ -129,6 +153,10 @@ public class FSQLQuery {
         namedArgs.put(name, value);
         return this;
     }
+    public FSQLQuery bindNamedIf(boolean cond, String name, Object value) {
+        if(!cond) return this;
+        return bindNamed(name, value);
+    }
 
     public FSQLQuery bindNamed(Map<String, Object> values) {
         if(values != null) {
@@ -136,6 +164,10 @@ public class FSQLQuery {
         }
 
         return this;
+    }
+    public FSQLQuery bindNamedIf(boolean cond, Map<String, Object> values) {
+        if(!cond) return this;
+        return bindNamed(values);
     }
 
 

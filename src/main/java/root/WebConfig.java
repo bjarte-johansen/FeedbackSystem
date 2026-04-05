@@ -24,7 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
             .addResourceHandler("/js/**")
             .addResourceLocations("file:" + path + "/src/main/resources/static/js/");
 
-        System.out.println("file:" + path + "/css/");
-        System.out.println("file:" + path + "/js/");
+        //System.out.println("file:" + path + "/css/");
+        //System.out.println("file:" + path + "/js/");
     }
 }

@@ -307,7 +307,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         // create query & return result(s) based on return type
         FSQLQuery q = FSQLQuery.create(sql)
             .debug(DEBUG_SQL)
-            .bind(args);
+            .bindArray(args);
 
         // return result
         Class<?> returnType = method.getReturnType();

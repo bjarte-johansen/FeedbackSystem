@@ -10,11 +10,9 @@ public class RandomPastInstant {
     public static java.time.Instant generate(java.time.Duration minAgo, java.time.Duration maxAgo) {
         long min = minAgo.getSeconds();
         long max = maxAgo.getSeconds();
-        if (min < 0 || max < min) throw new IllegalArgumentException();
+        //if (min < 0 || max < min) throw new IllegalArgumentException();
 
-        long delta = java.util.concurrent.ThreadLocalRandom.current()
-            .nextLong(min, max + 1);
-
+        long delta = java.util.concurrent.ThreadLocalRandom.current().nextLong(min, max + 1);
         return java.time.Instant.now().minusSeconds(delta);
     }
 }

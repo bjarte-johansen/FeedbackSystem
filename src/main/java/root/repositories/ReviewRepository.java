@@ -6,6 +6,7 @@ import root.models.Review;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -16,21 +17,16 @@ import java.util.List;
 
 
 public interface ReviewRepository extends ProxyRepository<Review, Long> {
-    // Review save(Review review) throws Exception;
-    // Review create(Review review) throws Exception;
-    // Review update(Review review) throws Exception;
-    // void deleteByTenantIdAndId(long tenantId, long reviewId) throws Exception;
-    // Optional<Review> findById(long tenantId, long reviewId) throws Exception;
-
-    List<Review> findByStatusAndExternalId(int status, String externalId) throws Exception;
+    //List<Review> findByStatusAndExternalId(int status, String externalId) throws Exception;
 
     List<Review> findByExternalId(String externalId) throws Exception;
     List<Review> findByScoreAndExternalId(int score, String externalId) throws Exception;
 
     long countByExternalId(String externalId) throws Exception;
 
-    void updateReviewLikeCount(long reviewId, int likeCount) throws Exception;
-    void updateReviewDislikeCount(long reviewId, int dislikeCount) throws Exception;
+    void addVoteUp(long reviewId, int offset) throws Exception;
+    void addVoteDown(long reviewId, int offset) throws Exception;
+
     void updateReviewStatus(long reviewId, int newStatus) throws Exception;
 
     // stats
@@ -42,7 +38,7 @@ public interface ReviewRepository extends ProxyRepository<Review, Long> {
     // main method to find reviews by external id with pagination and sorting
     //List<Review> findByExternalIdWithPagination(String externalId, Long prevId, Long nextId, int limit, int statusEnum, int orderByEnum) throws Exception;
     List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception;
-    List<Review> findByAnyExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception;
+    List<Review> findAllExternalIdsWithPagination(ReviewQueryOptions options) throws Exception;
 
     int countByExternalIdAndStatus(String externalId, int status) throws Exception;
 }

@@ -56,6 +56,12 @@ h1,h2,h3,h4,h5,h6{ margin:4px 0 1.0rem 0; }
 
 /***************************************************/
 
+.form-inline{
+    display:inline-block !important;
+}
+
+/***************************************************/
+
 
 .box{
     border: 1px solid grey;
@@ -115,9 +121,21 @@ hr{
     margin: 16px 0;
 }
 
+a.btn, a.btn-primary {
+    --bg: #e8681e;
+    background-color: var(--bg);
+    border: 2px solid color-mix(in srgb, var(--bg) 20%, black);
+    border-radius: 4px;
+    padding: 8px;
+    color: #FFF !important;
+    font-weight: bold;
+}
+
 /***************************************************/
 
 .paginator--cursors{
+
+
     a{
         margin-right:8px;
     }
@@ -201,6 +219,7 @@ hr{
         border-radius: 4px;
         color: #333;
         text-decoration: none;
+        font-size:0.9em;
     }
 }
 
@@ -268,7 +287,7 @@ hr{
             /*display:none;*/
         }
 
-        &>*{
+        &>span,&>em{
             display: block;
         }
         .score-outer{

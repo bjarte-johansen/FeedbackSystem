@@ -1,6 +1,7 @@
 package root.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import root.app.includes.PageCursorEncoder;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.controllers.dto.NewReviewForm;
+import root.includes.Try;
 import root.logger.Logger;
 import root.models.Review;
 import root.models.Reviewer;
@@ -28,17 +30,55 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 //import root.models.repositories.JdbcReviewRepository;
 
 
+
+class AppClientSessionObject{
+    Map<String, Boolean> reviewLikeMap = new LinkedHashMap<>();
+
+    public AppClientSessionObject(HttpServletRequest req) {
+        var session = req.getSession();
+        if(session.getAttribute(AppConfig.SESSION_ROOT_KEY) == null){
+            session.setAttribute(AppConfig.SESSION_ROOT_KEY, this);
+        }
+
+    }
+    public static AppClientSessionObject getOrCreateClientSessionObject(HttpServletRequest req) {
+        var session = req.getSession();
+        AppClientSessionObject cso = (AppClientSessionObject) session.getAttribute(AppConfig.SESSION_ROOT_KEY);
+        if(cso == null){
+            cso = new AppClientSessionObject(req);
+            session.setAttribute(AppConfig.SESSION_ROOT_KEY, cso);
+        }
+        return cso;
+    }
+
+    public Map<String, Boolean> getReviewLikeMap() {
+        return reviewLikeMap;
+    }
+
+    public boolean hasLikedReview(long reviewId) {
+        return reviewLikeMap.getOrDefault("like_" + reviewId, false);
+    }
+    public void markReviewLiked(long reviewId) {
+        reviewLikeMap.put("like_" + reviewId, true);
+    }
+
+    public boolean hasDislikedReview(long reviewId) {
+        return reviewLikeMap.getOrDefault("dislike_" + reviewId, false);
+    }
+    public void markReviewDisliked(long reviewId) {
+        reviewLikeMap.put("dislike_" + reviewId, true);
+    }
+}
+
 @Controller
 public class DefaultController {
-    //private static final Logger log = new Logger();
     public static boolean DEBUG_ERRORS = true;
-
-    // TODO: must be false for production
-    public static boolean AUTO_APPROVE_NEW_REVIEWS = true;
 
     @Autowired
     ReviewRepository reviewRepo;
@@ -48,6 +88,28 @@ public class DefaultController {
 
     @Autowired
     ReviewService reviewService;
+
+    // add a simple function to format double values to 2 decimals for display in JSP
+    private static Function<Double, String> DOUBLE_FORMATTER = v -> String.format(Locale.US, "%.2f", v);
+
+    // add a simple function to format double values to 2 decimals for display in JSP
+    private static Function<Instant, String> DD_MM_YYYY_FORMATTER = v -> {
+        if (v == null) return "";
+
+        return DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            .withLocale(Locale.US)
+            .withZone(ZoneId.systemDefault())
+            .format(v);
+    };
+
+    // add a simple function to format Instant values to "days ago" format for display in JSP
+    private static Function<Instant, String> DAYS_AGO_FORMATTER = v -> {
+        if (v == null) return "";
+
+        long days = ChronoUnit.DAYS.between(v, Instant.now());
+        return String.valueOf(Math.max(0, days));
+    };
+
 
     private void addDefaultNewReviewFormValues(Model model){
         model.addAttribute("displayNameSuggestion", FunnyUserNameGenerator.generate());
@@ -105,15 +167,49 @@ public class DefaultController {
         }
     }
 
+
+
+    /**
+     * Simple route to display an error page. This is just for demonstration purposes and should be replaced with
+     * proper error handling in production code.
+     */
+
     @GetMapping("/error")
     public String error()  {
         return "error";
     }
 
+
+
+    /**
+     * Default route to show reviews for a default externalId. This is just for convenience and demonstration purposes,
+     * and should be removed or redirected to a more appropriate page in production code.
+     * TODO: remove or redirect to a more appropriate page in production code
+     *
+     * @param model
+     * @param req
+     * @return
+     * @throws Exception
+     */
+
     @GetMapping("/")
     public String index(Model model, HttpServletRequest req) throws Exception{
         return showReviews("/product/1", null, model, req);
     }
+
+
+
+    /**
+     * Main route to show reviews for a given externalId. This is the main route of the application and is used to
+     * display reviews for a given externalId with pagination and sorting. It also displays aggregate score stats
+     * for the given externalId.
+     * @param externalId
+     * @param strEncodedCursor
+     * @param model
+     * @param req
+     * @return
+     * @throws Exception
+     */
 
     @GetMapping("/show-reviews")
     public String showReviews(
@@ -136,7 +232,7 @@ public class DefaultController {
 
         if(externalId == null || externalId.isBlank()) {
             Logger.log("missing externalId, defaulting to empty string");
-            externalId = "";
+            throw new RuntimeException("externalId is null or empty");
         }
 
         // decode cursor
@@ -145,11 +241,11 @@ public class DefaultController {
         ReviewQueryOptions options = new ReviewQueryOptions();
         options.setPageCursor(decodedCursor);
         options.setStatusEnum(Review.REVIEW_STATUS_APPROVED);
-        options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC);
+        options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
 
         // get score stats for the given externalId and add to model
         // this includes things like average score, total reviews, and score distribution for display in JSP
-        var scoreStats = reviewService.getScoreStatsHelper(externalId);
+        var scoreStats = reviewService.getScoreStatsHelper(externalId, AppConfig.DEFAULT_REVIEW_SCORE_SCALE_MAX);
         model.addAttribute("scoreStats", scoreStats);
 
         Logger.log("QueryOptions: " + options);
@@ -158,12 +254,8 @@ public class DefaultController {
         List<Review> reviews = reviewRepo.findByExternalIdWithPagination(externalId, options);
         model.addAttribute("reviews", reviews);
 
-        // replace with
-        int numPotentialReviewMatches = reviewRepo.countByExternalIdAndStatus(externalId, Review.REVIEW_STATUS_APPROVED);
-
-
         // add cursor to model
-        addCursorToModel(model, numPotentialReviewMatches, decodedCursor);
+        addCursorToModel(model, (int) scoreStats.getTotalCount(), decodedCursor);
         model.addAttribute("cursor", decodedCursor);
 
         // add total reviews for the given externalId to model for display in JSP
@@ -178,30 +270,9 @@ public class DefaultController {
         //externalId = URLDecoder.decode(externalId, StandardCharsets.UTF_8);
         //Logger.log("External ID extracted from request: " + externalId);
 
-
-
-        // add a simple function to format double values to 2 decimals for display in JSP
-        Function<Double, String> dblFormatter = v -> String.format(Locale.US, "%.2f", v);
-        model.addAttribute("dblFormatter2", dblFormatter);
-
-        // add a simple function to format double values to 2 decimals for display in JSP
-        Function<Instant, String> dateFormatter = v -> {
-            if (v == null) return "";
-
-            return DateTimeFormatter.ofPattern("dd/MM/yyyy")
-                .withLocale(Locale.US)
-                .withZone(ZoneId.systemDefault())
-                .format(v);
-        };
-        model.addAttribute("dateFormatter", dateFormatter);
-
-        Function<Instant, String> daysAgo = v -> {
-            if (v == null) return "";
-
-            long days = ChronoUnit.DAYS.between(v, Instant.now());
-            return String.valueOf(Math.max(0, days));
-        };
-        model.addAttribute("daysAgoFormatter", daysAgo);
+        model.addAttribute("dblFormatter2", DOUBLE_FORMATTER);
+        model.addAttribute("dateFormatter", DD_MM_YYYY_FORMATTER);
+        model.addAttribute("daysAgoFormatter", DAYS_AGO_FORMATTER);
 
         // TODO END: get scores for aggregate display of score distribution and average score
 
@@ -213,81 +284,85 @@ public class DefaultController {
 
 
 
-    @PostMapping("/api/set-review-status/{customer}/{reviewId}/{newStatus}")
-    public ResponseEntity<Void> setReviewStatus(@PathVariable String customer, @PathVariable long reviewId, @PathVariable int newStatus) throws Exception{
-        try {
-            reviewRepo.updateReviewStatus(reviewId, newStatus);
-            return ResponseEntity.noContent().build();
-        }catch(Exception e){
-            // TODO: remove stacktrace?
-            if(DEBUG_ERRORS) e.printStackTrace();
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @PostMapping("/api/like-review/{customer}/{reviewId}")
-    public ResponseEntity<Void> addReviewLike(@PathVariable String customer, @PathVariable long reviewId, HttpServletRequest request) throws Exception{
-        try {
-            reviewRepo.updateReviewLikeCount(reviewId, 1);
-            return ResponseEntity.noContent().build();
-        }catch(Exception e){
-            // TODO: remove stacktrace?
-            if(DEBUG_ERRORS) e.printStackTrace();
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @PostMapping("/api/dislike-review/{customer}/{reviewId}")
-    public ResponseEntity<Object> addReviewDislike(@PathVariable String customer, @PathVariable long reviewId, HttpServletRequest request) throws Exception{
-        try {
-            reviewRepo.updateReviewDislikeCount(reviewId, 1);
-            return ResponseEntity.ok().build();
-            //return "redirect:" + request.getHeader("Referer");
-        }catch(Exception e){
-            // TODO: remove stacktrace?
-            if(DEBUG_ERRORS) e.printStackTrace();
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-
     /**
-     * API endpoint to delete a review by id.
+     * API endpoint to add a like to a review.
+     * Can be called only once for a user session.
      *
-     * @param tenantId
+     * @param customer
      * @param reviewId
-     * @param req
      * @return
      * @throws Exception
      */
 
-    @DeleteMapping("/api/delete-review/{tenantId}/{reviewId}")
-    public ResponseEntity deleteReviewApi(
-        @PathVariable long tenantId,
+    @PostMapping("/api/like-review/{customer}/{reviewId}")
+    public ResponseEntity<Void> addReviewLike(
+        @PathVariable String customer,
         @PathVariable long reviewId,
-        HttpServletRequest req
-    ) throws Exception {
-        try {
-            // TODO: check that tenant is set
+        HttpSession session)
+    throws Exception{
 
-            // validate parameters
-            if(tenantId <= 0 || reviewId <= 0) throw new BadRequestException();
-
-            reviewRepo.deleteById(reviewId);
-
+        if(addReviewVote(session, reviewId, 1)) {
+            return ResponseEntity.ok().build();
+        }else{
             return ResponseEntity.noContent().build();
-        } catch(BadRequestException e){
-            return ResponseEntity.badRequest().build();
-        } catch(Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
 
-    public boolean validateDeleteReviewApi(long tenantId, long reviewId) {
-        return !(tenantId <= 0 || reviewId <= 0);
+
+
+    /**
+     * API endpoint to add a dislike to a review.
+     * Can be called only once for a user session.
+     *
+     * @param customer
+     * @param reviewId
+     * @return
+     * @throws Exception
+     */
+
+    @PostMapping("/api/dislike-review/{customer}/{reviewId}")
+    public ResponseEntity<Void> addReviewDislike(
+        @PathVariable String customer,
+        @PathVariable long reviewId,
+        HttpSession session)
+    throws Exception{
+
+        if(addReviewVote(session, reviewId, -1)) {
+            return ResponseEntity.ok().build();
+        }else{
+            return ResponseEntity.noContent().build();
+        }
     }
 
+
+    private boolean addReviewVote(HttpSession session, long reviewId, int offset) throws Exception {
+        Supplier<Map<String, Boolean>> getSessionLikeMap = () -> {
+            Map<String, Boolean> sessionLikeMap = (Map<String, Boolean>) session.getAttribute(AppConfig.SESSION_REVIEW_LIKE_MAP_KEY);
+            if(sessionLikeMap == null) {
+                sessionLikeMap = new HashMap<>();
+                session.setAttribute(AppConfig.SESSION_REVIEW_LIKE_MAP_KEY, sessionLikeMap);
+            }
+            return sessionLikeMap;
+        };
+
+        try {
+            String key = offset > 0 ? "like_" + reviewId : "dislike_" + reviewId;
+            Map<String, Boolean> sessionLikeMap = getSessionLikeMap.get();
+
+            if(sessionLikeMap.get(key) == null) {
+                int voteType = (offset > 0) ? Review.VOTE_UP : Review.VOTE_DOWN;
+                reviewService.addReviewVote(reviewId, voteType, 1);
+
+                sessionLikeMap.put(key, true);
+                return true;
+            }
+
+            return false;
+        }catch(Exception e){
+            if(DEBUG_ERRORS) e.printStackTrace();
+            return false;
+        }
+    }
 
 
 
@@ -305,18 +380,6 @@ public class DefaultController {
 
     @PostMapping("/submit-review")
     public ResponseEntity<Void> submitReview(
-        /*
-        @RequestParam(defaultValue = "1") long tenantId,
-        @RequestParam(defaultValue = "") String externalId,
-
-        @RequestParam(defaultValue = "") String email,
-        @RequestParam(defaultValue = "") String password,
-
-        @RequestParam(defaultValue = "Anonymous") String displayName,
-        @RequestParam(defaultValue = "1") int score,
-        @RequestParam(defaultValue = "") String title,
-        @RequestParam(defaultValue = "") String comment,
-         */
         @ModelAttribute NewReviewForm form,
         Model model,
         RedirectAttributes ra,
@@ -324,9 +387,9 @@ public class DefaultController {
     ) throws Exception {
         try {
             System.out.println("ROUTE /api/submit-review");
-            dumpRequestParams(req);
+            ControllerUtils.dumpRequestParams(req);
 
-            List<String> errors = validateNewReviewForm(form);
+            List<String> errors = NewReviewForm.validate(form, new ArrayList<String>());
             if(!errors.isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
@@ -345,7 +408,7 @@ public class DefaultController {
             review.setTitle(form.title());
             review.setStatus(Review.REVIEW_STATUS_PENDING);
 
-            if(AUTO_APPROVE_NEW_REVIEWS /* NOTE: should be set to false for production */) {
+            if(AppConfig.AUTO_APPROVE_NEW_REVIEWS /* NOTE: should be set to false for production */) {
                 review.setStatus(Review.REVIEW_STATUS_APPROVED);
             }
 
@@ -358,104 +421,9 @@ public class DefaultController {
         }
     }
 
-    private static List<String> validateNewReviewForm(NewReviewForm form) throws Exception{
-        List<String> errors = new ArrayList<>();
-
-        // Validate input parameters (you can add more validation as needed)
-        if (errors.isEmpty() && (form.tenantId() <= 0 || form.score() < 1 || form.score() > 5)) {
-            errors.add("Invalid input parameters.");
-        }
-
-        if(errors.isEmpty() && (form.email().isEmpty() || form.password().isEmpty())) {
-            errors.add("Email and password are required.");
-        }
-
-        if(errors.isEmpty() && !(form.email().equals("test@test.com") && form.password().equals("Abacus556!"))) {
-            errors.add("Test credentials (email: \"test@test.com\", pass: \"pass\" are required to submit a review.");
-        }
-
-        return errors;
-    }
-
-    /*
-
-    @PostMapping("/submit-review")
-    public String submitReview(
-        @RequestParam(defaultValue = "1") long tenantId,
-        @RequestParam(defaultValue = "") String externalId,
-
-        @RequestParam(defaultValue = "") String email,
-        @RequestParam(defaultValue = "") String password,
-
-        @RequestParam(defaultValue = "Anonymous") String displayName,
-        @RequestParam(defaultValue = "1") int score,
-        @RequestParam(defaultValue = "") String title,
-        @RequestParam(defaultValue = "") String comment,
-        Model model,
-        RedirectAttributes ra,
-        HttpServletRequest req
-    ) throws Exception {
-        try {
-            System.out.println("ROUTE /api/submit-review");
-            dumpRequestParams(req);
-
-            List<String> errors = validateSubmitReviewParams(tenantId, score, email, password);
-            if(!errors.isEmpty()) {
-                return ControllerHelper.create()
-                    .withError("Invalid input parameters.")
-                    .redirect(ra, "/");
-            }
-
-            Reviewer reviewer = (Reviewer) reviewerRepo.findByEmail(email).orElse(null);
-            if(Objects.isNull(reviewer)) {
-                return ControllerHelper.create()
-                    .withError("Reviewer already exists.")
-                    .redirect(ra, "/");
-            }
-
-            Review review = new Review();
-            review.setAuthorName(displayName);
-            review.setScore(score);
-            review.setComment(comment);
-            review.setExternalId(externalId);
-            review.setCreatedAt(Instant.now());
-            review.setTitle(title);
-            reviewRepo.save(review);
-
-            return ControllerHelper.create()
-                .withSuccess("Review has been added successfully. [REPLACE MSG WITH STATIC CONSTANT]")
-                .redirect(ra, "/");
-        }catch(Exception e){
-            e.printStackTrace();
-            return ControllerHelper.create()
-                .withError("Exception thrown: " + e.getMessage())
-                .redirect(ra, "/");
-        }
-    }
-     */
-
-    private static void dumpRequestParams(HttpServletRequest req) {
-        System.out.println("BEGIN request-params:");
-        req.getParameterMap().forEach((k, v) ->
-            System.out.println("\t" + k + " = " + java.util.Arrays.toString(v))
-        );
-        System.out.println("END request-params");
-    }
-
-    @DeleteMapping("/api/submit-review")
+/*
+    @PostMapping("/api/submit-review")
     public ResponseEntity apiSubmitReview(
-        /*
-        @RequestParam(defaultValue = "1") long tenantId,
-        @RequestParam(defaultValue = "") String externalId,
-
-        @RequestParam(defaultValue = "") String email,
-        @RequestParam(defaultValue = "") String password,
-
-        @RequestParam(defaultValue = "Anonymous") String displayName,
-        @RequestParam(defaultValue = "1") int score,
-        @RequestParam(defaultValue = "") String title,
-        @RequestParam(defaultValue = "") String comment,
-         */
         @ModelAttribute NewReviewForm form,
         Model model,
         RedirectAttributes ra,
@@ -463,7 +431,7 @@ public class DefaultController {
     ) throws Exception {
         try {
             System.out.println("ROUTE /api/submit-review");
-            dumpRequestParams(req);
+            ControllerUtils.dumpRequestParams(req);
 
             List<String> errors = validateNewReviewForm(form);
             if(!errors.isEmpty()) {
@@ -484,7 +452,7 @@ public class DefaultController {
             review.setTitle(form.title());
             review.setStatus(Review.REVIEW_STATUS_PENDING);
 
-            if(AUTO_APPROVE_NEW_REVIEWS /* NOTE: should be set to false for production */) {
+            if(AppConfig.AUTO_APPROVE_NEW_REVIEWS) {
                 review.setStatus(Review.REVIEW_STATUS_APPROVED);
             }
 
@@ -496,11 +464,11 @@ public class DefaultController {
             return ResponseEntity.badRequest().build();
         }
     }
+    */
 
 
-
+    /*
     public void actualInsertReviewCode(){
-        /*
         // create reviewer
         String passwordSalt = PasswordService.generateSalt();
         String passwordHash = PasswordService.hash(password, passwordSalt);
@@ -521,6 +489,6 @@ public class DefaultController {
 
         // persist to database
         reviewRepository.create(review);
-        */
     }
+    */
 }

@@ -1,5 +1,6 @@
 package root.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -61,4 +62,6 @@ public class ControllerHelper {
     public static void setupModel(Model model) throws Exception {
         model.addAttribute("defaultTitle", "Review System");
     }
+
+
 }

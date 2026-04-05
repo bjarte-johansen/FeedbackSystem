@@ -90,6 +90,11 @@
             <version>17.0.0</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>no.hvl.dat108</groupId>
+            <artifactId>dat109prosjekt</artifactId>
+            <version>1.0.0</version>
+        </dependency>
 
     </dependencies>
 

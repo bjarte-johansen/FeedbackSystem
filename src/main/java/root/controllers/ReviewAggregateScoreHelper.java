@@ -11,17 +11,17 @@ import java.util.Map;
 
 public class ReviewAggregateScoreHelper {
     private double averageScore;
-    private long totalScoreCount;
-    private long totalScoreSum;
+    private long totalCount;
+    private long totalScore;
 
     private Map<Integer, Double> scoreDistribution = new LinkedHashMap<Integer, Double>();
     private Map<Integer, Integer> scoreCounts = new LinkedHashMap<>();
 
-    public long getTotalScoreSum() { return totalScoreSum; }
-    public void setTotalScoreSum(long totalScoreSum) { this.totalScoreSum = totalScoreSum; }
+    public long getTotalScore() { return totalScore; }
+    public void setTotalScore(long score) { this.totalScore = score; }
 
-    public long getTotalScoreCount() { return totalScoreCount; }
-    public void setTotalScoreCount(long totalScoreCount) { this.totalScoreCount = totalScoreCount; }
+    public long getTotalCount() { return totalCount; }
+    public void setTotalCount(long count) { this.totalCount = count; }
 
     public double getAverageScore() { return averageScore; }
     public void setAverageScore(double averageScore) { this.averageScore = averageScore; }

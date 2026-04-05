@@ -33,6 +33,13 @@ public class DataSourceManager {
         var manager = getSingleton();
         manager.connectionProvider = provider;
     }
+    public static CustomConnectionProvider getConnectionProvider() {
+        var manager = getSingleton();
+        if (manager.connectionProvider == null) {
+            throw new IllegalStateException("Connection provider has not been set. Please initialize the connection provider before using it.");
+        }
+        return manager.connectionProvider;
+    }
 
     public static void setMultiTenant(boolean enable) {
         var manager = getSingleton();
