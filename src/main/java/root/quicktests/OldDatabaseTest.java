@@ -46,14 +46,12 @@ class OldDatabaseTest {
         String authorPasswordSalt = PasswordSaltGenerator.generate(16);
         String authorPasswordHash = PasswordService.hash(authorPassword, authorPasswordSalt);
 
-        Reviewer reviewer = new Reviewer(
-            authorEmail,
-            authorDisplayName,
-            authorPasswordHash,
-            authorPasswordSalt,
-            Instant.now(),
-            null
-        );
+        Reviewer reviewer = new Reviewer();
+        reviewer.setEmail(authorEmail);
+        reviewer.setDisplayName(authorDisplayName);
+        reviewer.setPasswordHash(authorPasswordHash);
+        reviewer.setPasswordSalt(authorPasswordSalt);
+        reviewer.setCreatedAt(Instant.now());
 
         reviewerRepo.save(reviewer);
 

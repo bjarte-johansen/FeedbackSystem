@@ -14,7 +14,7 @@ import java.util.Objects;
 public class UserVerificationService implements IUserVerificationService {
 
     @Autowired
-    private ReviewerRepository userRepository;
+    private ReviewerRepository reviewerRepo;
 
     @Override
     public Long getExpirationDurationSeconds() {
@@ -23,11 +23,11 @@ public class UserVerificationService implements IUserVerificationService {
 
     @Override
     public void setUserAsFullyVerified(Long userId) throws Exception {
-        var user = userRepository.findById(userId)
+        var user = reviewerRepo.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setVerifiedAt(Instant.now());
-        userRepository.save(user);
+        reviewerRepo.save(user);
     }
 
     @Override
@@ -66,6 +66,6 @@ public class UserVerificationService implements IUserVerificationService {
     }
 
     public Boolean isUserVerified(Long userId) throws Exception{
-        return userRepository.findById(userId).isPresent();
+        return reviewerRepo.findById(userId).isPresent();
     }
 }

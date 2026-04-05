@@ -1,5 +1,10 @@
 package root.includes;
 
+
+/**
+ * Utility class to wrap lambdas that throw checked exceptions and rethrow them as unchecked exceptions.
+ */
+
 public class Try {
     /**
      * Functional interface for a lambda that takes no arguments and returns a result, and can throw checked exceptions.

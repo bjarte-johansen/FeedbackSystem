@@ -47,18 +47,22 @@ public class GenericEntityPersistence {
 
         try {
             for (var field : entity.getClass().getDeclaredFields()) {
+                // check modifiers to skip static, transient, and synthetic fields
                 int mod = field.getModifiers();
                 if (Modifier.isStatic(mod) || Modifier.isTransient(mod) || field.isSynthetic())
                     continue;
 
+                // skip ID field
                 String name = field.getName();
-                if (name.equals(id_field_name)) {
+                if ((id_field_name != null) && name.equals(id_field_name)) {
                     id_field_name = null;
                     continue;
                 }
 
+                // make field accessible
                 field.setAccessible(true);
 
+                // modify case and map getter
                 name = CachedCaseConverter.camelToSnake(name);
                 props.put(name, field::get);
             }
@@ -117,18 +121,38 @@ public class GenericEntityPersistence {
         Objects.requireNonNull(id_field_name);
         TableNameSanitizer.validateSafeTableName(table_name);
 
-        // Build a map of property names to their getter functions, excluding the ID field
-        var props = buildPropertyMapWithoutId(entity, id_field_name, true);
+        String[] columnNameArr;
+        Object[] columnValueArr;
 
-        // Build the SQL insert statement
-        String columnList = String.join(", ", props.keySet());
-        String placeholders = String.join(", ", Collections.nCopies(props.size(), "?"));
+        String parenColumnListSql;
+        String parenPlaceholdersSql;
 
-        var sql = "INSERT INTO " + table_name + " (" + columnList + ")" + " VALUES" + " (" + placeholders + ")";
+        if(true) {
+            EntityMeta meta = EntityMeta.create(entity.getClass());
+            columnNameArr = meta.getNonIdColumnNames();
+            columnValueArr = meta.getNonIdPropertyValues(entity);
+
+            // Build the SQL insert statement
+            parenColumnListSql = "(" + String.join(", ", columnNameArr) + ")";
+            parenPlaceholdersSql = SqlFactory.createParenPlaceholdersSql(columnNameArr.length);
+        }else {
+            // Build a map of property names to their getter functions, excluding the ID field
+            var props = buildPropertyMapWithoutId(entity, id_field_name, true);
+
+            columnNameArr = props.keySet().toArray(new String[0]);
+            columnValueArr = extractPropertyValues(entity, props);
+
+            // Build the SQL insert statement
+            parenColumnListSql = "(" + String.join(", ", columnNameArr) + ")";
+            parenPlaceholdersSql = "(" + String.join(", ", Collections.nCopies(columnNameArr.length, "?")) + ")";
+        }
+
+        String sql = "INSERT INTO " + table_name + parenColumnListSql + " VALUES " + parenPlaceholdersSql;
 
         // Execute the insert and get the generated ID
         Long id = FSQLQuery.create(conn, sql)
-            .bindArray(extractPropertyValues(entity, props))
+            .bindArray(columnValueArr)
+            //.bindArray(extractPropertyValues(entity, props))
             .debug(DEBUG_SQL)
             .insertAndSetId(entity, id_field_name);
 
@@ -164,23 +188,45 @@ public class GenericEntityPersistence {
         Objects.requireNonNull(id_field_name);
         TableNameSanitizer.validateSafeTableName(table_name);
 
-        // Build a map of property names to their getter functions, excluding the ID field
-        LinkedHashMap<String, FieldGetter> props = buildPropertyMapWithoutId(entity, id_field_name, true);
+        String[] columnNameArr;
+        Object[] columnValueArr;
 
-        // cache entity id and property values before executing the query
+        String setClauseSql;
+
         Object entityId = getEntityId(entity, id_field_name);
+
         checkArgument(entityId instanceof Number, "Entity must have numeric ID field for update operation");
 
-        // Build the SQL insert statement
-        String setClause = props.keySet().stream()
-            .map(key -> key + " = ?")
-            .collect(Collectors.joining(", "));
+        if(true) {
+            EntityMeta meta = EntityMeta.create(entity.getClass());
+            columnNameArr = meta.getNonIdColumnNames();
+            columnValueArr = meta.getNonIdPropertyValues(entity);
 
-        var sql = "UPDATE " + table_name + " SET " + setClause + " WHERE " + id_field_name + " = ?";
+            StringBuilder setClauseBuilder = new StringBuilder(512);
+            for(int i = 0; i < columnNameArr.length; i++) {
+                if (i > 0) setClauseBuilder.append(", ");
+                setClauseBuilder.append(columnNameArr[i]).append(" = ?");
+            }
+            setClauseSql = setClauseBuilder.toString();
+        }else {
+            // Build a map of property names to their getter functions, excluding the ID field
+            var props = buildPropertyMapWithoutId(entity, id_field_name, true);
+
+            // Build the SQL insert statement
+            setClauseSql = props.keySet().stream()
+                .map(key -> key + " = ?")
+                .collect(Collectors.joining(", "));
+
+            columnValueArr = extractPropertyValues(entity, props);
+        }
+
+
+
+        var sql = "UPDATE " + table_name + " SET " + setClauseSql + " WHERE " + id_field_name + " = ?";
 
         // Execute the insert and get the generated ID
         int affectedRows = FSQLQuery.create(conn, sql)
-            .bindArray(extractPropertyValues(entity, props))
+            .bindArray(columnValueArr)
             .bind(entityId)
             .debug(DEBUG_SQL)
             .update();

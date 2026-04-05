@@ -17,15 +17,12 @@ public class RepoIntegrationTestZone {
 
     public void execTest() throws Exception {
         Review review = new Review();
-        {
-            review.setAuthorId(3L);
-            review.setComment("Im old");
-            review.setExternalId("/product/69");
-            review.setTitle("My review title");
-            review.setScore(4);
-
-            reviewRepo.save(review);
-        }
+        review.setAuthorId(3L);
+        review.setComment("Im old");
+        review.setExternalId("/product/69");
+        review.setTitle("My review title");
+        review.setScore(4);
+        reviewRepo.save(review);
 
         String sql = SqlFactory.createUpdateSql(
             "review",

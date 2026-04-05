@@ -73,7 +73,7 @@ public class ReviewRepositoryCustomImpl {
             .fetchCallback(fnReadResultSet);
     }
 
-    List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception{
+    List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception {
         boolean DEBUG_SQL = false;
 
         Set<Integer> searchableReviewStatusEnums = Set.of(
@@ -81,15 +81,31 @@ public class ReviewRepositoryCustomImpl {
             Review.REVIEW_STATUS_PENDING,
             Review.REVIEW_STATUS_REJECTED
         );
+        Set<Integer> matchAllReviewStatusEnum = Set.of(
+            Review.REVIEW_STATUS_MATCH_ALL
+        );
 
         String columnStr = "id, external_id, author_name, score, title, comment, like_count, dislike_count, status, created_at";
 
         // make condition list
         ArrayList<String> conditionExprList = new ArrayList<>();
+
+        // add external id filter
         conditionExprList.add("(external_id = ?)");
 
-        if(searchableReviewStatusEnums.contains(getStatusEnum(options))){
-            conditionExprList.add("(status = " + options.getStatusEnum() + ")");
+        if ((options.getStatusEnum() == Review.REVIEW_STATUS_MATCH_ALL)) {
+            // catch all, no need to add any condition
+        } else {
+            // check bitflags
+            if ((options.getStatusEnum() & Review.REVIEW_STATUS_APPROVED) != 0) {
+                conditionExprList.add("(status = " + Review.REVIEW_STATUS_APPROVED + ")");
+            }
+            if ((options.getStatusEnum() & Review.REVIEW_STATUS_PENDING) != 0) {
+                conditionExprList.add("(status = " + Review.REVIEW_STATUS_PENDING + ")");
+            }
+            if ((options.getStatusEnum() & Review.REVIEW_STATUS_REJECTED) != 0) {
+                conditionExprList.add("(status = " + Review.REVIEW_STATUS_REJECTED + ")");
+            }
         }
 
         // make where expr-list sql
@@ -118,10 +134,6 @@ public class ReviewRepositoryCustomImpl {
 
     List<Review> findByAnyExternalIdWithPagination(ReviewQueryOptions options) throws Exception{
         return findByExternalIdWithPagination(null, options);
-    }
-
-    private static int getStatusEnum(ReviewQueryOptions options) {
-        return options.getStatusEnum();
     }
 
     int countByExternalIdAndStatus(String externalId, int status) throws Exception{

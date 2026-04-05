@@ -15,7 +15,6 @@ import java.time.Instant;
 @Deprecated
 public class ReviewAggregate implements HasId {
     private Long id;
-    private long reviewId;
     private String externalId;
     private double averageScore;
     private long totalScoreCount;
@@ -26,15 +25,14 @@ public class ReviewAggregate implements HasId {
 
     public ReviewAggregate() {}
 
-    @Override public Long getId() {
+    @Override
+    public Long getId() {
         return id != null ? id : 0L;
     }
-    @Override public void setId(long id) {
+    @Override
+    public void setId(long id) {
         this.id = id;
     }
-
-    public long getReviewId() { return reviewId; }
-    public void setReviewId(long reviewId) { this.reviewId = reviewId; }
 
     public double getAverageScore() { return averageScore; }
     public void setAverageScore(double averageScore) { this.averageScore = averageScore; }
@@ -45,6 +43,8 @@ public class ReviewAggregate implements HasId {
     public long getSumScore() { return totalScoreSum; }
     public void setSumScore(long sumScore) { this.totalScoreSum = sumScore; }
 
+    public String getExternalId() { return externalId; }
+    public void setExternalId(String externalId) { this.externalId = externalId; }
 
     public void setEncodedHistogramPercent(String encodedHistogram) {
         this.encoded_histogram_percent = encodedHistogram;
@@ -64,7 +64,6 @@ public class ReviewAggregate implements HasId {
     public String toString() {
         return "ReviewAggregate{" +
             "id=" + id +
-            ", review_id=" + reviewId +
             ", average_score=" + averageScore +
             ", total_count=" + totalScoreCount +
             ", sum_score=" + totalScoreSum +

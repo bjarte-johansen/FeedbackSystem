@@ -3,27 +3,30 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <div class="box review--list">
-    <h3>Omtaler (${totalReviewCount})</h3>
+    <h3>Omtaler (${reviewStats.totalCount})</h3>
 
     <div class="box">
         <h3>Sammendrag</h3>
 
         <div class="mb-2">
-            Snittkarakter: ${dblFormatter2.apply(scoreStats.averageScore)} / 5<br>
-            Antall omtalelser: ${scoreStats.totalCount}
+           <div class="score-outer mb-0">
+                <strong class="score-text">${reviewStats.averageScore}/5</strong> <span class="score score-${dblFormatterCssPointFive.apply(reviewStats.averageScore)}"></span>
+            </div>
+            Snittkarakter: ${dblFormatter1.apply(reviewStats.averageScore)} av 5<br>
+            Antall omtalelser: ${reviewStats.totalCount}
         </div>
 
-        <c:forEach var="scoreCount" items="${scoreStats.scoreCounts}">
+        <c:forEach var="scoreCount" items="${reviewStats.scoreCounts}">
             <div class="grid mb-1">
                 <div class="grid-auto">
                     ${scoreCount.key} Stjerner
                 </div>
                 <div class="grid-auto grid">
                     <div class="score-pct-bar">
-                        <div style="width: ${scoreStats.scoreDistribution[scoreCount.key]}%;"></div>
+                        <div style="width: ${reviewStats.scoreDistribution[scoreCount.key]}%;"></div>
                     </div>
 
-                    ${scoreStats.scoreCounts[scoreCount.key]}
+                    ${reviewStats.scoreCounts[scoreCount.key]}
                 </div>
             </div>
         </c:forEach>
@@ -33,7 +36,7 @@
     <%@ include file="paginator.jsp" %>
 
     <c:forEach var="review" items="${reviews}">
-        <div class="box review">
+        <div class="box review review--review-${review.id}">
             <div class="score-outer mb-0">
                 <strong class="score-text">${review.score}/5</strong> <span class="score score-${review.score}"></span>
             </div>
@@ -68,23 +71,26 @@
 
 
             <!--<a href="" class="btn btn-secondary">Fjern</a>-->
+            <div class="box-virtual">
+                <h5>Buttons should not be here in client interface</h5>
 
-            <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/delete-review/${tenantId}/${review.id}" method="post">
-                <input type="hidden" name="_method" value="delete">
-                <button type="submit">Delete</button>
-            </form>
+                <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/delete-review/${tenantId}/${review.id}" method="post">
+                    <input type="hidden" name="_method" value="delete">
+                    <button type="submit">Delete</button>
+                </form>
 
-            <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-approved/${tenantId}/${review.id}" method="post">
-                <button type="submit">Approve</button>
-            </form>
+                <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-approved/${tenantId}/${review.id}" method="post">
+                    <button type="submit">Approve</button>
+                </form>
 
-            <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-rejected/${tenantId}/${review.id}" method="post">
-                <button type="submit">Reject</button>
-            </form>
+                <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-rejected/${tenantId}/${review.id}" method="post">
+                    <button type="submit">Reject</button>
+                </form>
 
-            <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-pending/${tenantId}/${review.id}" method="post">
-                <button type="submit">Mark ending</button>
-            </form>
+                <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-pending/${tenantId}/${review.id}" method="post">
+                    <button type="submit">Check</button>
+                </form>
+            </div>
 
         </div>
     </c:forEach>

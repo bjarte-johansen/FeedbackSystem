@@ -30,12 +30,14 @@ var Review = {
             console.log("Review.formHandlers.likeReviewDone called");
 
             if(res.status !== 200) return;
+
             Review.utils.incrementElementTextBy($(form).find(".count"), +1);
         },
         dislikeReviewDone: function(form, res) {
             console.log("Review.formHandlers.dislikeReviewDone called");
 
             if(res.status !== 200) return;
+
             Review.utils.incrementElementTextBy($(form).find(".count"), +1);
         },
 
@@ -49,15 +51,22 @@ var Review = {
 
         // status marking events
         markApprovedReviewDone: function(form, res){
+            if(res.status !== 200) return;
+
             console.log("Review.formHandlers.markApprovedReviewDone called");
         },
         markRejectedReviewDone: function(form, res){
+            if(res.status !== 200) return;
+
             console.log("Review.formHandlers.markRejectedReviewDone called");
         },
         markPendingReviewDone: function(form, res){
+            if(res.status !== 200) return;
+
             console.log("Review.formHandlers.markPendingReviewDone called");
         }
     },
+
     invokeHandler: function(name, form, res){
         const handler = this.handlers[name];
         if (typeof handler === "function") {
@@ -67,8 +76,6 @@ var Review = {
 
         console.warn(`No form handler found for name: ${name}`);
     }
-
-
 };
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -99,7 +106,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         if(!res.ok) {
-            console.warn(key, "Form submission failed with status " + res.status);
+            console.warn(key, "Form submission failed", "HTTP error", res.status);
             return;
         }
 

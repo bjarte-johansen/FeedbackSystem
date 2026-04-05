@@ -1,9 +1,23 @@
 package root.includes;
 
+/**
+ * Formats a java.time.Instant into a human-readable "time ago" format in Norwegian.
+ * Example: "for 5 minutter siden", "for 2 timer siden", etc.
+ * Note: This is a simple implementation and may not cover all edge cases or localization nuances.
+ * In part written by ChatGPT, with some adjustments for Norwegian language and pluralization.
+ * TODO: Consider using a library like Joda-Time or java.time.format for more robust formatting and localization support.
+ */
+
 public class NorwegianTimeAgoTextFormatter {
 
-    // TODO: Move this to a utility class if needed elsewhere
-    // NOTE: written by chatGPT, may need adjustments for localization and edge cases
+    /**
+     * Formats the given Instant into a "time ago" string in Norwegian.
+     *
+     * @param t
+     * @param prefix
+     * @param suffix
+     * @return
+     */
 
     public static String formatInstantAgo(java.time.Instant t, String prefix, String suffix) {
         if (t == null) return "";

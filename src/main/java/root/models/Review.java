@@ -5,14 +5,42 @@ import root.interfaces.IReview;
 
 import java.time.Instant;
 
+
+/**
+ * Represents a review entity with properties such as id, author information, score, title, comment, status, and
+ * timestamps. This class implements the IReview interface and provides methods to access and modify these properties.
+ * <p>
+ * The Review class also includes static constants for vote types and review statuses, as well as a method to convert
+ * the review status to a human-readable string and a method to get a short date string indicating how long ago the
+ * review was created, formatted in Norwegian.
+ * <p>
+ * Javadoc is provided in interface and therefore omitted here for brevity, but all methods and properties are
+ * documented in the IReview interface.
+ */
+
 public class Review implements IReview {
+    /**
+     * Vote type constants:
+     * 1 = Upvote
+     * -1 = Downvote
+     */
     public static int VOTE_UP = 1;
     public static int VOTE_DOWN = -1;
 
-    public static int REVIEW_STATUS_APPROVED = 0;
-    public static int REVIEW_STATUS_PENDING = 1;
-    public static int REVIEW_STATUS_REJECTED = 2;
-    public static int REVIEW_STATUS_ANY = 3;
+    /**
+     * Review status constants:
+     * 0 = Approved
+     * 1 = Pending
+     * 2 = Rejected
+     * 3 = Any (used for filtering, not an actual status)
+     */
+    //public static int REVIEW_STATUS_EMPTY = 1 << 0;
+    public static int REVIEW_STATUS_APPROVED = 1 << 0;
+    public static int REVIEW_STATUS_PENDING = 1 << 1;
+    public static int REVIEW_STATUS_REJECTED = 1 << 2;
+    //public static int REVIEW_STATUS_UNUSED_HIGH = 1 << 2;
+    public static int REVIEW_STATUS_MATCH_ALL = REVIEW_STATUS_APPROVED | REVIEW_STATUS_PENDING | REVIEW_STATUS_REJECTED;
+    //public static int REVIEW_STATUS_ANY = 3;
     //public static int REVIEW_STATUS_TEST = 5;
 
     private Long id;
@@ -27,7 +55,11 @@ public class Review implements IReview {
     private int likeCount = 0;
     private int dislikeCount = 0;
 
-    public Review() {}
+    /**
+     * Default constructor for the Review class. Initializes a new instance of the Review class with default values.
+     */
+    public Review() {
+    }
 
     @Override
     public Long getId() {
@@ -41,10 +73,14 @@ public class Review implements IReview {
 
 
     @Override
-    public int getStatus(){ return this.status; }
+    public int getStatus() {
+        return this.status;
+    }
 
     @Override
-    public void setStatus(int status){ this.status = status; }
+    public void setStatus(int status) {
+        this.status = status;
+    }
 
 
     @Override
@@ -89,10 +125,14 @@ public class Review implements IReview {
 
 
     @Override
-    public String getTitle(){ return this.title; }
+    public String getTitle() {
+        return this.title;
+    }
 
     @Override
-    public void setTitle(String title){ this.title = title; }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
 
     @Override
@@ -135,21 +175,26 @@ public class Review implements IReview {
         this.likeCount = likeCount;
     }
 
+    /**
+     * Returns a string representation of the Review object, including all its properties.
+     *
+     * @return A string representation of the Review object.
+     */
     @Override
     public String toString() {
         return "Review(" +
-                "id=" + id +
-                ", externalId='" + externalId + '\'' +
-                ", authorId=" + authorId +
-                ", authorName='" + authorName + '\'' +
-                ", score=" + score +
-                ", title='" + title + '\'' +
-                ", comment='" + comment + '\'' +
-                ", status=" + statusToString(status) +
-                ", likeCount=" + likeCount +
-                ", dislikeCount=" + dislikeCount +
-                ", createdAt=" + createdAt +
-                ')';
+            "id=" + id +
+            ", externalId='" + externalId + '\'' +
+            ", authorId=" + authorId +
+            ", authorName='" + authorName + '\'' +
+            ", score=" + score +
+            ", title='" + title + '\'' +
+            ", comment='" + comment + '\'' +
+            ", status=" + statusToString(status) +
+            ", likeCount=" + likeCount +
+            ", dislikeCount=" + dislikeCount +
+            ", createdAt=" + createdAt +
+            ')';
     }
 
 
@@ -168,6 +213,7 @@ public class Review implements IReview {
 
     /**
      * Returns a human-readable string representing how long ago the review was created, formatted in Norwegian.
+     *
      * @return A string like "for 5 minutter siden" indicating how long ago the review was created.
      */
 

@@ -124,7 +124,7 @@ public class FSQLUtils {
 
     public static IColumnReader createColumnReader(Class<?> t) throws SQLException {
 
-        //gettInt and be used directly for primitive types, as they return 0/false for null values, and we can check
+        //getInt and be used directly for primitive types, as they return 0/false for null values, and we can check
         //wasNull() to return null instead for boxed types.
 
         // hottest first

@@ -4,6 +4,17 @@ import root.interfaces.IReviewer;
 
 import java.time.Instant;
 
+/**
+ * The Reviewer class represents a user who can submit reviews. It implements the IReviewer interface,
+ * which defines the contract for reviewer entities in the system. This class contains fields for
+ * storing reviewer information such as email, display name, password hash, and timestamps for
+ * account creation and verification.
+ *
+ * JavaDoc comments are written in interface and omitted here for brevity.
+ *
+ * TODO: Any code inserted here must have javadoc comments. This is a requirement for all code in this project.
+ */
+
 public class Reviewer implements IReviewer {
 
     //private Long tenantId = 0L;
@@ -15,8 +26,11 @@ public class Reviewer implements IReviewer {
     private Instant createdAt = Instant.now();
     private Instant verifiedAt = null;
 
+    /**
+     * Default constructor for the Reviewer class. Initializes all fields to their default values.
+     */
     public Reviewer() {}
-
+    /*
     public Reviewer(
     String email,
     String displayName,
@@ -32,6 +46,7 @@ public class Reviewer implements IReviewer {
         this.createdAt = createdAt != null ? createdAt : Instant.now();
         this.verifiedAt = verifiedAt;
     }
+     */
 
     // --- getters / setters ---
 
@@ -78,4 +93,17 @@ public class Reviewer implements IReviewer {
 
     @Override
     public void setVerifiedAt(Instant verifiedAt) { this.verifiedAt = verifiedAt; }
+
+    @Override
+    public String toString() {
+        return "Reviewer{" +
+            "id=" + id +
+            ", email='" + email + '\'' +
+            ", displayName='" + displayName + '\'' +
+            ", passwordHash='" + passwordHash + '\'' +
+            ", passwordSalt='" + passwordSalt + '\'' +
+            ", createdAt=" + createdAt +
+            ", verifiedAt=" + verifiedAt +
+            '}';
+    }
 }

@@ -358,7 +358,7 @@ public class SqlFactory {
      *
      * @param tableName The name of the table to select rows from.
      * @param columns An array of column names to be selected. If null or empty, all columns will be selected.
-     * @param cond An optional array of conditions for the WHERE clause, where even indices are expressions and odd
+     * @param cond An optional array of conditions for the WHERE clause, where even indices are expressions and odd are values/placeholders.
      * @return A SQL query string for selecting rows from the specified table with the given columns and conditions.
      * @throws SQLException If an error occurs while accessing the database metadata for quoting identifiers.
      */

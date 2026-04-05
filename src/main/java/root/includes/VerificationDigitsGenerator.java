@@ -5,9 +5,11 @@ import java.security.SecureRandom;
 
 /**
  * Utility class for generating random numeric strings, often used as verification digits.
+ * TODO: Any code inserted here must have javadoc comments. This is a requirement for all code in this project.
  */
 
 public class VerificationDigitsGenerator {
+    // SecureRandom is a cryptographically strong random number generator, suitable for generating verification digits
     private static final SecureRandom secureRandom = new SecureRandom();
 
 

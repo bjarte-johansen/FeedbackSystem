@@ -6,28 +6,93 @@ import java.time.Instant;
  * Represents a reviewer in the system.
  */
 
-public interface IReviewer extends HasId{
-    // display name is the name shown to other users, while username is used for login and must be unique
+public interface IReviewer extends HasId {
+    /**
+     * Gets the display name of the reviewer.
+     *
+     * @return
+     */
     String getDisplayName();
+
+    /**
+     * Sets the display name of the reviewer.
+     *
+     * @param displayName
+     */
     void setDisplayName(String displayName);
 
-    // email is used for login and verification, and must be unique
+    /**
+     * Gets the email of the reviewer.
+     *
+     * @return
+     */
     String getEmail();
+
+    /**
+     * Sets the email of the reviewer.
+     *
+     * @param email
+     */
     void setEmail(String email);
 
-    // passwordHash is the hashed version of the user's password, and passwordSalt is the random salt used for hashing
+    /**
+     * Gets the password hash of the reviewer.
+     *
+     * @return
+     */
     String getPasswordHash();
+
+    /**
+     * Sets the password hash of the reviewer.
+     *
+     * @param passwordHash
+     */
     void setPasswordHash(String passwordHash);
 
-    // passwordSalt is the random salt used for hashing the user's password, and should be stored separately
+    /**
+     * Gets the password salt of the reviewer.
+     *
+     * @return
+     */
     String getPasswordSalt();
+
+    /**
+     * Sets the password salt of the reviewer.
+     *
+     * @param passwordSalt
+     */
     void setPasswordSalt(String passwordSalt);
 
-    // verifiedAt is the timestamp when the user's email was verified, and should be null if not verified
+
+    /**
+     * Gets the timestamp when the reviewer's email was verified. This should be null if the email is not verified.
+     *
+     * @return
+     */
     Instant getVerifiedAt();
+
+    /**
+     * Sets the timestamp when the reviewer's email was verified. This should be set to null if the email is not
+     * verified.
+     *
+     * @param verifiedAt
+     */
     void setVerifiedAt(Instant verifiedAt);
 
-    // createdAt is the timestamp when the user account was created, and should be set when the account is created
+
+    /**
+     * Gets the timestamp when the reviewer account was created. This should be set when the account is created and
+     * should not be null.
+     *
+     * @return
+     */
     Instant getCreatedAt();
+
+    /**
+     * Sets the timestamp when the reviewer account was created. This should be set when the account is created and
+     * should not be null.
+     *
+     * @param createdAt
+     */
     void setCreatedAt(Instant createdAt);
 }

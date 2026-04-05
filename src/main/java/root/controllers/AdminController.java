@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import root.app.AppConfig;
 import root.app.AppContext;
 import root.models.Review;
 import root.repositories.ReviewRepository;
@@ -40,8 +41,7 @@ public class AdminController {
      */
 
     private ResponseEntity<Void> markReviewWithStatus(long reviewId, int newStatus) throws Exception {
-        // require administrator privileges
-        AppContext.checkIsAdministrator();
+        if(!AppContext.isAdministrator()) return ResponseEntity.status(401).build();
 
         reviewService.setReviewStatus(reviewId, newStatus);
 
@@ -66,6 +66,8 @@ public class AdminController {
      */
     @PostMapping("/api/mark-review-approved/{customer}/{reviewId}")
     public ResponseEntity<Void> markReviewAsApproved(@PathVariable Long customer, @PathVariable long reviewId) throws Exception {
+        // authorization check in markReviewWithStatus method
+
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_APPROVED);
     }
 
@@ -79,6 +81,8 @@ public class AdminController {
 
     @PostMapping("/api/mark-review-rejected/{customer}/{reviewId}")
     public ResponseEntity<Void> markReviewAsRejected(@PathVariable Long customer, @PathVariable long reviewId) throws Exception {
+        // authorization check in markReviewWithStatus method
+
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_REJECTED);
     }
 
@@ -93,6 +97,8 @@ public class AdminController {
 
     @PostMapping("/api/mark-review-pending/{customer}/{reviewId}")
     public ResponseEntity<Void> markReviewAsPending(@PathVariable Long customer, @PathVariable long reviewId) throws Exception {
+        // authorization check in markReviewWithStatus method
+
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_PENDING);
     }
 
@@ -114,24 +120,19 @@ public class AdminController {
         HttpServletRequest req
     ) throws Exception {
         try {
-            // require administrator privileges
-            AppContext.checkIsAdministrator();
+            if(!AppContext.isAdministrator()) return ResponseEntity.status(401).build();
 
             // validate parameters
             if(tenantId <= 0 || reviewId <= 0) throw new BadRequestException();
 
             reviewService.deleteById(reviewId);
 
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok().build();
         } catch(BadRequestException e){
             return ResponseEntity.badRequest().build();
         } catch(Exception e) {
-            e.printStackTrace();
+            if(AppConfig.CONTROLLER_PRINT_STACK_TRACE_ON_ERROR) e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
-    }
-
-    public boolean validateDeleteReviewApi(long tenantId, long reviewId) {
-        return !(tenantId <= 0 || reviewId <= 0);
     }
 }

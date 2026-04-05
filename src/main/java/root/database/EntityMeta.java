@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class EntityMeta {
+    /*
     public class MappingFieldValuetIterator implements Iterator<Object> {
         private final Object o;
         private final FSQLColumnMapping[] mappings;
@@ -37,6 +38,7 @@ public class EntityMeta {
             }
         }
     }
+    */
 
     public record LocalPair<F, S>(F first, S second) {}
 
@@ -45,9 +47,11 @@ public class EntityMeta {
     private EntityMeta() {
     }
 
+    /*
     public MappingFieldValuetIterator getFieldValueIterator(Object o, boolean includeId) {
         return new MappingFieldValuetIterator(o, includeId ? all : nonId);
     }
+     */
 
     public Constructor<?> ctor;
 
@@ -127,6 +131,12 @@ public class EntityMeta {
         return nonIdColumnNames;
     }
 
+    public Object[] getAllPropertyValues(Object o) throws Exception {
+        return extractFieldValuesFromColumnMappings(o, all);
+    }
+    public Object[] getNonIdPropertyValues(Object o) throws Exception {
+        return extractFieldValuesFromColumnMappings(o, nonId);
+    }
 
 
     /**
@@ -205,11 +215,14 @@ public class EntityMeta {
                     continue;
                 }
 
+                // set accessible to bypass private/pro
                 f.setAccessible(true);
 
+                // get field name and type
                 String fieldName = f.getName();
                 Class<?> fieldType = f.getType();
 
+                // create column mapping for the field
                 FSQLColumnMapping cm = new FSQLColumnMapping(
                     fieldName,
                     f,

@@ -2,7 +2,6 @@ package root.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -15,7 +14,6 @@ import root.app.includes.PageCursorEncoder;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.controllers.dto.NewReviewForm;
-import root.includes.Try;
 import root.logger.Logger;
 import root.models.Review;
 import root.models.Reviewer;
@@ -30,7 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
-import java.util.function.BooleanSupplier;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 //import root.models.repositories.JdbcReviewRepository;
@@ -78,8 +76,6 @@ class AppClientSessionObject{
 
 @Controller
 public class DefaultController {
-    public static boolean DEBUG_ERRORS = true;
-
     @Autowired
     ReviewRepository reviewRepo;
 
@@ -89,8 +85,17 @@ public class DefaultController {
     @Autowired
     ReviewService reviewService;
 
+    // debugging flag
+    public static boolean DEBUG_ERRORS = true;
+    public static boolean PRINT_REQUEST_PARAMS = false;
+    public static boolean PRINT_STACK_TRACE_ON_ERROR = true;
+
+    private static double roundToHalf(double v) { return Math.round(v * 2.0) / 2.0; }
+
     // add a simple function to format double values to 2 decimals for display in JSP
-    private static Function<Double, String> DOUBLE_FORMATTER = v -> String.format(Locale.US, "%.2f", v);
+    private static Function<Double, String> CSS_DOUBLE_FORMATTER_POINT_FIVE = (v) -> String.format(Locale.US, "%.1f", roundToHalf(v)).replace(".", "-");
+    private static Function<Double, String> DOUBLE_FORMATTER_1 = (v) -> String.format(Locale.US, "%.1f", v);
+    private static Function<Double, String> DOUBLE_FORMATTER_2 = (v) -> String.format(Locale.US, "%.1f", v);
 
     // add a simple function to format double values to 2 decimals for display in JSP
     private static Function<Instant, String> DD_MM_YYYY_FORMATTER = v -> {
@@ -111,6 +116,13 @@ public class DefaultController {
     };
 
 
+
+
+
+    /*
+     * methods
+     */
+
     private void addDefaultNewReviewFormValues(Model model){
         model.addAttribute("displayNameSuggestion", FunnyUserNameGenerator.generate());
         model.addAttribute("titleSuggestion", IpsumLoremGenerator.generate(2 + (int)(Math.random() * 4)).replace(".", ""));
@@ -118,7 +130,7 @@ public class DefaultController {
         model.addAttribute("scoreSuggestion", 1 + new Random().nextInt(5));
     }
 
-    private void addUniqueExternalIdsToModel(Model model) throws Exception{
+    private void addSelectExternalIdPillData(Model model) throws Exception{
         List<String> uniqueExternalIds = reviewRepo.findUniqueExternalIds();
         model.addAttribute("uniqueExternalIds", uniqueExternalIds);
     }
@@ -139,10 +151,12 @@ public class DefaultController {
         }
     }
 
+    /*
     private void addTotalReviewsForExternalIdToModel(Model model, String externalId) throws Exception{
         long totalReviewCount = reviewRepo.countByExternalIdAndStatus(externalId, Review.REVIEW_STATUS_APPROVED);
         model.addAttribute("totalReviewCount", totalReviewCount);
     }
+     */
 
     // used to extract the externalId from the request URI for the /reviews/{externalId} route. Must be used
     // allow for complex routing
@@ -218,17 +232,26 @@ public class DefaultController {
         Model model,
         HttpServletRequest req
     ) throws Exception{
-        // find all unique externalIds for reviews to display in the dropdown for quick navigation
-        // only used in demonstration interface
-        // TODO: remove for production code
-        addUniqueExternalIdsToModel(model);
-
-        // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
-        // TODO: remove for production code
-        addDefaultNewReviewFormValues(model);
-
         // add things like title etc
         ControllerHelper.setupModel(model);
+
+        // find all unique externalIds for reviews to display in the dropdown for quick navigation
+        // only used in demonstration interface
+        // TODO: remove for production code, should allways take an externalId as a parameter and not display
+        // a dropdown of all externalIds
+        addSelectExternalIdPillData(model);
+
+        // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
+        // TODO: remove for production code, should have empty form
+        addDefaultNewReviewFormValues(model);
+
+        //String externalId = extractExternalIdFromRequest(req);
+        //externalId = URLDecoder.decode(externalId, StandardCharsets.UTF_8);
+        //Logger.log("External ID extracted from request: " + externalId);
+
+
+        // TODO: set to 1 for testing only
+        model.addAttribute("tenantId", 1);
 
         if(externalId == null || externalId.isBlank()) {
             Logger.log("missing externalId, defaulting to empty string");
@@ -238,6 +261,7 @@ public class DefaultController {
         // decode cursor
         PageCursor decodedCursor = decodeOrCreateCursor(strEncodedCursor, AppConfig.DEFAULT_MAX_VISIBLE_REVIEWS);
 
+        // set query options for fetching reviews, including pagination and sorting. We are only fetching approved reviews for display.
         ReviewQueryOptions options = new ReviewQueryOptions();
         options.setPageCursor(decodedCursor);
         options.setStatusEnum(Review.REVIEW_STATUS_APPROVED);
@@ -245,8 +269,8 @@ public class DefaultController {
 
         // get score stats for the given externalId and add to model
         // this includes things like average score, total reviews, and score distribution for display in JSP
-        var scoreStats = reviewService.getScoreStatsHelper(externalId, AppConfig.DEFAULT_REVIEW_SCORE_SCALE_MAX);
-        model.addAttribute("scoreStats", scoreStats);
+        var reviewStats = reviewService.getScoreStatsHelper(externalId, Review.REVIEW_STATUS_APPROVED);
+        model.addAttribute("reviewStats", reviewStats);
 
         Logger.log("QueryOptions: " + options);
 
@@ -254,30 +278,28 @@ public class DefaultController {
         List<Review> reviews = reviewRepo.findByExternalIdWithPagination(externalId, options);
         model.addAttribute("reviews", reviews);
 
-        // add cursor to model
-        addCursorToModel(model, (int) scoreStats.getTotalCount(), decodedCursor);
-        model.addAttribute("cursor", decodedCursor);
+        ReviewQueryOptions dumpOptions = new ReviewQueryOptions();
+        dumpOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
+        dumpOptions.setStatusEnum(Review.REVIEW_STATUS_MATCH_ALL);
+        dumpOptions.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
+        List<Review> reviewDump = reviewRepo.findByExternalIdWithPagination(externalId, dumpOptions);
+        model.addAttribute("reviewDump", reviewDump);
 
-        // add total reviews for the given externalId to model for display in JSP
-        // TODO: we could get this from our ReviewAggregateScoreHelper to avoid multiple queries to the database,
-        //  but for simplicity we will just query it directly for now
-        addTotalReviewsForExternalIdToModel(model, externalId);
+        // add cursor to model
+        addCursorToModel(model, (int) reviewStats.getTotalCount(), options.getPageCursor());
+        //model.addAttribute("cursor", options.getPageCursor());
 
         // add externalId to model for display in JSP and for use in form submission for new reviews
         model.addAttribute("externalId", externalId);
 
-        //String externalId = extractExternalIdFromRequest(req);
-        //externalId = URLDecoder.decode(externalId, StandardCharsets.UTF_8);
-        //Logger.log("External ID extracted from request: " + externalId);
-
-        model.addAttribute("dblFormatter2", DOUBLE_FORMATTER);
+        // add formatters to model for display in JSP
+        model.addAttribute("dblFormatter1", DOUBLE_FORMATTER_1);
+        //model.addAttribute("dblFormatter2", DOUBLE_FORMATTER_2);
         model.addAttribute("dateFormatter", DD_MM_YYYY_FORMATTER);
         model.addAttribute("daysAgoFormatter", DAYS_AGO_FORMATTER);
+        model.addAttribute("dblFormatterCssPointFive", CSS_DOUBLE_FORMATTER_POINT_FIVE);
 
         // TODO END: get scores for aggregate display of score distribution and average score
-
-        // TODO: set to 1 for testing only
-        model.addAttribute("tenantId", 1);
 
         return "index";
     }
@@ -300,12 +322,15 @@ public class DefaultController {
         @PathVariable long reviewId,
         HttpSession session)
     throws Exception{
-
-        if(addReviewVote(session, reviewId, 1)) {
-            return ResponseEntity.ok().build();
-        }else{
-            return ResponseEntity.noContent().build();
+        try {
+            if (addReviewVote(session, reviewId, 1)) {
+                return ResponseEntity.ok().build();
+            }
+        }catch (Exception e){
+            if(AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS) e.printStackTrace();
         }
+
+        return ResponseEntity.noContent().build();
     }
 
 
@@ -326,12 +351,15 @@ public class DefaultController {
         @PathVariable long reviewId,
         HttpSession session)
     throws Exception{
-
-        if(addReviewVote(session, reviewId, -1)) {
-            return ResponseEntity.ok().build();
-        }else{
-            return ResponseEntity.noContent().build();
+        try {
+            if (addReviewVote(session, reviewId, -1)) {
+                return ResponseEntity.ok().build();
+            }
+        }catch (Exception e){
+            if(AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS) e.printStackTrace();
         }
+
+        return ResponseEntity.noContent().build();
     }
 
 
@@ -359,7 +387,7 @@ public class DefaultController {
 
             return false;
         }catch(Exception e){
-            if(DEBUG_ERRORS) e.printStackTrace();
+            if(AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS) e.printStackTrace();
             return false;
         }
     }
@@ -385,10 +413,11 @@ public class DefaultController {
         RedirectAttributes ra,
         HttpServletRequest req
     ) throws Exception {
-        try {
-            System.out.println("ROUTE /api/submit-review");
+        if(AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS){
             ControllerUtils.dumpRequestParams(req);
+        }
 
+        try {
             List<String> errors = NewReviewForm.validate(form, new ArrayList<String>());
             if(!errors.isEmpty()) {
                 return ResponseEntity.badRequest().build();
@@ -416,7 +445,7 @@ public class DefaultController {
 
             return ResponseEntity.ok().build();
         }catch(Exception e){
-            e.printStackTrace();
+            if(AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS) e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }

@@ -54,6 +54,10 @@ public class ReviewService {
     other things
      */
 
+    private double avg(double sum, double count, double defaultScore) {
+        return (count > 0) ? sum / count : defaultScore;
+    }
+
     public ReviewAggregateScoreHelper getScoreStatsHelper(String externalId, int defaultScore) throws Exception {
         var scoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId);
 
@@ -68,14 +72,14 @@ public class ReviewService {
             totalCount += hits;
         }
 
-        double averageScore = (totalCount > 0) ? (double) totalScoreSum / (double) totalCount : defaultScore;
+        double averageScore = avg(totalScoreSum, totalCount, defaultScore);
         scoreStats.setAverageScore(averageScore);
         scoreStats.setTotalCount(totalCount);
         scoreStats.setTotalScore(totalScoreSum);
 
         for(int i=5; i>=1; i--) {
             int hits = scoreMap.getOrDefault(i, 0);
-            Double pct = (totalCount > 0) ? ((double) hits / totalCount) * 100.0 : 0.0;
+            double pct = avg(hits, totalCount, 0.0) * 100.0;
             scoreStats.getScoreDistribution().put(i, pct);
             scoreStats.getScoreCounts().put(i, hits);
         }
