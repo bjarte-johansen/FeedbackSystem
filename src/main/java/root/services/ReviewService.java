@@ -52,10 +52,11 @@ public class ReviewService {
         }else{
             throw new Exception("Invalid vote id");
         }
-        /*else if(voteType == Review.VOTE_REPORT){
+        /*
+        else if(voteType == Review.VOTE_REPORT){
             reviewRepo.addVoteReport(reviewId, delta);
         }
-         */
+        */
     }
 
     /**
@@ -115,7 +116,7 @@ public class ReviewService {
                 return true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if(AppConfig.CONTROLLER_PRINT_STACK_TRACE_ON_ERROR) e.printStackTrace();
         }
 
         return false;
@@ -172,8 +173,8 @@ public class ReviewService {
      * @return
      * @throws Exception
      */
-    public ReviewAggregateScoreHelper getScoreStatsHelper(String externalId, int defaultScore) throws Exception {
-        var scoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId);
+    public ReviewAggregateScoreHelper getScoreStatsHelper(String externalId, int defaultScore, int filterScoreMin, int filterScoreMax) throws Exception {
+        var scoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId, filterScoreMin, filterScoreMax);
 
         var scoreStats = new ReviewAggregateScoreHelper();
 

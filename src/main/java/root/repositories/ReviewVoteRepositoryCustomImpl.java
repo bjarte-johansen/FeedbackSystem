@@ -1,5 +1,6 @@
 package root.repositories;
 
+import root.app.AppConfig;
 import root.database.FSQLQuery;
 
 public class ReviewVoteRepositoryCustomImpl {
@@ -16,12 +17,11 @@ public class ReviewVoteRepositoryCustomImpl {
 
     public int addVote(long reviewId, int voteTypeId, String sessionId, String ip) {
         try {
-            String sql = """
-                INSERT INTO review_vote (review_id, session_id, ip, vote)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT (review_id, session_id)
-                DO UPDATE SET vote = EXCLUDED.vote, ip = EXCLUDED.ip
-                """;
+            String sql = "INSERT INTO " + AppConfig.REVIEW_VOTE_TABLE_NAME
+                + " (review_id, session_id, ip, vote)"
+                + " VALUES (?, ?, ?, ?)"
+                + " ON CONFLICT (review_id, session_id)"
+                + " DO UPDATE SET vote = EXCLUDED.vote, ip = EXCLUDED.ip";
 
             return FSQLQuery.create(sql)
                 .bind(reviewId)
@@ -46,7 +46,7 @@ public class ReviewVoteRepositoryCustomImpl {
 
     public int removeVote(long reviewId, String sessionId) {
         try {
-            String sql = "DELETE FROM review_vote WHERE review_id = ? AND session_id = ?";
+            String sql = "DELETE FROM " + AppConfig.REVIEW_VOTE_TABLE_NAME + " WHERE review_id = ? AND session_id = ?";
 
             return FSQLQuery.create(sql)
                 .bind(reviewId)
@@ -71,7 +71,7 @@ public class ReviewVoteRepositoryCustomImpl {
 
     public int getVote(long reviewId, String sessionId, String ip) {
         try {
-            String sql = "SELECT vote FROM review_vote WHERE review_id = ? AND session_id = ?";
+            String sql = "SELECT vote FROM " + AppConfig.REVIEW_VOTE_TABLE_NAME + " WHERE review_id = ? AND session_id = ?";
 
             return FSQLQuery.create(sql)
                 .bind(reviewId)
@@ -86,7 +86,7 @@ public class ReviewVoteRepositoryCustomImpl {
 
     public void removeExpiredVotes(int expirationTimeInDays) {
         try {
-            String sql = "DELETE FROM review_vote WHERE created_at < (NOW() - INTERVAL '" + expirationTimeInDays + " days')";
+            String sql = "DELETE FROM " + AppConfig.REVIEW_VOTE_TABLE_NAME + " WHERE created_at < (NOW() - INTERVAL '" + expirationTimeInDays + " days')";
 
             FSQLQuery.create(sql)
                 .delete();

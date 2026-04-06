@@ -10,8 +10,6 @@
     <!-- external ids to represent different pages/products -->
     <%@ include file="show-external-ids.jsp" %>
 
-
-
     <!-- review section part -->
     <div class="container--reviews">
         <%@ include file="pretty-review-list.partial.jsp" %>

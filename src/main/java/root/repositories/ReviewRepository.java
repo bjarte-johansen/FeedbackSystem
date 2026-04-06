@@ -30,7 +30,7 @@ public interface ReviewRepository extends ProxyRepository<Review, Long> {
     void updateReviewStatus(long reviewId, int newStatus) throws Exception;
 
     // stats
-    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId) throws Exception;
+    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, int filterScoreMin, int filterScoreMax) throws Exception;
 
     // find unique review ids
     List<String> findUniqueExternalIds() throws Exception;

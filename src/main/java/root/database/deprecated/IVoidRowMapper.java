@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 @Deprecated
-interface ITypedRowMapper<T> {
-    T map(ResultSet rs) throws SQLException;
+interface IVoidRowMapper {
+    void map(ResultSet rs) throws SQLException;
 }
-

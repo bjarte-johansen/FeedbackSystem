@@ -9,7 +9,7 @@ import root.includes.logger.logger.Logger;
 
 public class AppContext {
     private CustomDataSource ds;
-    public static ThreadLocal<Integer> currentTenantId = new ThreadLocal<>();
+    public static ThreadLocal<Long> currentTenantId = new ThreadLocal<>();
 
     /**
      * Initializes the application context, including data sources and connection providers.

@@ -24,15 +24,119 @@ var Review = {
         }
     },
 
+    triggerClientOrderByEnumChange(select) {
+        const $reviewList = $(select).closest(".review--list");
+        if(!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
+
+        const val = parseInt($(select).val());
+        $reviewList.attr("data-order-by-enum", val);
+
+        Review.reloadReviewList();
+    },
+
+    triggerClientScoreFilterChange(select){
+        const $reviewList = $(select).closest(".review--list");
+        if(!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
+
+        const val = parseInt($(select).val());
+        $reviewList.attr("data-score-filter", val);
+
+        Review.reloadReviewList();
+    },
+
+    buildSearchParamsFromReviewList($reviewList) {
+        const params = new URLSearchParams();
+
+        const externalId = $reviewList.attr("data-external-id");
+        if (externalId !== undefined) {
+            params.set("externalId", externalId);
+        }
+
+        const orderByEnum = $reviewList.attr("data-order-by-enum");
+        if (orderByEnum !== undefined) {
+            params.set("orderByEnum", orderByEnum);
+        }
+
+        /*
+        const scoreFilterMin = $reviewList.attr("score-filter-min");
+        const scoreFilterMax = $reviewList.attr("score-filter-max");
+        if (scoreFilterMin !== undefined && scoreFilterMax !== undefined) {
+            params.set("scoreFilterMin", scoreFilterMin);
+            params.set("scoreFilterMax", scoreFilterMax);
+        }
+        */
+
+        const scoreFilter = $reviewList.attr("data-score-filter");
+        if (scoreFilter !== undefined) {
+            params.set("scoreFilter", scoreFilter);
+        }
+
+        const cursor = $reviewList.attr("data-cursor");
+        if (cursor !== undefined) {
+            params.set("cursor", cursor);
+        }
+
+        return params;
+    },
+
+    updateReviewListFromUI(){
+        const $reviewList = $(".review--list");
+        if(!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
+
+        const $orderByEnumSelect = $(".review--list select[name='orderByEnum']");
+        if($orderByEnumSelect.length !== 0) {
+            const orderByEnumValue = parseInt($orderByEnumSelect.val());
+            $reviewList.attr("data-order-by-enum", orderByEnumValue);
+        }
+
+        const $scoreFilter = $(".review--list select[name='scoreFilter']");
+        if($scoreFilter.length !== 0) {
+            const filterValue = $scoreFilter.val();
+            //$reviewList.attr("data-score-filter-min", filterValue);
+            //$reviewList.attr("data-score-filter-max", filterValue);
+            $reviewList.attr("data-score-filter", filterValue);
+        }
+    },
+
+    reloadReviewList: function(){
+        Review.updateReviewListFromUI();
+
+        const $reviewList = $(".review--list");
+        const params = Review.buildSearchParamsFromReviewList($reviewList);
+
+        const url = new URL(window.location.href);
+        params.forEach((v, k) => url.searchParams.set(k, v));
+
+        console.log("loading: " + url.toString());
+        window.location.href = url.toString();
+    },
+
+    nextReviewListPage: function(offset = 1){
+        offset = offset || 1;
+
+        const $reviewList = $(".review--list");
+        if(!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
+
+        const reviewCount = parseInt($reviewList.attr("data-review-count")) || 0;
+
+        const currentCursorArr = ($reviewList.attr("data-cursor") || "0," + Number.MAX_SAFE_INTEGER).split(",");
+        currentCursorArr[0] = parseInt(currentCursorArr[0]) || 0;
+        currentCursorArr[1] = parseInt(currentCursorArr[1]) || Number.MAX_SAFE_INTEGER;
+        currentCursorArr[0] = Math.max(0, Math.min(reviewCount - 1, currentCursorArr[0] + (currentCursorArr[1] * offset)));
+        $reviewList.attr("data-cursor", currentCursorArr.join(","));
+        console.log("new cursor", currentCursorArr[0], currentCursorArr[1]);
+
+        Review.reloadReviewList();
+    },
+    prevReviewListPage: function(){
+        Review.nextReviewListPage(-1);
+    },
+
     reloadReview: function(reviewId) {
         console.log("Review.reloadReview called with reviewId:", reviewId);
 
-        const tenantId = $(`.review--list .review[data-review-id="${reviewId}"]`).data("tenant-id");
-        console.log("Using tenant-id for AJAX request:", tenantId);
-        console.log("Using url", `/api/make-review-html/${tenantId}/${reviewId}`);
-
         $.ajax({
-            url: `/api/make-review-html/${tenantId}/${reviewId}`,
+            url: `/api/make-review-html/${reviewId}`,
             method: "GET",
             success: function(html) {
                 const $newReview = $(html);

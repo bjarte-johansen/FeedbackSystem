@@ -1,10 +1,11 @@
 package root.repositories;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import root.app.ReviewQueryOptions;
 import root.database.FSQLQuery;
+import root.includes.logger.logger.Logger;
 import root.models.Review;
+import root.utils.RangeQueryFilterBuilder;
 
 import java.sql.ResultSet;
 import java.util.*;
@@ -50,7 +51,7 @@ public class ReviewRepositoryCustomImpl {
     };
 
 
-    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId) throws Exception{
+    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, int filterScoreMin, int filterScoreMax) throws Exception{
         FSQLQuery.ResultSetConsumer<LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
             LinkedHashMap<Integer, Integer> res = new LinkedHashMap<>();
             while (rs.next()) {
@@ -61,7 +62,15 @@ public class ReviewRepositoryCustomImpl {
             return res;
         };
 
-        String sql = "SELECT score, COUNT(*) AS count FROM review WHERE ((external_id = ?) AND (status = ?)) GROUP BY score";
+        var filterRangeSql = RangeQueryFilterBuilder.buildSqlQueryString(
+            "score",
+            filterScoreMin > -1 ? filterScoreMin : null,
+            filterScoreMax > -1 ? filterScoreMax : null,
+            true,
+            true,
+            "(1=1)");
+
+        String sql = "SELECT score, COUNT(*) AS count FROM review WHERE ((external_id = ?) AND (status = ?) AND " + filterRangeSql + ") GROUP BY score";
         return FSQLQuery.create(sql)
             .bind(externalId)
             .bind(Review.REVIEW_STATUS_APPROVED)
@@ -91,7 +100,7 @@ public class ReviewRepositoryCustomImpl {
         ArrayList<String> conditionExprList = new ArrayList<>();
 
         // add external id filter
-        if(externalId != null && !externalId.isEmpty()) {
+        if (externalId != null && !externalId.isEmpty()) {
             // add condition for external id
             conditionExprList.add("(external_id = ?)");
         }
@@ -110,6 +119,45 @@ public class ReviewRepositoryCustomImpl {
                 conditionExprList.add("(status = " + Review.REVIEW_STATUS_REJECTED + ")");
             }
         }
+/*
+        record ScoreFilter(int min, int max) {
+            boolean isEmpty() {
+                return min() < 0 && max() < 0;
+            }
+        }
+ */
+
+        var filterRangeSql = RangeQueryFilterBuilder.buildSqlQueryString(
+            "score",
+            options.getFilterScoreMin() > -1 ? options.getFilterScoreMin() : null,
+            options.getFilterScoreMax() > -1 ? options.getFilterScoreMax() : null,
+            true,
+            true,
+            ""
+        );
+
+        if(filterRangeSql != null && !filterRangeSql.isEmpty()) {
+            Logger.log("Adding filter range SQL: " + filterRangeSql);
+            conditionExprList.add(filterRangeSql);
+        }
+
+/*
+        // add score filter, if any
+        ScoreFilter filter = new ScoreFilter(options.getFilterScoreMin(), options.getFilterScoreMax());
+        if(!filter.isEmpty()) {
+            if((filter.min() > -1) && (filter.max() > -1)) {
+                // both min and max are set, add a between condition
+                conditionExprList.add("(score >= " + filter.min() + " AND score <= " + filter.max() + ")");
+            } else if (filter.min() > -1) {
+                // at least one filter is set, add a condition group for score
+                conditionExprList.add("(score >= " + filter.min() + ")");
+            } else {
+                // at least one filter is set, add a condition group for score
+                conditionExprList.add("(score <= " + filter.max() + ")");
+            }
+        }
+
+ */
 
         // make where expr-list sql
         String whereStr = conditionExprList.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditionExprList);

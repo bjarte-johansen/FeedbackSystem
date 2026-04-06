@@ -11,9 +11,13 @@ import root.includes.logger.logger.Logger;
 import root.repositories.ReviewRepository;
 import root.repositories.TenantRepository;
 import root.services.DatabaseService;
+import root.utils.WhereQueryBuilder;
 
 import java.sql.Connection;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 
 @SpringBootApplication
@@ -45,27 +49,6 @@ public class App implements CommandLineRunner {
         appContext = new AppContext();
     }
 
-    @FunctionalInterface
-    public interface ConnectionStatementSchemaRunnable{
-        void run(Connection c, java.sql.Statement st, String schema) throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ConnectionStatementRunnable{
-        void run(Connection c, java.sql.Statement st) throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ThrowingRunnable{
-        void run() throws Exception;
-    }
-
-    public static void logExec(ThrowingRunnable runnable, String title) throws Exception {
-        try(var _ = Logger.scope(title != null ? title : "{unnamed block}")) {
-            runnable.run();
-        }
-    }
-
     @Bean
     @Order(0)
     CommandLineRunner startup(ReviewRepository reviewRep, DatabaseService databaseService, TenantRepository tenantRepo, ReviewRepository reviewRepository) throws Exception {
@@ -75,14 +58,55 @@ public class App implements CommandLineRunner {
 
             initAppContext();
 
-            reviewRepository.sayHello("test123");
-
-            //AppContext.triggerEvent(AppContext.EVENT_REVIEW_CRUD_OPERATION, 13, null);
-            //AppContext.triggerEvent(AppContext.EVENT_TENANT_CRUD_OPERATION, 13, null);
-            //AppContext.triggerEvent(AppContext.EVENT_MARK_REVIEW_STATS_DIRTY, 0, new Object[]{"/my-product/123"});
-
             databaseService.executeDatabasePatches();
             databaseService.resetDemoData();
+
+            //WhereQueryBuilder.test();
         };
     }
+
+
+
+    @FunctionalInterface
+    public interface ConnectionStatementRunnable{
+        void run(Connection c, java.sql.Statement st) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ConnectionStatementSchemaRunnable{
+        void run(Connection c, java.sql.Statement st, String schema) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ThrowingRunnable{
+        void run() throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ThrowingConsumer<T>{
+        void run(T t) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ThrowingSupplier<T>{
+        T run() throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ThrowingFunction<T, R>{
+        R run(T t) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ThrowingBiFunction<T, U, R>{
+        R run(T t, U u) throws Exception;
+    }
+
+    /*
+    public static void logExec(ThrowingRunnable runnable, String title) throws Exception {
+        try(var _ = Logger.scope(title != null ? title : "{unnamed block}")) {
+            runnable.run();
+        }
+    }
+    */
 }

@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 
 public class AppRequestSchema {
     private static final Pattern VALID_SCHEMA_NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
-    public static ThreadLocal<String> TENANT_SCHEMA = new ThreadLocal<String>();
+    private static final ThreadLocal<String> TENANT_SCHEMA = new ThreadLocal<String>();
 
     private static void validateSchema(String schemaName) {
         if (!VALID_SCHEMA_NAME_PATTERN.matcher(schemaName).matches())

@@ -9,7 +9,7 @@ public class AppTenantConnectionProvider extends root.database.connectionprovide
 
     @Override
     public String resolveTenantSchemaIdentifier() {
-        String tenant_schema = AppRequestSchema.TENANT_SCHEMA.get();
+        String tenant_schema = AppRequestSchema.get();
 
         if (tenant_schema == null || tenant_schema.isBlank())
             throw new RuntimeException("Tenant schema not set in AppRequestContext, unable to resolve tenant connection");

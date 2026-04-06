@@ -34,6 +34,7 @@ public class AppConfig {
     public static final String REVIEW_TABLE_NAME = "review";
     public static final String REVIEWER_TABLE_NAME = "reviewer";
     public static final String TENANT_TABLE_NAME = "tenant";
+    public static final String REVIEW_VOTE_TABLE_NAME = "review_vote";
 
     // used only for testing fsqlquery/proxy, not part of project
     // TODO: remove before delivery

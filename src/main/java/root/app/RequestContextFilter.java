@@ -21,9 +21,9 @@ public class RequestContextFilter extends OncePerRequestFilter {
     private static int requestFilterCount = 0;
 
 
-    private int resolveTenantId(HttpServletRequest req, boolean required) {
+    private Long resolveTenantId(HttpServletRequest req, boolean required) {
         if (AppConfig.USE_TEST_TENANT) {
-            return 1;
+            return 1L;
         }
 
         String tenantParam = req.getParameter("tenantId");
@@ -32,11 +32,11 @@ public class RequestContextFilter extends OncePerRequestFilter {
                 throw new RuntimeException("Missing tenant parameter");
             }
 
-            return -1;
+            return -1L;
         }
 
         try {
-            return Integer.parseInt(tenantParam);
+            return Long.parseLong(tenantParam);
         } catch (NumberFormatException e) {
             throw new RuntimeException("Invalid tenant parameter: " + tenantParam, e);
         }
@@ -66,7 +66,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
             return;
         }
 
-        int tenantId;
+        Long tenantId;
         String tenantSchema;
 
         try {
@@ -81,7 +81,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
         }
 
         requestFilterCount++;
-
+/*
         Map<String, String> vars =
             (Map<String, String>) req.getAttribute(
                 HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE
@@ -89,6 +89,8 @@ public class RequestContextFilter extends OncePerRequestFilter {
         for(var entry : vars.entrySet()) {
             Logger.log("URI variable: " + entry.getKey() + " = " + entry.getValue());
         }
+
+ */
 
         // set schema and tenant id
         AppContext.currentTenantId.set(tenantId);

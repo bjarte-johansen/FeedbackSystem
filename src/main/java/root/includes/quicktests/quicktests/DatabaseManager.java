@@ -51,6 +51,7 @@ public class DatabaseManager {
         cleanTable(AppConfig.REVIEW_TABLE_NAME);
         cleanTable(AppConfig.REVIEWER_TABLE_NAME);
         cleanTable(AppConfig.TENANT_TABLE_NAME);
+        cleanTable(AppConfig.REVIEW_VOTE_TABLE_NAME);
     }
 
     public void resetDemoData() throws Exception {

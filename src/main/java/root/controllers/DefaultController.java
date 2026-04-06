@@ -9,6 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import root.app.AppConfig;
+import root.app.AppContext;
 import root.app.includes.PageCursor;
 import root.app.includes.PageCursorEncoder;
 import root.common.utils.FunnyUserNameGenerator;
@@ -30,7 +31,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Supplier;
+
+import static root.common.utils.Preconditions.checkArgument;
 //import root.models.repositories.JdbcReviewRepository;
 
 
@@ -168,8 +170,9 @@ public class DefaultController {
      */
 
     @GetMapping("/")
-    public String index(Model model, HttpServletRequest req) throws Exception {
-        return showReviews("/product/1", null, model, req);
+    public String index(Model model, HttpServletRequest req, RedirectAttributes ra) throws Exception {
+        //return showReviews("/product/1", null, ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC, model, req);
+        return "redirect:/show-reviews?externalId=";
     }
 
 
@@ -211,16 +214,24 @@ public class DefaultController {
     public String showReviews(
         @RequestParam String externalId,
         @RequestParam(name = "cursor", defaultValue = "") String strEncodedCursor,
+        @RequestParam(name = "orderByEnum", defaultValue = ("" + ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC)) int orderByEnum,
+        @RequestParam(name = "scoreFilter", defaultValue = ("" + -1)) int scoreFilter,
+        @RequestParam(name = "scoreFilterMin", defaultValue = ("" + -1)) int scoreFilterMin,
+        @RequestParam(name = "scoreFilterMax", defaultValue = ("" + -1)) int scoreFilterMax,
         Model model,
         HttpServletRequest req
     ) throws Exception {
+        model.addAttribute("scoreFilter", scoreFilter);
+        model.addAttribute("scoreFilterMin", scoreFilterMin);
+        model.addAttribute("scoreFilterMax", scoreFilterMax);
+
         // add things like title etc
         ControllerUtils.setDefaults(model);
 
         // find all unique externalIds for reviews to display in the dropdown for quick navigation
         // only used in demonstration interface
         // TODO: remove for production code, should allways take an externalId as a parameter and not display
-        // a dropdown of all externalIds
+        //  a dropdown of all externalIds
         addSelectExternalIdPillData(model);
 
         // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
@@ -233,12 +244,14 @@ public class DefaultController {
 
 
         // TODO: set to 1 for testing only
-        model.addAttribute("tenantId", 1);
+        Long tenantId = AppContext.currentTenantId.get();
+        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
+        model.addAttribute("tenantId", AppContext.currentTenantId.get());
 
-        if (externalId == null || externalId.isBlank()) {
-            Logger.log("missing externalId, defaulting to empty string");
-            throw new RuntimeException("externalId is null or empty");
+        if(externalId == null || externalId.isBlank()) {
+            externalId = "empty-external-id";
         }
+        checkArgument (externalId != null && !externalId.isBlank(), "externalId must be non-null and non-empty");
 
         // decode cursor
         PageCursor decodedCursor = decodeOrCreateCursor(strEncodedCursor, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
@@ -247,11 +260,20 @@ public class DefaultController {
         ReviewQueryOptions options = new ReviewQueryOptions();
         options.setPageCursor(decodedCursor);
         options.setStatusEnum(Review.REVIEW_STATUS_APPROVED);
-        options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
+        options.setOrderByEnum(orderByEnum);
+
+        // apply score filter if any
+        if(scoreFilterMin > -1 || scoreFilterMax > -1) {
+            options.setFilterScoreMin(scoreFilterMin);
+            options.setFilterScoreMax(scoreFilterMax);
+        }else if(scoreFilter > -1) {
+            options.setFilterScoreMin(scoreFilter);
+            options.setFilterScoreMax(scoreFilter);
+        }
 
         // get score stats for the given externalId and add to model
         // this includes things like average score, total reviews, and score distribution for display in JSP
-        var reviewStats = reviewService.getScoreStatsHelper(externalId, Review.REVIEW_STATUS_APPROVED);
+        var reviewStats = reviewService.getScoreStatsHelper(externalId, Review.REVIEW_STATUS_APPROVED, options.getFilterScoreMin(), options.getFilterScoreMax());
         model.addAttribute("reviewStats", reviewStats);
 
         Logger.log("QueryOptions: " + options);
@@ -259,6 +281,14 @@ public class DefaultController {
         // add reviews to model for display in JSP
         List<Review> reviews = reviewRepo.findByExternalIdWithPagination(externalId, options);
         model.addAttribute("reviews", reviews);
+
+        LinkedHashMap<String, Integer> reviewListOrderOptions = new LinkedHashMap<>();
+        reviewListOrderOptions.put("Nyeste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
+        reviewListOrderOptions.put("Eldste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC);
+        reviewListOrderOptions.put("Score (høyeste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_DESC);
+        reviewListOrderOptions.put("Score (laveste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_ASC);
+        model.addAttribute("reviewListOrderOptions", reviewListOrderOptions);
+        model.addAttribute("currentOrderByEnum", orderByEnum);
 
         ReviewQueryOptions dumpOptions = new ReviewQueryOptions();
         dumpOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
@@ -269,7 +299,7 @@ public class DefaultController {
 
         // add cursor to model
         addCursorToModel(model, (int) reviewStats.getTotalCount(), options.getPageCursor());
-        //model.addAttribute("cursor", options.getPageCursor());
+        model.addAttribute("pageCursor", PageCursorEncoder.encodeCursor(options.getPageCursor()));
 
         // add externalId to model for display in JSP and for use in form submission for new reviews
         model.addAttribute("externalId", externalId);
@@ -290,14 +320,13 @@ public class DefaultController {
     /**
      * API endpoint to generate HTML for a single review by id.
      *
-     * @param tenantId
      * @param reviewId
      * @param model
      * @return
      * @throws Exception
      */
-    @GetMapping("/api/make-review-html/{tenantId}/{reviewId}")
-    public String makeReviewHtml(@PathVariable long tenantId, @PathVariable long reviewId, Model model) throws Exception {
+    @GetMapping("/api/make-review-html/{reviewId}")
+    public String makeReviewHtml(@PathVariable long reviewId, Model model) throws Exception {
 
         Review review = reviewRepo.findById(reviewId).orElse(null);
         if (review == null) return "error";
@@ -305,6 +334,8 @@ public class DefaultController {
         model.addAttribute("review", review);
 
         // add externalId to model for display in JSP and for use in form submission for new reviews
+        Long tenantId = AppContext.currentTenantId.get();
+        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
         model.addAttribute("tenantId", tenantId);
 
         // add formatters to model for display in JSP
@@ -317,14 +348,12 @@ public class DefaultController {
     /**
      * API endpoint to add a like to a review. Can be called only once for a user session.
      *
-     * @param customer
      * @param reviewId
      * @return
      */
 
-    @PostMapping("/api/like-review/{customer}/{reviewId}")
+    @PostMapping("/api/like-review/{reviewId}")
     public ResponseEntity<Void> addReviewLike(
-        @PathVariable String customer,
         @PathVariable long reviewId,
         HttpSession session,
         HttpServletRequest req)
@@ -341,14 +370,12 @@ public class DefaultController {
     /**
      * API endpoint to add a dislike to a review. Can be called only once for a user session.
      *
-     * @param customer
      * @param reviewId
      * @return
      */
 
-    @PostMapping("/api/dislike-review/{customer}/{reviewId}")
+    @PostMapping("/api/dislike-review/{reviewId}")
     public ResponseEntity<Void> addReviewDislike(
-        @PathVariable String customer,
         @PathVariable long reviewId,
         HttpSession session,
         HttpServletRequest req)
@@ -369,19 +396,13 @@ public class DefaultController {
      * application you would likely want to use a request body with a DTO object for better structure and validation.
      *
      * @param form
-     * @param model
-     * @param ra
-     * @param req
      * @return
      * @throws Exception
      */
 
-    @PostMapping("/submit-review")
+    @PostMapping("/api/submit-review")
     public ResponseEntity<Void> submitReview(
-        @ModelAttribute NewReviewForm form,
-        Model model,
-        RedirectAttributes ra,
-        HttpServletRequest req
+        @ModelAttribute NewReviewForm form
     ) throws Exception {
 
         try {

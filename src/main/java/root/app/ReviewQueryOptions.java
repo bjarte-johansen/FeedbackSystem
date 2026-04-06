@@ -6,15 +6,22 @@ import root.models.Review;
 public class ReviewQueryOptions {
     public static final int OPTION_ORDER_BY_ID_ASC = 1;
     public static final int OPTION_ORDER_BY_ID_DESC = 2;
+
     public static final int OPTION_ORDER_BY_CREATED_AT_ASC = 3;
     public static final int OPTION_ORDER_BY_CREATED_AT_DESC = 4;
-    public static final int OPTION_ORDER_BY_PENDING_FIRST = 5;
-    public static final int OPTION_ORDER_BY_APPROVED_FIRST = 6;
-    public static final int OPTION_ORDER_BY_REJECTED_FIRST = 7;
+
+    public static final int OPTION_ORDER_BY_SCORE_ASC = 8;
+    public static final int OPTION_ORDER_BY_SCORE_DESC = 9;
+
+    public static final int OPTION_ORDER_BY_PENDING_FIRST = 20;
+    public static final int OPTION_ORDER_BY_APPROVED_FIRST = 21;
+    public static final int OPTION_ORDER_BY_REJECTED_FIRST = 22;
 
     private PageCursor pageCursor;
     private int orderByEnum;
     private int statusEnum;
+    private int filterScoreMin;
+    private int filterScoreMax;
 
     /**
      * Default constructor for the ReviewQueryOptions class. Initializes a new instance of the ReviewQueryOptions class
@@ -42,7 +49,15 @@ public class ReviewQueryOptions {
         this.pageCursor = pageCursor;
         this.statusEnum = statusEnum;
         this.orderByEnum = orderByEnum;
+        this.filterScoreMin = -1;
+        this.filterScoreMax = -1;
     }
+
+
+
+    /*
+    pagination
+     */
 
     /**
      * Returns the page cursor associated with the review query options.
@@ -61,6 +76,12 @@ public class ReviewQueryOptions {
     public void setPageCursor(PageCursor pageCursor) {
         this.pageCursor = pageCursor;
     }
+
+
+
+    /*
+    order by
+     */
 
     /**
      * Returns the order by enum value associated with the review query options. This value indicates the sorting order
@@ -86,6 +107,12 @@ public class ReviewQueryOptions {
     public void setOrderByEnum(int orderByEnum) {
         this.orderByEnum = orderByEnum;
     }
+
+
+
+    /*
+    filter by status
+     */
 
     /**
      * Returns the status enum value associated with the review query options. This value indicates the review status
@@ -114,6 +141,72 @@ public class ReviewQueryOptions {
     }
 
 
+
+    /*
+    filter by score range
+     */
+
+
+    /**
+     * Returns the minimum score filter for the review query options. This value allows developers to specify a lower
+     * limit for the review scores to be included in the query results.
+     *
+     * @return
+     */
+    public int getFilterScoreMin() {
+        return filterScoreMin;
+    }
+
+
+    /**
+     * Sets the minimum score filter for the review query options. This value allows developers to specify a lower limit
+     * for the review scores to be included in the query results.
+     *
+     * @param filterScoreMin
+     */
+    public void setFilterScoreMin(int filterScoreMin) {
+        this.filterScoreMin = filterScoreMin;
+    }
+
+
+    /**
+     * Returns the maximum score filter for the review query options. This value allows developers to specify an upper
+     * limit for the review scores to be included in the query results.
+     *
+     * @return
+     */
+    public int getFilterScoreMax() {
+        return filterScoreMax;
+    }
+
+
+    /**
+     * Sets the maximum score filter for the review query options. This value allows developers to specify an upper
+     * limit for the review scores to be included in the query results.
+     *
+     * @param filterScoreMax
+     */
+    public void setFilterScoreMax(int filterScoreMax) {
+        this.filterScoreMax = filterScoreMax;
+    }
+
+
+    /**
+     * Checks if a score filter is applied in the review query options. This method returns true if either the minimum
+     * score filter or the maximum score filter is set to a value other than -1, indicating that a score filter is
+     * active and should be applied when querying the database for reviews.
+     *
+     * @return
+     */
+    public boolean hasScoreFilter() {
+        return filterScoreMin != -1 || filterScoreMax != -1;
+    }
+
+
+    /*
+    utility
+     */
+
     /**
      * Builds the SQL ORDER BY clause based on the orderByEnum value. This method translates the enum value into a
      * corresponding SQL ORDER BY clause that can be used in a SQL query to sort the results accordingly.
@@ -131,6 +224,12 @@ public class ReviewQueryOptions {
                 return "createdAt ASC";
             case OPTION_ORDER_BY_CREATED_AT_DESC:
                 return "createdAt DESC";
+
+            case OPTION_ORDER_BY_SCORE_ASC:
+                return "score ASC";
+            case OPTION_ORDER_BY_SCORE_DESC:
+                return "score DESC";
+
             case OPTION_ORDER_BY_PENDING_FIRST:
                 return "status = " + Review.REVIEW_STATUS_PENDING + " DESC, id DESC";
             case OPTION_ORDER_BY_APPROVED_FIRST:

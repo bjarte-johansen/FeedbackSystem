@@ -3,6 +3,7 @@ package root.app;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
+@Deprecated
 public class GenericArrayUtils {
     public static Object[] makeEmptyArray(Class<?> componentType) {
         return (Object[]) Array.newInstance(componentType, 0);

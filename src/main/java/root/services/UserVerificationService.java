@@ -37,8 +37,7 @@ public class UserVerificationService implements IUserVerificationService {
 
         String verificationCode = VerificationDigitsGenerator.generate(6);
 
-        UserVerificationRecord verificationRecord =
-        new UserVerificationRecord(userId, verificationCode, expiresAt);
+        UserVerificationRecord verificationRecord = new UserVerificationRecord(userId, verificationCode, expiresAt);
 
         // TODO: persist verificationRecord
         throw new UnsupportedOperationException("Implement logic to save verification code");

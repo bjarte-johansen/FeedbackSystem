@@ -150,6 +150,16 @@ public class CustomDataSource{
         }
     }
 
+    private void discardConnection(Connection conn) {
+        try {
+            conn.close();
+        } catch (SQLException e) {
+            logMessage("Error closing connection: " + e.getMessage());
+        } finally {
+            TOTAL_CONNECTION_COUNT.decrementAndGet();
+        }
+    }
+
 
     /**
      * Returns a connection to the pool. This method is called when a connection is closed (via the PooledConnection proxy).
@@ -165,7 +175,7 @@ public class CustomDataSource{
         conn = conn.unwrap(Connection.class);
 
         // return the connection to the pool
-        connectionPool.add(conn);
+        connectionPool.offer(conn);
 
         logMessage("Connection -->> Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
     }
@@ -174,21 +184,42 @@ public class CustomDataSource{
     public entry points
      */
 
-    public Connection getConnection() throws Exception {
-        checkArgument(currentDataSourceParams != null, "DataSource has no default datasource parameters.");
+    private boolean isAlive(Connection conn) {
+        try {
+            return conn != null && !conn.isClosed() && conn.isValid(2);
+        } catch (SQLException e) {
+            return false;
+        }
+    }
 
+    public Connection getConnection() throws Exception {
         return getConnection(currentDataSourceParams);
     }
 
     private Connection getConnection(DataSourceConnectionParams params) throws SQLException {
-        Connection conn = connectionPool.poll();
+        checkArgument(currentDataSourceParams != null, "DataSource has no default datasource parameters.");
 
-        if (conn == null) {
-            conn = createConnection(params);
+        Connection conn;
+
+        while(true){
+            conn = connectionPool.poll();
+
+            if (conn == null) {
+                conn = createConnection(params);
+            }
+
+            try{
+                if(!isAlive(conn)) {
+                    discardConnection(conn);
+                    continue;
+                }
+
+                logMessage("Connection <<-- Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
+
+                return PooledConnection.wrap(conn, this);
+            }catch(Exception e) {
+                discardConnection(conn);
+            }
         }
-
-        logMessage("Connection <<-- Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
-
-        return PooledConnection.wrap(conn, this);
     }
 }
