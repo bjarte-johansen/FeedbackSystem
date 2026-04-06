@@ -171,6 +171,11 @@ public class EntityMeta {
         return ENTITY_META_CACHE.computeIfAbsent(entityClazz, EntityMeta::doCreate);
     }
 
+    private static boolean isSerializableField(Field f) {
+        int modifiers = f.getModifiers();
+        return !(Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers) || f.isSynthetic());
+    }
+
     private static EntityMeta doCreate(Class<?> clazz) {
         try {
             EntityMeta meta = new EntityMeta();
@@ -181,11 +186,9 @@ public class EntityMeta {
             // count valid fields (non-static, non-transient, non-synthetic)
             int count = 0;
             for (Field f : meta.declaredFields) {
-                // skip static and transient fields + synthetic (compiler generated) fields
-                int mod = f.getModifiers();
-                if (Modifier.isStatic(mod) || Modifier.isTransient(mod) || f.isSynthetic())
-                    continue;
-                count++;
+                if(isSerializableField(f)) {
+                    count++;
+                }
             }
 
             meta.clazz = clazz;
@@ -209,9 +212,7 @@ public class EntityMeta {
             int nonIdIndex = 0;
 
             for (Field f : meta.declaredFields) {
-                // skip static and transient fields + synthetic (compiler generated) fields
-                int mod = f.getModifiers();
-                if (Modifier.isStatic(mod) || Modifier.isTransient(mod) || f.isSynthetic()) {
+                if(!isSerializableField(f)) {
                     continue;
                 }
 

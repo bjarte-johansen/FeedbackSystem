@@ -17,17 +17,21 @@ public class AppRequestSchema {
     private static final Pattern VALID_SCHEMA_NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
     public static ThreadLocal<String> TENANT_SCHEMA = new ThreadLocal<String>();
 
-    public static void validateSchema(String schemaName) {
+    private static void validateSchema(String schemaName) {
         if (!VALID_SCHEMA_NAME_PATTERN.matcher(schemaName).matches())
             throw new IllegalArgumentException("Invalid schema name: " + schemaName);
     }
 
-    public static void setSchema(String schemaName){
+    public static String get() {
+        return TENANT_SCHEMA.get();
+    }
+
+    public static void set(String schemaName){
         validateSchema(schemaName);
         TENANT_SCHEMA.set(schemaName);
     }
 
-    public static void clearSchema(){
+    public static void remove(){
         TENANT_SCHEMA.remove();
     }
 

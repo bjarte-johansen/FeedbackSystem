@@ -7,6 +7,12 @@ import java.util.List;
 
 import static root.common.utils.Preconditions.checkArgument;
 
+
+/**
+ * DTO for creating a new review. This record encapsulates all necessary information required to submit a review,
+ * including tenant information, reviewer credentials, and the review content itself.
+ */
+
 public record NewReviewForm(
     long tenantId,
     String externalId,
@@ -19,6 +25,13 @@ public record NewReviewForm(
     String title,
     String comment
 ) {
+    /**
+     * Validates the NewReviewForm DTO and populates the provided errors list with any validation errors found.
+     *
+     * @param dto
+     * @param errors
+     * @return
+     */
     public static List<String> validate(NewReviewForm dto, List<String> errors){
         checkArgument(dto != null, "DTO cannot be null.");
         checkArgument(errors != null, "Error list cannot be null.");

@@ -2,6 +2,7 @@ package root.common.utils;
 
 import java.util.Objects;
 
+@Deprecated
 public class StringUtils {
     public static String DEFAULT_QUOTE_STRING = "\"";
 

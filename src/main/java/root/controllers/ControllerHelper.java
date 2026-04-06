@@ -56,12 +56,4 @@ public class ControllerHelper {
     public static void setSuccessMessage(Model model, String message) {
         model.addAttribute("successMessage", message);
     }
-
-
-    //
-    public static void setupModel(Model model) throws Exception {
-        model.addAttribute("defaultTitle", "Review System");
-    }
-
-
 }

@@ -1,12 +1,11 @@
 package root.repositories;
 
-import root.ProxyRepository;
+import root.includes.proxyrepo.ProxyRepository;
 import root.app.ReviewQueryOptions;
 import root.models.Review;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Optional;
 
 
 /**
@@ -24,6 +23,7 @@ public interface ReviewRepository extends ProxyRepository<Review, Long> {
 
     long countByExternalId(String externalId) throws Exception;
 
+    void addVoteReport(long reviewId) throws Exception;
     void addVoteUp(long reviewId, int offset) throws Exception;
     void addVoteDown(long reviewId, int offset) throws Exception;
 
@@ -41,4 +41,8 @@ public interface ReviewRepository extends ProxyRepository<Review, Long> {
     List<Review> findAllExternalIdsWithPagination(ReviewQueryOptions options) throws Exception;
 
     int countByExternalIdAndStatus(String externalId, int status) throws Exception;
+
+    default void sayHello(String msg) {
+        System.out.println("hello world from ReviewRepository, msg: " + msg);
+    }
 }

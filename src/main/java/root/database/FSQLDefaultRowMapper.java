@@ -1,6 +1,6 @@
 package root.database;
 
-import root.logger.Logger;
+import root.includes.logger.logger.Logger;
 
 import java.sql.ResultSet;
 

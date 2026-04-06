@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import root.app.AppContext;
 
-import root.logger.Logger;
+import root.includes.logger.logger.Logger;
 import root.repositories.ReviewRepository;
 import root.repositories.TenantRepository;
 import root.services.DatabaseService;
@@ -32,9 +32,9 @@ public class App implements CommandLineRunner {
     @Override
     @Order(0)
     public void run(String... args) throws Exception {
-        Logger.log("WE ARE UP AND RUNNING!!");
         initAppContext();
-        Logger.log("Hello world!");
+
+        Logger.log();
     }
 
     public static void initAppContext() {
@@ -68,12 +68,14 @@ public class App implements CommandLineRunner {
 
     @Bean
     @Order(0)
-    CommandLineRunner startup(ReviewRepository reviewRep, DatabaseService databaseService, TenantRepository tenantRepo) throws Exception {
+    CommandLineRunner startup(ReviewRepository reviewRep, DatabaseService databaseService, TenantRepository tenantRepo, ReviewRepository reviewRepository) throws Exception {
 
         return (args) -> {
             Logger.log("running app startup tasks...");
 
             initAppContext();
+
+            reviewRepository.sayHello("test123");
 
             //AppContext.triggerEvent(AppContext.EVENT_REVIEW_CRUD_OPERATION, 13, null);
             //AppContext.triggerEvent(AppContext.EVENT_TENANT_CRUD_OPERATION, 13, null);

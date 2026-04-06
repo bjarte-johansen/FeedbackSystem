@@ -5,94 +5,16 @@
 <div class="box review--list">
     <h3>Omtaler (${reviewStats.totalCount})</h3>
 
-    <div class="box">
-        <h3>Sammendrag</h3>
+        <%@ include file="review-list-stats.partial.jsp" %>
 
-        <div class="mb-2">
-           <div class="score-outer mb-0">
-                <strong class="score-text">${reviewStats.averageScore}/5</strong> <span class="score score-${dblFormatterCssPointFive.apply(reviewStats.averageScore)}"></span>
-            </div>
-            Snittkarakter: ${dblFormatter1.apply(reviewStats.averageScore)} av 5<br>
-            Antall omtalelser: ${reviewStats.totalCount}
-        </div>
-
-        <c:forEach var="scoreCount" items="${reviewStats.scoreCounts}">
-            <div class="grid mb-1">
-                <div class="grid-auto">
-                    ${scoreCount.key} Stjerner
-                </div>
-                <div class="grid-auto grid">
-                    <div class="score-pct-bar">
-                        <div style="width: ${reviewStats.scoreDistribution[scoreCount.key]}%;"></div>
-                    </div>
-
-                    ${reviewStats.scoreCounts[scoreCount.key]}
-                </div>
-            </div>
-        </c:forEach>
+        <!-- form to submit new review -->
+        <%@ include file="submit-review-form.partial.jsp" %>
     </div>
-
 
     <%@ include file="paginator.jsp" %>
 
     <c:forEach var="review" items="${reviews}">
-        <div class="box review review--review-${review.id}">
-            <div class="score-outer mb-0">
-                <strong class="score-text">${review.score}/5</strong> <span class="score score-${review.score}"></span>
-            </div>
-            <span class="title mb-2">${not empty review.title ? review.title : ""} (id = ${review.id}, @${daysAgoFormatter.apply(review.createdAt)} dager siden)</span>
-            <span class="name mb-0">${empty review.authorName ? 'Anonym' : review.authorName}</span>
-            <em class="time mb-2">${review.getShortDateString()}</em>
-            <span class="comment mb-4">${review.comment}</span>
-
-            <div class="votes mb-4">
-                <span class="vote up-votes">
-                    <form class="ajax form--like-review" data-handler="likeReviewDone" action="${pageContext.request.contextPath}/api/like-review/${tenantId}/${review.id}" method="post" style="display:inline;">
-                        <button type="submit">
-                            <svg aria-hidden="true" viewBox="0 0 16 16" fill="inherit" class="" xmlns="http://www.w3.org/2000/svg" width="14px" height="14px" role="img"><path fill-rule="evenodd" clip-rule="evenodd" d="M7.94.94A1.5 1.5 0 0 1 10.5 2a20.774 20.774 0 0 1-.384 4H14.5A1.5 1.5 0 0 1 16 7.5v.066l-1.845 6.9-.094.095A1.5 1.5 0 0 1 13 15H9c-.32 0-.685-.078-1.038-.174-.357-.097-.743-.226-1.112-.349l-.008-.003c-.378-.126-.74-.246-1.067-.335C5.44 14.047 5.18 14 5 14v.941l-5 .625V6h5v.788c.913-.4 1.524-1.357 1.926-2.418A10.169 10.169 0 0 0 7.5 1.973 1.5 1.5 0 0 1 7.94.939ZM8 2l.498.045v.006l-.002.013a4.507 4.507 0 0 1-.026.217 11.166 11.166 0 0 1-.609 2.443C7.396 5.951 6.541 7.404 5 7.851V13c.32 0 .685.078 1.038.174.357.097.743.226 1.112.349l.008.003c.378.126.74.246 1.067.335.335.092.594.139.775.139h4a.5.5 0 0 0 .265-.076l1.732-6.479A.5.5 0 0 0 14.5 7H8.874l.138-.61c.326-1.44.49-2.913.488-4.39a.5.5 0 0 0-1 0v.023l-.002.022L8 2ZM4 7H1v7.434l3-.375V7Zm-1.5 5.75a.25.25 0 1 0 0-.5.25.25 0 0 0 0 .5Zm-.75-.25a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Z"></path></svg>
-                            <span class="text">
-                                <span class="count">${review.likeCount}</span>
-                            </span>
-                        </button>
-                    </form>
-                </span>
-
-                <span class="vote down-votes">
-                    <form class="ajax form--like-review" data-handler="dislikeReviewDone" action="${pageContext.request.contextPath}/api/dislike-review/${tenantId}/${review.id}" method="post" style="display:inline;">
-                        <button type="submit">
-                            <svg aria-hidden="true" viewBox="0 0 16 16" fill="inherit" class="flip-vertical" xmlns="http://www.w3.org/2000/svg" width="14px" height="14px" role="img"><path fill-rule="evenodd" clip-rule="evenodd" d="M7.94.94A1.5 1.5 0 0 1 10.5 2a20.774 20.774 0 0 1-.384 4H14.5A1.5 1.5 0 0 1 16 7.5v.066l-1.845 6.9-.094.095A1.5 1.5 0 0 1 13 15H9c-.32 0-.685-.078-1.038-.174-.357-.097-.743-.226-1.112-.349l-.008-.003c-.378-.126-.74-.246-1.067-.335C5.44 14.047 5.18 14 5 14v.941l-5 .625V6h5v.788c.913-.4 1.524-1.357 1.926-2.418A10.169 10.169 0 0 0 7.5 1.973 1.5 1.5 0 0 1 7.94.939ZM8 2l.498.045v.006l-.002.013a4.507 4.507 0 0 1-.026.217 11.166 11.166 0 0 1-.609 2.443C7.396 5.951 6.541 7.404 5 7.851V13c.32 0 .685.078 1.038.174.357.097.743.226 1.112.349l.008.003c.378.126.74.246 1.067.335.335.092.594.139.775.139h4a.5.5 0 0 0 .265-.076l1.732-6.479A.5.5 0 0 0 14.5 7H8.874l.138-.61c.326-1.44.49-2.913.488-4.39a.5.5 0 0 0-1 0v.023l-.002.022L8 2ZM4 7H1v7.434l3-.375V7Zm-1.5 5.75a.25.25 0 1 0 0-.5.25.25 0 0 0 0 .5Zm-.75-.25a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Z"></path></svg>
-                            <span class="text">
-                                <span class="count">${review.dislikeCount}</span>
-                            </span>
-                        </button>
-                    </form>
-                </span>
-            </div>
-
-
-            <!--<a href="" class="btn btn-secondary">Fjern</a>-->
-            <div class="box-virtual">
-                <h5>Buttons should not be here in client interface</h5>
-
-                <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/delete-review/${tenantId}/${review.id}" method="post">
-                    <input type="hidden" name="_method" value="delete">
-                    <button type="submit">Delete</button>
-                </form>
-
-                <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-approved/${tenantId}/${review.id}" method="post">
-                    <button type="submit">Approve</button>
-                </form>
-
-                <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-rejected/${tenantId}/${review.id}" method="post">
-                    <button type="submit">Reject</button>
-                </form>
-
-                <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/mark-review-pending/${tenantId}/${review.id}" method="post">
-                    <button type="submit">Check</button>
-                </form>
-            </div>
-
-        </div>
+        <%@ include file="pretty-review.partial.jsp" %>
     </c:forEach>
 
     <%@ include file="paginator.jsp" %>

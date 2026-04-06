@@ -1,6 +1,18 @@
 package root.common.utils;
 
+/**
+ * A simple word wrapper that breaks lines at spaces without breaking words.
+ * It does not handle hyphenation or other complex cases, but it is fast and simple.
+ */
+
 public class KissWordWrapper {
+    /**
+     * Wraps the input string to the specified maximum column width, breaking lines at spaces.
+     *
+     * @param s
+     * @param maxColumnWidth
+     * @return
+     */
     public static String wordwrap(String s, int maxColumnWidth) {
         StringBuilder out = new StringBuilder(s.length());
         int col = 0;

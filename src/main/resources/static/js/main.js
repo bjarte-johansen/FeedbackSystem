@@ -23,22 +23,46 @@ var Review = {
             $el.text(iOldValue + Number(delta));
         }
     },
+
+    reloadReview: function(reviewId) {
+        console.log("Review.reloadReview called with reviewId:", reviewId);
+
+        const tenantId = $(`.review--list .review[data-review-id="${reviewId}"]`).data("tenant-id");
+        console.log("Using tenant-id for AJAX request:", tenantId);
+        console.log("Using url", `/api/make-review-html/${tenantId}/${reviewId}`);
+
+        $.ajax({
+            url: `/api/make-review-html/${tenantId}/${reviewId}`,
+            method: "GET",
+            success: function(html) {
+                const $newReview = $(html);
+                const $oldReview = $(`.review--list .review[data-review-id="${reviewId}"]`);
+                if ($oldReview.length) {
+                    $oldReview.replaceWith($newReview);
+                    console.log(`Review with ID ${reviewId} reloaded successfully.`);
+                } else {
+                    console.warn(`Old review element with ID ${reviewId} not found for replacement.`);
+                }
+                console.log('-----------------------------------------------------------');
+            },
+            error: function(xhr, status, error) {
+                console.error(`Failed to reload review with ID ${reviewId}:`, status, error);
+            }
+        });
+    },
+
     handlers: {
 
         // like/dislike events
         likeReviewDone: function(form, res){
             console.log("Review.formHandlers.likeReviewDone called");
 
-            if(res.status !== 200) return;
-
-            Review.utils.incrementElementTextBy($(form).find(".count"), +1);
+            Review.reloadReview($(form).closest(".review").data("review-id"));
         },
         dislikeReviewDone: function(form, res) {
             console.log("Review.formHandlers.dislikeReviewDone called");
 
-            if(res.status !== 200) return;
-
-            Review.utils.incrementElementTextBy($(form).find(".count"), +1);
+            Review.reloadReview($(form).closest(".review").data("review-id"));
         },
 
         // review management events

@@ -3,10 +3,10 @@ package root;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import root.quicktests.DatabaseManager;
+import root.includes.quicktests.quicktests.DatabaseManager;
 import root.common.utils.RandomPastInstant;
-import root.logger.Logger;
-import root.logger.LoggerScope;
+import root.includes.logger.logger.Logger;
+import root.includes.logger.logger.LoggerScope;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 

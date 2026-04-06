@@ -38,7 +38,9 @@ th { background: #f0f0f0; }
 
 .alert:empty{display: none;}
 
-
+td,th{
+    vertical-align: top;
+}
 
 h1,h2,h3,h4,h5,h6{ margin:4px 0 1.0rem 0; }
 
@@ -81,7 +83,8 @@ h1,h2,h3,h4,h5,h6{ margin:4px 0 1.0rem 0; }
 .grid{
     display: grid;
     gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    /*grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));*/
+    grid-template-columns: repeat(12, 1fr);
 }
 .grid-200px { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .gap-1rem { gap: 1rem; }
@@ -93,6 +96,19 @@ h1,h2,h3,h4,h5,h6{ margin:4px 0 1.0rem 0; }
 .grid-6 { grid-template-columns: repeat(6, 1fr); }
 .grid-auto { grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); align-items: start; }
 .grid-cell{ padding: 1rem; }
+
+.grid-col-1{ grid-column: span 1; }
+.grid-col-2{ grid-column: span 2; }
+.grid-col-3{ grid-column: span 3; }
+.grid-col-4{ grid-column: span 4; }
+.grid-col-5{ grid-column: span 5; }
+.grid-col-6{ grid-column: span 6; }
+.grid-col-7{ grid-column: span 7; }
+.grid-col-8{ grid-column: span 8; }
+.grid-col-9{ grid-column: span 9; }
+.grid-col-10{ grid-column: span 10; }
+.grid-col-11{ grid-column: span 11; }
+.grid-col-12{ grid-column: span 12; }
 
 
 /***************************************************/
@@ -124,11 +140,12 @@ hr{
 a.btn, a.btn-primary {
     --bg: #e8681e;
     background-color: var(--bg);
-    border: 2px solid color-mix(in srgb, var(--bg) 20%, black);
+    border: 1px solid color-mix(in srgb, var(--bg) 80%, black);
     border-radius: 4px;
     padding: 8px;
     color: #FFF !important;
     font-weight: bold;
+    font-size:0.9em;
 }
 
 /***************************************************/
@@ -391,7 +408,7 @@ button{
     --bg: #e8681e;
 
     background-color: var(--bg);
-    border: 2px solid color-mix(in srgb, var(--bg) 80%, black);
+    border: 1px solid color-mix(in srgb, var(--bg) 70%, black);
 
     border-radius: 4px;
     padding: 8px;
@@ -399,7 +416,7 @@ button{
     font-weight: bold;
 
     &:hover{
-        background-color: color-mix(in srgb, var(--bg) 80%, black);
+        background-color: color-mix(in srgb, var(--bg) 60%, black);
     }
 
     &:active{

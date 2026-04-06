@@ -1,8 +1,7 @@
 package root.database;
 
 import root.database.connectionproviders.CustomConnectionProvider;
-import root.database.connectionproviders.CustomMultiTenantConnectionProvider;
-import root.logger.Logger;
+import root.includes.logger.logger.Logger;
 
 import java.sql.Connection;
 

@@ -1,6 +1,6 @@
 package root.repositories;
 
-import root.ProxyRepository;
+import root.includes.proxyrepo.ProxyRepository;
 import root.interfaces.IReviewer;
 import root.models.Reviewer;
 

@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 import root.app.AppConfig;
 import root.app.AppContext;
 import root.database.*;
-import root.logger.*;
+import root.includes.logger.logger.Logger;
 import root.models.Review;
-import root.quicktests.FantasyRepoTest;
-import root.repofun.FantasyRepository;
+import root.includes.proxyrepo.RepositoryProxyConstructor;
+import root.includes.quicktests.quicktests.FantasyRepoTest;
 import root.repositories.TenantRepository;
 
 

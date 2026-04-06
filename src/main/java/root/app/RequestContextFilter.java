@@ -7,9 +7,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import root.logger.Logger;
+import org.springframework.web.servlet.HandlerMapping;
+import root.includes.logger.logger.Logger;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static root.common.utils.Preconditions.checkArgument;
 
@@ -18,7 +20,12 @@ import static root.common.utils.Preconditions.checkArgument;
 public class RequestContextFilter extends OncePerRequestFilter {
     private static int requestFilterCount = 0;
 
+
     private int resolveTenantId(HttpServletRequest req, boolean required) {
+        if (AppConfig.USE_TEST_TENANT) {
+            return 1;
+        }
+
         String tenantParam = req.getParameter("tenantId");
         if (tenantParam == null) {
             if(required) {
@@ -36,7 +43,12 @@ public class RequestContextFilter extends OncePerRequestFilter {
     }
 
     private String resolveTenantSchema(HttpServletRequest req){
-        //int id = resolveTenantId(req, true);
+        if (AppConfig.USE_TEST_TENANT) {
+            return "test";
+        }
+
+        // TODO: return actual tenant schema based on request, e.g. by looking up tenant ID in database or using a
+        //  header value
         return "test";
     }
 
@@ -45,7 +57,8 @@ public class RequestContextFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
         HttpServletRequest req,
         HttpServletResponse res,
-        FilterChain chain) throws ServletException, IOException {
+        FilterChain chain
+    ) throws ServletException, IOException {
 
         String uri = req.getRequestURI();
         if (uri.endsWith(".js") || uri.endsWith(".css") || uri.endsWith(".json")) {
@@ -53,32 +66,59 @@ public class RequestContextFilter extends OncePerRequestFilter {
             return;
         }
 
+        int tenantId;
         String tenantSchema;
-        boolean USE_TEST_TENANT = true;
+
+        try {
+            tenantId = resolveTenantId(req, false);
+            tenantSchema = resolveTenantSchema(req);
+
+            checkArgument(tenantId > 0, "Invalid tenant ID: " + tenantId);
+            checkArgument(tenantSchema != null && !tenantSchema.isBlank(), "Unable to find tenant schema, aborting request");
+        }catch (Exception e) {
+            Logger.error("Error resolving tenant information: " + e.getMessage(), e);
+             throw new RuntimeException(e);
+        }
 
         requestFilterCount++;
 
-        if(USE_TEST_TENANT){
-            tenantSchema = "test";
-        }else {
-            tenantSchema = resolveTenantSchema(req);
+        Map<String, String> vars =
+            (Map<String, String>) req.getAttribute(
+                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE
+            );
+        for(var entry : vars.entrySet()) {
+            Logger.log("URI variable: " + entry.getKey() + " = " + entry.getValue());
         }
-        checkArgument(tenantSchema != null && !tenantSchema.isBlank(), "Unable to find tenant schema, aborting request");
+
+        // set schema and tenant id
+        AppContext.currentTenantId.set(tenantId);
+        AppRequestSchema.set(tenantSchema);
+
 
         // open a logging block for this request, so all logs within this block will be grouped together with the
         // request URI and filter count for easier debugging
-        var logBlock = Logger.scope("Request, " + req.getRequestURI() + " (" + requestFilterCount + ")");
-        Logger.log("Received request for tenant schema: " + tenantSchema);
+        Logger.log("Request (#" + requestFilterCount + "), " + req.getRequestURI());
+        Logger.enter();
+        Logger.log("Received request for tenant (id: " + tenantId + ", schema: " + tenantSchema + ")");
 
-        for(var entry : req.getParameterMap().entrySet()) {
-            Logger.log("Request parameter: " + entry.getKey() + " = " + String.join(", ", entry.getValue()));
+        if(AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS) {
+            // print request parameters for debugging
+            if(req.getParameterMap().isEmpty()) {
+                Logger.log("No request parameters");
+            } else {
+                Logger.log("Request parameters:");
+                Logger.enter();
+                for (var entry : req.getParameterMap().entrySet()) {
+                    Logger.log("Request parameter: " + entry.getKey() + " = " + String.join(", ", entry.getValue()));
+                }
+                Logger.leave();
+                Logger.log("");
+            }
         }
+
 
         try {
             // BEFORE request (always runs)
-
-            // set schema for connections
-            AppRequestSchema.setSchema(tenantSchema);
 
             // runs controller route and other filters (if any)
             // ex @GetMapping("/") in will run after this line if route is "/"
@@ -86,9 +126,12 @@ public class RequestContextFilter extends OncePerRequestFilter {
 
         } finally {
             // AFTER request (always runs)
-            AppRequestSchema.clearSchema();
+            AppRequestSchema.remove();
 
-            logBlock.close();
+            Logger.leave();
+            Logger.log("Finished request for tenant (id: " + tenantId + ", schema: " + tenantSchema + ")");
+            Logger.log("--------------------------------------------------");
+            Logger.log("");
         }
     }
 }

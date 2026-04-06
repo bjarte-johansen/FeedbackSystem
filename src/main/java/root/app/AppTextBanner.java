@@ -1,8 +1,8 @@
 package root.app;
 
-import root.RepositoryProxyConstructor;
+import root.includes.proxyrepo.RepositoryProxyConstructor;
 import root.common.utils.KissWordWrapper;
-import root.logger.Logger;
+import root.includes.logger.logger.Logger;
 
 
 /**

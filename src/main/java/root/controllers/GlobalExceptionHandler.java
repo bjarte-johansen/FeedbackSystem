@@ -3,7 +3,7 @@ package root.controllers;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import root.logger.Logger;
+import root.includes.logger.logger.Logger;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {

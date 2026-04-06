@@ -5,8 +5,8 @@ import org.springframework.stereotype.Service;
 import root.App;
 import root.app.AppRequestSchema;
 import root.database.DataSourceManager;
-import root.logger.Logger;
-import root.quicktests.DatabaseManager;
+import root.includes.logger.logger.Logger;
+import root.includes.quicktests.quicktests.DatabaseManager;
 import root.repositories.TenantRepository;
 
 import java.util.List;
@@ -25,6 +25,21 @@ public class DatabaseService {
     }
 
     public void executeDatabasePatches() throws Exception {
+        // create lambda patcher
+        App.ConnectionStatementRunnable patchAddREviewVoteTable = (c, st) -> {
+            st.execute("""
+CREATE TABLE IF NOT EXISTS review_vote (
+	id		   BIGSERIAL PRIMARY KEY,
+    review_id  BIGINT NOT NULL,
+    session_id VARCHAR(64) NOT NULL,
+    ip         INET NOT NULL,
+    vote       SMALLINT NOT NULL,
+    created_at TIMESTAMP DEFAULT now(),
+
+    UNIQUE  (review_id, session_id)
+);""");
+        };
+
         // create lambda patcher
         App.ConnectionStatementRunnable patchAddStatusFieldForReview = (c, st) -> {
             st.execute("ALTER TABLE review ADD COLUMN IF NOT EXISTS status SMALLINT NOT NULL DEFAULT 0");

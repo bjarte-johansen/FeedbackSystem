@@ -1,31 +1,25 @@
 package root.database;
 
-import root.logger.Logger;
+import root.includes.logger.logger.Logger;
 
 import java.sql.*;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.lang.reflect.Array;
-import java.util.function.Function;
 
 
 /**
- * FSQLQuery is a utility class for building and executing SQL queries with support for both positional and named parameters.
- * It provides methods for binding parameters, executing queries, and mapping results to Java objects.
- *
+ * FSQLQuery is a utility class for building and executing SQL queries with support for both positional and named
+ * parameters. It provides methods for binding parameters, executing queries, and mapping results to Java objects.
+ * <p>
  * Example usage:
- *
- *   using positional parameters:
- *   Optional<User> user = FSQLQuery query = new FSQLQuery(conn, "SELECT * FROM users WHERE id = ?")
- *       .bind(123)
- *       .fetchOne(User.class);
- *
- *   using named parameters:
- *   Optional<User> user = FSQLQuery query = new FSQLQuery(conn, "SELECT * FROM users WHERE id = :id")
- *       .bindNamed("id", 123)
- *       .fetchOne(User.class);
- *
+ * <p>
+ * using positional parameters: Optional<User> user = FSQLQuery query = new FSQLQuery(conn, "SELECT * FROM users WHERE
+ * id = ?") .bind(123) .fetchOne(User.class);
+ * <p>
+ * using named parameters: Optional<User> user = FSQLQuery query = new FSQLQuery(conn, "SELECT * FROM users WHERE id =
+ * :id") .bindNamed("id", 123) .fetchOne(User.class);
+ * <p>
  * Note: This class is designed to be flexible and can be extended with additional features as needed.
  */
 
@@ -35,7 +29,7 @@ public class FSQLQuery {
         T run(Connection conn) throws Exception;
     }
 
-    public static class InsertResult{
+    public static class InsertResult {
         private final Long _id;
         private final int _count;
 
@@ -44,10 +38,11 @@ public class FSQLQuery {
             this._count = count;
         }
 
-        public Long getId(){
+        public Long getId() {
             return _id;
         }
-        public int getCount(){
+
+        public int getCount() {
             return _count;
         }
     }
@@ -59,7 +54,7 @@ public class FSQLQuery {
     private Connection conn;
     private final String sql;
     private final List<Object> args = new ArrayList<>(DEFAULT_CAPACITY);
-    private final HashMap<String, Object> namedArgs = new HashMap<String,Object>(DEFAULT_CAPACITY);
+    private final HashMap<String, Object> namedArgs = new HashMap<String, Object>(DEFAULT_CAPACITY);
     private boolean ownsConnection = false;
 
     private boolean debugSql = false;
@@ -81,7 +76,7 @@ public class FSQLQuery {
     public static FSQLQuery create(String sql) {
         try {
             return new FSQLQuery(null, sql, true);
-        }catch(Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("Failed to create FSQLQuery with new connection", e);
         }
     }
@@ -94,82 +89,83 @@ public class FSQLQuery {
      */
 
     public FSQLQuery bind(Object... values) {
-        if(values != null && values.length > 1) {
+        if (values != null && values.length > 1) {
             throw new RuntimeException("More than one argument provided to bind method. If you want to bind multiple values, use bindArray or bind(Iterable) methods.");
         }
 
-        if(values != null && values.length > 0) {
-            bind( Arrays.asList(values) );
+        if (values != null && values.length > 0) {
+            bind(Arrays.asList(values));
         }
         return this;
     }
 
     public FSQLQuery bindIf(boolean cond, Object... values) {
-        if(!cond) return this;
+        if (!cond) return this;
         return bind(values);
     }
 
     public FSQLQuery bindArray(Object[] values) {
-        if(values != null && values.length > 0) {
-            bind( Arrays.asList(values) );
+        if (values != null && values.length > 0) {
+            bind(Arrays.asList(values));
         }
         return this;
     }
 
     public FSQLQuery bindArrayIf(boolean cond, Object[] values) {
-        if(!cond) return this;
+        if (!cond) return this;
         return bindArray(values);
     }
 
-    public FSQLQuery bind(Iterable<?> values){
-        if(values != null) {
+    public FSQLQuery bind(Iterable<?> values) {
+        if (values != null) {
             values.forEach(value -> bind(value));
         }
         return this;
     }
 
-    public FSQLQuery bindIf(boolean cond, Iterable<?> values){
-        if(!cond) return this;
+    public FSQLQuery bindIf(boolean cond, Iterable<?> values) {
+        if (!cond) return this;
         return bind(values);
     }
 
-    public FSQLQuery bind(List<?> values){
-        if(values != null) {
-            args.addAll( values );
+    public FSQLQuery bind(List<?> values) {
+        if (values != null) {
+            args.addAll(values);
         }
         return this;
     }
 
-    public FSQLQuery bindIf(boolean cond, List<?> values){
-        if(!cond) return this;
+    public FSQLQuery bindIf(boolean cond, List<?> values) {
+        if (!cond) return this;
         return bind(values);
     }
 
     public FSQLQuery bindNamed(String name, Object value) {
-        if(name == null || name.isBlank()) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Parameter name cannot be null or blank");
         }
 
         namedArgs.put(name, value);
         return this;
     }
+
     public FSQLQuery bindNamedIf(boolean cond, String name, Object value) {
-        if(!cond) return this;
+        if (!cond) return this;
         return bindNamed(name, value);
     }
 
     public FSQLQuery bindNamed(Map<String, Object> values) {
-        if(values != null) {
+        if (values != null) {
             namedArgs.putAll(values);
         }
 
         return this;
     }
+
     public FSQLQuery bindNamedIf(boolean cond, Map<String, Object> values) {
-        if(!cond) return this;
+        if (!cond) return this;
         return bindNamed(values);
     }
-
 
 
     protected static void __bindArgs(PreparedStatement ps, Object[] args) throws SQLException {
@@ -179,33 +175,27 @@ public class FSQLQuery {
     //@SuppressWarnings("unchecked")
     protected static void __bindArgs(PreparedStatement ps, List<Object> args) throws SQLException {
         int i = 1;
-        for(var arg : args){
+        for (var arg : args) {
 
-            if(arg instanceof Objects[] arr) {
+            if (arg instanceof Objects[] arr) {
                 for (var val : arr) FSQL.bind(ps, i++, val);
-            }
-            else if(arg instanceof int[] arr) {
-                for(var val : arr) FSQL.bind(ps, i++, val);
-            }
-            else if(arg instanceof long[] arr) {
-                for(var val : arr) FSQL.bind(ps, i++, val);
-            }
-            else if(arg instanceof List<?> list) {
-                for(Object val : list) FSQL.bind(ps, i++, val);
-            }
-            else if(arg instanceof LinkedHashMap<?, ?> map){
+            } else if (arg instanceof int[] arr) {
+                for (var val : arr) FSQL.bind(ps, i++, val);
+            } else if (arg instanceof long[] arr) {
+                for (var val : arr) FSQL.bind(ps, i++, val);
+            } else if (arg instanceof List<?> list) {
+                for (Object val : list) FSQL.bind(ps, i++, val);
+            } else if (arg instanceof LinkedHashMap<?, ?> map) {
                 for (Object val : map.values()) FSQL.bind(ps, i++, val);
-            }
-            else if(arg != null && arg.getClass().isArray()) {
+            } else if (arg != null && arg.getClass().isArray()) {
                 for (int idx = 0, n = Array.getLength(arg); idx < n; idx++) {
                     Object val = Array.get(arg, idx);
                     FSQL.bind(ps, i++, val);
                 }
-            }
-            else {
-                if(arg == null){
+            } else {
+                if (arg == null) {
                     FSQL.bindNull(ps, i++);
-                }else {
+                } else {
                     FSQL.bind(ps, i++, arg);
                 }
             }
@@ -216,7 +206,7 @@ public class FSQLQuery {
         ResultSet keys = ps.getGeneratedKeys();
 
         if (!keys.next()) {
-            if(required)
+            if (required)
                 throw new SQLException("Insert succeeded but no ID obtained.");
 
             return null;
@@ -225,7 +215,7 @@ public class FSQLQuery {
         return keys.getLong(1);
     }
 
-    public FSQLQuery debug(){
+    public FSQLQuery debug() {
         this.debugSql = true;
         return this;
     }
@@ -236,18 +226,20 @@ public class FSQLQuery {
     }
 
     private <T> T execute(QueryExecutor<T> executor) throws Exception {
-        if(ownsConnection){
+        if (ownsConnection) {
             T result = null;
 
-            try(var tmpConn = DataSourceManager.getConnection()) {
-                Connection oldConn = conn;
-                conn = tmpConn;
+            Connection oldConn = conn;
+            try {
+                conn = DataSourceManager.getConnection();
                 result = executor.run(conn);
+            } finally {
+                conn.close();
                 conn = oldConn;
             }
 
             return result;
-        }else {
+        } else {
             return executor.run(conn);
         }
     }
@@ -268,7 +260,7 @@ public class FSQLQuery {
         NamedSql.Parsed parsed = NamedSql.parse(activeSql, this.namedArgs, args);
 
         // log
-        if(debugSql || OVERRIDE_DEBUG_SQL) {
+        if (debugSql || OVERRIDE_DEBUG_SQL) {
             try (var ignore = Logger.scope("Parsed Query::prepareSql")) {
                 //Logger.log("Raw: " + activeSql);
                 //Logger.log("Parsed: " + parsed.sql);
@@ -279,13 +271,13 @@ public class FSQLQuery {
 
         // prepare statement
         PreparedStatement ps;
-        if(options != null && options.length > 0) {
-            if(!Integer.class.isAssignableFrom(options[0].getClass())){
+        if (options != null && options.length > 0) {
+            if (!Integer.class.isAssignableFrom(options[0].getClass())) {
                 throw new IllegalArgumentException("Expected first option to be of type Integer for Statement options");
             }
 
             ps = conn.prepareStatement(parsed.sql, ((Number) options[0]).intValue());
-        }else {
+        } else {
             ps = conn.prepareStatement(parsed.sql);
         }
 
@@ -334,7 +326,7 @@ public class FSQLQuery {
     public Long insertAndGetId(Consumer<Long> after) throws Exception {
         InsertResult result = insert(true);
 
-        if(after != null)
+        if (after != null)
             after.accept(result.getId());
 
         return result.getId();
@@ -432,7 +424,7 @@ public class FSQLQuery {
 
                 try (ResultSet rs = ps.getResultSet()) {
                     return resultSetConsumer.accept(rs);
-                }catch(Exception e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -460,7 +452,9 @@ public class FSQLQuery {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ResultSet rs = ps.executeQuery();
-                rs.next();
+                if(!rs.next()) {
+                    throw new RuntimeException("Expected count query to return a result");
+                }
                 return rs.getLong(1);
             }
         });
@@ -470,10 +464,55 @@ public class FSQLQuery {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql("SELECT EXISTS (" + this.sql + ")")) {
                 try (ResultSet rs = ps.executeQuery()) {
-                    rs.next();
+                    if(!rs.next()) {
+                        throw new RuntimeException("Expected exists query to return a result");
+                    }
                     return rs.getBoolean(1);
                 }
             }
         });
     }
+
+
+    /*
+     * Fetch a single column value from the first row of the result set. This is useful for queries that return a
+     * single value, such as COUNT(*) or MAX(column).
+     */
+
+    public <R> Optional<R> fetchColumn(Class<R> t) throws Exception {
+        return execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL);
+                 ResultSet rs = ps.executeQuery()) {
+
+                if (!rs.next()) return Optional.empty();
+
+                return Optional.ofNullable(rs.getObject(1, t));
+            }
+        });
+    }
+
+    public <R> Optional<R> fetchColumn(int colIndex, Class<R> t) throws Exception {
+        return execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL);
+                 ResultSet rs = ps.executeQuery()) {
+
+                if (!rs.next()) return Optional.empty();
+
+                return Optional.ofNullable(rs.getObject(colIndex, t));
+            }
+        });
+    }
+
+    public <R> Optional<R> fetchColumn(String colIndex, Class<R> t) throws Exception {
+        return execute(r -> {
+            try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL);
+                 ResultSet rs = ps.executeQuery()) {
+
+                if (!rs.next()) return Optional.empty();
+
+                return Optional.ofNullable(rs.getObject(colIndex, t));
+            }
+        });
+    }
+
 }

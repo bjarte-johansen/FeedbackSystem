@@ -1,5 +1,10 @@
 package root.common.utils;
 
+/**
+ * Utility class to generate a random Instant in the past within a specified range.
+ * Example usage:
+ *      Instant randomInstant = RandomPastInstant.generate(Duration.ofDays(1), Duration.ofDays(30));
+ */
 public class RandomPastInstant {
     /**
      * Generates a random Instant in the past between minAgo and maxAgo durations from now.

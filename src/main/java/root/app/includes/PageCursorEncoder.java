@@ -11,13 +11,14 @@ public class PageCursorEncoder {
     }
 
     public static PageCursor decodeCursor(String cursor) {
-        String[] parts = cursor.split(",");
+        String[] parts = (cursor == null) ? new String[0] : cursor.split(",");
         if (parts.length == 2) {
             return new PageCursor(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
         }else{
             return new PageCursor(0, Integer.MAX_VALUE);
         }
     }
+
 
     /*
     public static String encodeCursor(PageCursor c) {

@@ -25,23 +25,21 @@ public class Review implements IReview {
      * -1 = Downvote
      */
     public static int VOTE_UP = 1;
-    public static int VOTE_DOWN = -1;
+    public static int VOTE_DOWN = 2;
 
     /**
      * Review status constants:
-     * 0 = Approved
-     * 1 = Pending
-     * 2 = Rejected
-     * 3 = Any (used for filtering, not an actual status)
+     * 1 = Approved
+     * 2 = Pending
+     * 4 = Rejected
+     * 1 | 2 | 4 = Any (used for filtering, not an actual status)
      */
-    //public static int REVIEW_STATUS_EMPTY = 1 << 0;
+
     public static int REVIEW_STATUS_APPROVED = 1 << 0;
     public static int REVIEW_STATUS_PENDING = 1 << 1;
     public static int REVIEW_STATUS_REJECTED = 1 << 2;
-    //public static int REVIEW_STATUS_UNUSED_HIGH = 1 << 2;
+
     public static int REVIEW_STATUS_MATCH_ALL = REVIEW_STATUS_APPROVED | REVIEW_STATUS_PENDING | REVIEW_STATUS_REJECTED;
-    //public static int REVIEW_STATUS_ANY = 3;
-    //public static int REVIEW_STATUS_TEST = 5;
 
     private Long id;
     private String externalId;

@@ -1,18 +1,15 @@
 package root.app;
 
-import jakarta.servlet.http.HttpSession;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import root.database.CustomDataSource;
 import root.database.DataSourceManager;
 import root.database.connectionproviders.CustomConnectionProvider;
-import root.logger.Logger;
-
-import java.lang.reflect.Array;
-import java.util.Arrays;
+import root.includes.logger.logger.Logger;
 
 public class AppContext {
     private CustomDataSource ds;
+    public static ThreadLocal<Integer> currentTenantId = new ThreadLocal<>();
 
     /**
      * Initializes the application context, including data sources and connection providers.
@@ -32,8 +29,6 @@ public class AppContext {
         // FIXME:
         //  set to true to use test tenant schema, otherwise tentants schema which needs to be supplied in
         //  routes to controller via id or name that we encode to schema name
-        AppConfig.USE_TEST_TENANT = true;
-
         ds = new CustomDataSource(AppConfig.TEST);
 
         if (AppConfig.USE_TEST_TENANT) {

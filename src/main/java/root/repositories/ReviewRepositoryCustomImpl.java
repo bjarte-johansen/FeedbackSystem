@@ -1,5 +1,6 @@
 package root.repositories;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import root.app.ReviewQueryOptions;
 import root.database.FSQLQuery;
@@ -12,20 +13,29 @@ import java.util.*;
 public class ReviewRepositoryCustomImpl {
     // This class can be used to implement custom methods for the ReviewRepository if needed.
 
-    void addVoteUp(long reviewId, int offset) throws Exception{
+    void addVoteReport(long reviewId) throws Exception{
+        String sql = "UPDATE review SET report_count = LEAST(32767, GREATEST(-32768, report_count + ?)) WHERE id = ?";
+
+        FSQLQuery.create(sql)
+            .bind(1)
+            .bind(reviewId)
+            .update();
+    }
+
+    void addVoteUp(long reviewId, int delta) throws Exception{
         String sql = "UPDATE review SET like_count = LEAST(32767, GREATEST(-32768, like_count + ?)) WHERE id = ?";
 
         FSQLQuery.create(sql)
-            .bind(offset)
+            .bind(delta)
             .bind(reviewId)
             .update();
     };
 
-    void addVoteDown(long reviewId, int offset) throws Exception{
+    void addVoteDown(long reviewId, int delta) throws Exception{
         String sql = "UPDATE review SET dislike_count = LEAST(32767, GREATEST(-32768, dislike_count + ?)) WHERE id = ?";
 
         FSQLQuery.create(sql)
-            .bind(offset)
+            .bind(delta)
             .bind(reviewId)
             .update();
     };
@@ -59,39 +69,32 @@ public class ReviewRepositoryCustomImpl {
     };
 
     List<String> findUniqueExternalIds() throws Exception{
-        FSQLQuery.ResultSetConsumer<List<String>> fnReadResultSet = (ResultSet rs) -> {
-            List<String> result = new ArrayList<>();
-            int colIndex = rs.findColumn("external_id");
-            while(rs.next()) {
-                result.add(rs.getString(colIndex));
-            }
-            return result;
-        };
+        //FSQLQuery.ResultSetConsumer<List<String>> fnReadResultSet = ;
 
         String sql = "SELECT DISTINCT external_id FROM review";
         return FSQLQuery.create(sql)
-            .fetchCallback(fnReadResultSet);
+            .fetchCallback((ResultSet rs) -> {
+                List<String> result = new ArrayList<>();
+                int colIndex = rs.findColumn("external_id");
+                while(rs.next()) {
+                    result.add(rs.getString(colIndex));
+                }
+                return result;
+            });
     }
 
     List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception {
         boolean DEBUG_SQL = false;
-
-        Set<Integer> searchableReviewStatusEnums = Set.of(
-            Review.REVIEW_STATUS_APPROVED,
-            Review.REVIEW_STATUS_PENDING,
-            Review.REVIEW_STATUS_REJECTED
-        );
-        Set<Integer> matchAllReviewStatusEnum = Set.of(
-            Review.REVIEW_STATUS_MATCH_ALL
-        );
-
         String columnStr = "id, external_id, author_name, score, title, comment, like_count, dislike_count, status, created_at";
 
         // make condition list
         ArrayList<String> conditionExprList = new ArrayList<>();
 
         // add external id filter
-        conditionExprList.add("(external_id = ?)");
+        if(externalId != null && !externalId.isEmpty()) {
+            // add condition for external id
+            conditionExprList.add("(external_id = ?)");
+        }
 
         if ((options.getStatusEnum() == Review.REVIEW_STATUS_MATCH_ALL)) {
             // catch all, no need to add any condition
@@ -109,10 +112,10 @@ public class ReviewRepositoryCustomImpl {
         }
 
         // make where expr-list sql
-        String whereStr = String.join(" AND ", conditionExprList);
+        String whereStr = conditionExprList.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditionExprList);
 
         // make limit/offset sql
-        String limitOffsetSql = options.buildLimitOffsetSql();
+        String limitOffsetSql = options.getPageCursor().buildLimitOffsetSql();
         if(!limitOffsetSql.isEmpty()) {
             limitOffsetSql = " " + limitOffsetSql;
         }
@@ -124,7 +127,7 @@ public class ReviewRepositoryCustomImpl {
         }
 
         // make query and execute
-        String sql = "SELECT " + columnStr + " FROM review WHERE " + whereStr + orderBySql + limitOffsetSql;
+        String sql = "SELECT " + columnStr + " FROM review" + whereStr + orderBySql + limitOffsetSql;
 
         return FSQLQuery.create(sql)
             .debug(DEBUG_SQL)

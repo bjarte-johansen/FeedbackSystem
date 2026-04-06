@@ -4,14 +4,10 @@ package root;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import root.quicktests.DatabaseManager;
-import root.logger.Logger;
-import root.logger.LoggerScope;
+import root.includes.quicktests.quicktests.DatabaseManager;
+import root.includes.logger.logger.Logger;
+import root.includes.logger.logger.LoggerScope;
 import root.repositories.ReviewRepository;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

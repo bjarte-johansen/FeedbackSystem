@@ -1,19 +1,29 @@
 <!-- header -->
 <%@ include file="header.jsp" %>
 
+    <h1>Client interface</h1>
+
+    <div class="box">
+        <a href="${pageContext.request.contextPath}/clear-session" class="btn btn-primary">Clear session</a>
+    </div>
+
     <!-- external ids to represent different pages/products -->
     <%@ include file="show-external-ids.jsp" %>
 
-    <!-- form to submit new review -->
-    <%@ include file="submit-review-form.partial.jsp" %>
+
 
     <!-- review section part -->
     <div class="container--reviews">
         <%@ include file="pretty-review-list.partial.jsp" %>
     </div>
 
-    <!-- show review dump for debugging -->
-    <%@ include file="raw-review-list.partial.jsp" %>
+    <h1>Administrator interface</h1>
+    <div class="box review--admin-interface">
+        <%@ include file="show-external-ids.jsp" %>
+
+        <!-- show review dump for debugging -->
+        <%@ include file="raw-review-list.partial.jsp" %>
+    </div>
 
 <!-- footer -->
 <%@ include file="footer.jsp" %>

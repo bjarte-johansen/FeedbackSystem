@@ -8,33 +8,28 @@ import java.util.*;
 import java.util.function.Function;
 
 public class FSQLCachedFieldColumnLookup {
-    //private static final ThreadLocal<Map<Class<?>, FSQLColumnMapping[]>> CACHE = ThreadLocal.withInitial(HashMap::new);
-    //private static final MethodHandles.Lookup lookup = MethodHandles.lookup();
-
+    public static boolean isSerializableField(Field f) {
+        int modifiers = f.getModifiers();
+        return !(Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers) || f.isSynthetic());
+    }
 
     protected static Map<String, FSQLColumnMapping> buildEntityColumnMapping(Class<?> clazz) throws Exception {
         Map<String, FSQLColumnMapping> m = new HashMap<>();
 
         for (Field f : clazz.getDeclaredFields()) {
-            f.setAccessible(true);
+            if(isSerializableField(f)) {
+                f.setAccessible(true);
 
-            int modifiers = f.getModifiers();
-            if(
-                Modifier.isStatic(modifiers)
-                || Modifier.isTransient(modifiers)
-                || f.isSynthetic()) {
-                continue;
+                var t = f.getType();
+                FSQLColumnMapping cm = new FSQLColumnMapping(
+                    f.getName(),
+                    f,
+                    CachedCaseConverter.camelToSnake(f.getName()),
+                    FSQLUtils.createColumnReader(t),
+                    FSQLUtils.createColumnWriter(t));
+
+                m.put(f.getName(), cm);
             }
-
-            var t = f.getType();
-            FSQLColumnMapping cm = new FSQLColumnMapping(
-                f.getName(),
-                f,
-                CachedCaseConverter.camelToSnake(f.getName()),
-                FSQLUtils.createColumnReader(t),
-                FSQLUtils.createColumnWriter(t));
-
-            m.put(f.getName(), cm);
         }
 
         return m;

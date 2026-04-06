@@ -2,14 +2,14 @@
 
 <script>
 function toggleReviewForm() {
-    //const form = document.querySelector('.form--submit-review-form');
     jQuery(".form--submit-review-form").toggle().removeClass("d-none");
     return false;
 }
 </script>
 
-<div class="box submit-review-form">
-    <h3 onclick="toggleReviewForm();">Legg til review (trykk meg)</h3>
+<div class="box-virtual submit-review-form">
+    <br>
+    <a href="#" onclick="toggleReviewForm();">Legg til ny omtale</a>
 
     <form class="ajax reload-on-success form--submit-review-form d-none" action="${pageContext.request.contextPath}/submit-review" method="post">
         <p class="alert alert-info">
