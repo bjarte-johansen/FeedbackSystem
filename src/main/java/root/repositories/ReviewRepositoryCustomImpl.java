@@ -289,6 +289,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
 
         return FSQLQuery.create(sql)
             .bindIf(externalId != null, externalId)
+            .debug(true)
             .fetchAll(Review.class);
     }
 

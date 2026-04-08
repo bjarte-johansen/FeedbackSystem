@@ -1,5 +1,5 @@
 <div class="box">
-    <h3>Dump</h3>
+    <h3>Dump ${fn:length(reviewDump)}</h3>
     <table class="w-100">
         <thead>
         <tr>
@@ -23,7 +23,7 @@
                 <td>${review.id}</td>
                 <td>${review.createdAt.toString().split("T")[0]}</td>
                 <td>${review.externalId}</td>
-                <td>${review.status == 0 ? "pending" : (review.status == 1 ? "approved" : "rejected")}</td>
+                <td>${review.statusToString(review.status)}</td>
                 <td>${review.authorName}</td>
                 <td>${review.score}</td>
                 <td>${review.title}</td>

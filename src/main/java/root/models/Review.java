@@ -38,8 +38,7 @@ public class Review implements IReview {
      * Review status constants:
      * 1 = Approved
      * 2 = Pending
-     * 4 = Rejected
-     * 1 | 2 | 4 = Any (used for filtering, not an actual status)
+     * 3 = Rejected
      */
 
     public static final int REVIEW_STATUS_APPROVED = 1;

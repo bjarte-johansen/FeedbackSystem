@@ -174,6 +174,8 @@ public class ReviewPageService {
         ReviewQueryOptions dumpOptions = new ReviewQueryOptions();
         dumpOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
         dumpOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_PENDING);
+        dumpOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_REJECTED);
+        dumpOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
         dumpOptions.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
 
         // add dump to model for display in JSP. This is just for demonstration purposes to show how to fetch all
