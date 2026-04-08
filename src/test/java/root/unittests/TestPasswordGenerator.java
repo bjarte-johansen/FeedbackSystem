@@ -1,9 +1,15 @@
 package root.unittests;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import root.TestA0Base;
+import root.includes.proxyrepo.RepositoryProxyConstructor;
+import root.repositories.ReviewRepository;
 import root.services.PasswordService;
 
 import java.util.ArrayList;
@@ -12,11 +18,18 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import root.includes.proxyrepo.ProxyFactoryBeans;
 
-@SpringBootTest
+@ComponentScan("root")
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {
+    PasswordService.class,
+    ProxyFactoryBeans.class
+})
 public class TestPasswordGenerator {
     @Autowired
     private PasswordService passwordService;
+
 
     @Test
     public void testValidPasswordGenerator() {

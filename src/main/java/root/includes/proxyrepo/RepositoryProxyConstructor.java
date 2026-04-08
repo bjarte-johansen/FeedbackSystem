@@ -27,34 +27,6 @@ public class RepositoryProxyConstructor {
 
     }
 
-    @Configuration
-    public static class ProxyFactoryBean {
-        @Bean
-        public static FantasyRepository createFantasyRepository() {
-            return RepositoryProxyConstructor.create(FantasyRepository.class);
-        }
-
-        @Bean
-        public static ReviewRepository createReviewRepository() {
-            return RepositoryProxyConstructor.create(ReviewRepository.class);
-        }
-
-        @Bean
-        public static ReviewerRepository createReviewerRepository() {
-            return RepositoryProxyConstructor.create(ReviewerRepository.class);
-        }
-
-        @Bean
-        public static TenantRepository createTenantRepository() {
-            return RepositoryProxyConstructor.create(TenantRepository.class);
-        }
-
-        @Bean
-        public static ReviewVoteRepository createReviewVoteRepository() {
-            return RepositoryProxyConstructor.create(ReviewVoteRepository.class);
-        }
-    }
-
     private static Object createRepoImpl(Class<?> repoInterface) {
         try {
             Class<?> implClass = Class.forName(repoInterface.getName() + "CustomImpl");

@@ -127,6 +127,15 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
         }
     }
 
+/*
+    private String clampLongSql(String columnName, long min, long max, String valuePlaceholder) {
+        return String.format("LEAST(%d, GREATEST(%d, %s))", max, min, valuePlaceholder);
+    }
+    private String clampIntSql(String columnName, int min, int max, String valuePlaceholder) {
+        return clampLongSql(columnName, (long) min, (long) max, valuePlaceholder);
+    }
+ */
+
 
 
 
@@ -150,11 +159,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .bind(reviewId)
             .update();
     }
-/*
-    private <T> String clampIntSql(String columnName, long min, long max, String valuePlaceholder) {
-        return String.format("LEAST(%d, GREATEST(%d, %s))", max, min, valuePlaceholder);
-    }
- */
+
 
     @Override
     public void incrementLikeVote(long reviewId, int delta) throws Exception {
