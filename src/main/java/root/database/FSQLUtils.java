@@ -41,7 +41,7 @@ public class FSQLUtils {
 
 
 
-    public static Object getEntityId(Object entity, String idFieldName) throws Exception {
+    public static Object getEntityId(Object entity, String idFieldName) {
         Class<?> clazz = entity.getClass();
 
         MethodHandle mh = CACHED_ENTITY_ID_GETTER.computeIfAbsent(clazz, c -> {
@@ -73,7 +73,7 @@ public class FSQLUtils {
     }
     */
 
-    public static void setEntityId(Object entity, Object id, String idFieldName) throws Exception {
+    public static void setEntityId(Object entity, Object id, String idFieldName) {
         if(entity == null) {
             throw new IllegalArgumentException("Entity cannot be null");
         }
@@ -117,13 +117,11 @@ public class FSQLUtils {
 
     /// ///
 
-    public static IColumnWriter createColumnWriter(Class<?> t) throws Exception {
-        //return (f, o, v) -> ((Field) f).set(o, v);
+    public static IColumnWriter createColumnWriter(Class<?> t) {
         return Field::set;
     }
 
-    public static IColumnReader createColumnReader(Class<?> t) throws SQLException {
-
+    public static IColumnReader createColumnReader(Class<?> t) {
         //getInt and be used directly for primitive types, as they return 0/false for null values, and we can check
         //wasNull() to return null instead for boxed types.
 

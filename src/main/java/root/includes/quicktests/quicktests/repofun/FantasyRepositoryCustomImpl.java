@@ -1,6 +1,6 @@
 package root.includes.quicktests.quicktests.repofun;
 
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 
 public class FantasyRepositoryCustomImpl {
     public void sayHello() {

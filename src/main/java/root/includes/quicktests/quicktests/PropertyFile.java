@@ -1,7 +1,7 @@
 package root.includes.quicktests.quicktests;
 
 import root.App;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 
 import java.io.InputStream;
 import java.util.*;

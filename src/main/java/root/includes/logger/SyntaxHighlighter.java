@@ -1,8 +1,8 @@
-package root.includes.logger.logger;
+package root.includes.logger;
 
 
-import root.includes.logger.logger.colorschemes.AnsiColorScheme;
-import root.includes.logger.logger.colorschemes.IntelliJDarkAnsi;
+import root.includes.logger.colorschemes.AnsiColorScheme;
+import root.includes.logger.colorschemes.IntelliJDarkAnsi;
 
 public class SyntaxHighlighter {
     public static AnsiColorScheme colorScheme = new IntelliJDarkAnsi();

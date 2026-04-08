@@ -3,37 +3,162 @@ package root.repositories;
 import org.springframework.stereotype.Repository;
 import root.app.ReviewQueryOptions;
 import root.database.FSQLQuery;
-import root.includes.logger.logger.Logger;
+import root.includes.NumericRangeRecord;
 import root.models.Review;
-import root.utils.RangeQueryFilterBuilder;
 
 import java.sql.ResultSet;
 import java.util.*;
 
-@Repository
-public class ReviewRepositoryCustomImpl {
-    // This class can be used to implement custom methods for the ReviewRepository if needed.
+import static root.common.utils.Preconditions.checkArgument;
 
-    void addVoteReport(long reviewId) throws Exception{
-        String sql = "UPDATE review SET report_count = LEAST(32767, GREATEST(-32768, report_count + ?)) WHERE id = ?";
+@Repository
+public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
+    /*
+
+     */
+
+    private static <T extends Number> String toCsv(Set<T> set) {
+        if (set == null || set.isEmpty()) return "";
+
+        // get rough storage capacity per element based on type of first element (assuming all elements are of the same type)
+        Number it = set.iterator().next();
+        boolean is_real = ((it instanceof Double) || (it instanceof Float));
+        int rough_capacity_per_element = is_real ? 20 : 10;
+
+        // use StringBuilder for efficient string concatenation
+        StringBuilder sb = new StringBuilder(set.size() * rough_capacity_per_element);
+
+        boolean first = true;
+        for (Number n : set) {
+            if (!first) sb.append(',');
+            sb.append(n);
+            first = false;
+        }
+
+        return sb.toString();
+    }
+
+    private <T extends Number> String buildInClauseSql(String columnName, List<T> valueList) {
+        if(valueList == null || valueList.isEmpty()) {
+            return "(1=1)";
+        }
+
+        // return result
+        return buildInClauseSql(columnName, new HashSet<>(valueList));
+    }
+
+    private <T extends Number> String buildInClauseSql(String columnName, Set<T> filterSet) {
+        if(filterSet == null || filterSet.isEmpty()) {
+            return "(1=1)";
+        }
+
+        return "(" + columnName + " IN (" + toCsv(filterSet) + "))";
+    }
+
+
+
+    /*
+    check if a set of integers is contiguous (i.e. forms a continuous range without gaps).
+     */
+
+    private static boolean isContiguous(Set<Integer> set) {
+        if (set == null || set.isEmpty()) return false;
+
+        int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
+
+        // find min/max in one pass
+        for (int v : set) {
+            if (v < min) min = v;
+            if (v > max) max = v;
+        }
+
+        // contiguous ⇔ size == range length
+        return set.size() == (max - min + 1);
+    }
+
+
+
+    /*
+    condition accumulators
+    , consider moving these methods
+     */
+
+    private void buildScoreFilterSetConditions(List<String> conditionExprList, Set<Integer> scoreFilter) {
+        if(scoreFilter != null && !scoreFilter.isEmpty()) {
+            conditionExprList.add(buildInClauseSql("score", scoreFilter));
+        }
+    }
+
+    private void buildScoreFilterRangeConditions(List<String> conditionExprList, NumericRangeRecord<Integer> rangeFilter) {
+        if(rangeFilter != null && rangeFilter.isValid()) {
+            String filterSql = "(score >= " + rangeFilter.min() + " AND score <= " + rangeFilter.max() + ")";
+            conditionExprList.add(filterSql);
+        }
+    }
+
+    private void buildStatusConditions(List<String> conditionExprList, Set<Integer> statusFilter) {
+        if (statusFilter != null && !statusFilter.isEmpty()) {
+            if(isContiguous(statusFilter)) {
+                int min = Collections.min(statusFilter);
+                int max = Collections.max(statusFilter);
+
+                String filterSql = "(status >= " + min + " AND status <= " + max + ")";
+                conditionExprList.add(filterSql);
+            }else {
+                conditionExprList.add(buildInClauseSql("status", statusFilter));
+            }
+        }
+    }
+
+    private void applyReviewQueryOptions(List<String> conditionExprList, ReviewQueryOptions options) {
+        // filter by status
+        Set<Integer> statusFilterSet = options.getStatusFilterSet();
+        buildStatusConditions(conditionExprList, statusFilterSet);
+
+        // filter by score range (scoreFilterRange and scoreFilterList are mutually exclusive. If range is valid,
+        // it will be used, otherwise filter by list (if any)).
+        NumericRangeRecord<Integer> scoreFilterRange = options.getScoreFilterRange();
+        buildScoreFilterRangeConditions(conditionExprList, scoreFilterRange);
+
+        // filter by score list, mutually exclusive with score range filter
+        if(scoreFilterRange == null || !scoreFilterRange.isValid()) {
+            Set<Integer> scoreFilterSet = options.getScoreFilterSet();
+            buildScoreFilterSetConditions(conditionExprList, scoreFilterSet);
+        }
+    }
+
+
+
+
+
+    /*
+    end of helper methods
+     */
+
+
+    /**
+     * Atomically increments the report count for a review, ensuring it stays within the bounds of a signed 16-bit
+     * integer.
+     * @param reviewId
+     */
+    @Override
+    public void incrementReportVote(long reviewId, int delta) throws Exception {
+        String sql = "UPDATE review SET report_count = LEAST(32767, GREATEST(0, report_count + ?)) WHERE id = ?";
 
         FSQLQuery.create(sql)
             .bind(1)
             .bind(reviewId)
             .update();
     }
+/*
+    private <T> String clampIntSql(String columnName, long min, long max, String valuePlaceholder) {
+        return String.format("LEAST(%d, GREATEST(%d, %s))", max, min, valuePlaceholder);
+    }
+ */
 
-    void addVoteUp(long reviewId, int delta) throws Exception{
-        String sql = "UPDATE review SET like_count = LEAST(32767, GREATEST(-32768, like_count + ?)) WHERE id = ?";
-
-        FSQLQuery.create(sql)
-            .bind(delta)
-            .bind(reviewId)
-            .update();
-    };
-
-    void addVoteDown(long reviewId, int delta) throws Exception{
-        String sql = "UPDATE review SET dislike_count = LEAST(32767, GREATEST(-32768, dislike_count + ?)) WHERE id = ?";
+    @Override
+    public void incrementLikeVote(long reviewId, int delta) throws Exception {
+        String sql = "UPDATE review SET like_count = LEAST(32767, GREATEST(0, like_count + ?)) WHERE id = ?";
 
         FSQLQuery.create(sql)
             .bind(delta)
@@ -41,7 +166,18 @@ public class ReviewRepositoryCustomImpl {
             .update();
     };
 
-    void updateReviewStatus(long reviewId, int newStatus) throws Exception{
+    @Override
+    public void incrementDislikeVote(long reviewId, int delta) throws Exception {
+        String sql = "UPDATE review SET dislike_count = LEAST(32767, GREATEST(0, dislike_count + ?)) WHERE id = ?";
+
+        FSQLQuery.create(sql)
+            .bind(delta)
+            .bind(reviewId)
+            .update();
+    };
+
+    @Override
+    public void updateReviewStatus(long reviewId, int newStatus) throws Exception {
         String sql = "UPDATE review SET status = ? WHERE id = ?";
 
         FSQLQuery.create(sql)
@@ -51,8 +187,9 @@ public class ReviewRepositoryCustomImpl {
     };
 
 
-    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, int filterScoreMin, int filterScoreMax) throws Exception{
-        FSQLQuery.ResultSetConsumer<LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
+    @Override
+    public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> scoreFilterSet) throws Exception{
+        FSQLQuery.ResultSetFunction<LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
             LinkedHashMap<Integer, Integer> res = new LinkedHashMap<>();
             while (rs.next()) {
                 int score = rs.getInt("score");
@@ -62,25 +199,28 @@ public class ReviewRepositoryCustomImpl {
             return res;
         };
 
-        var filterRangeSql = RangeQueryFilterBuilder.buildSqlQueryString(
-            "score",
-            filterScoreMin > -1 ? filterScoreMin : null,
-            filterScoreMax > -1 ? filterScoreMax : null,
-            true,
-            true,
-            "(1=1)");
+        List<String> conditionExprList = new ArrayList<>();
+        conditionExprList.add("(external_id = ?)");
+        conditionExprList.add("(status = ?)");
 
-        String sql = "SELECT score, COUNT(*) AS count FROM review WHERE ((external_id = ?) AND (status = ?) AND " + filterRangeSql + ") GROUP BY score";
+        buildScoreFilterSetConditions(conditionExprList, scoreFilterSet);
+
+        // build sql
+        String whereStr = conditionExprList.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditionExprList);
+        String sql = "SELECT score, COUNT(*) AS count FROM review"
+            + whereStr
+            + " GROUP BY score";
+
         return FSQLQuery.create(sql)
             .bind(externalId)
             .bind(Review.REVIEW_STATUS_APPROVED)
             .fetchCallback(fnReadResultSet);
     };
 
-    List<String> findUniqueExternalIds() throws Exception{
-        //FSQLQuery.ResultSetConsumer<List<String>> fnReadResultSet = ;
-
+    @Override
+    public List<String> findUniqueExternalIds() throws Exception{
         String sql = "SELECT DISTINCT external_id FROM review";
+
         return FSQLQuery.create(sql)
             .fetchCallback((ResultSet rs) -> {
                 List<String> result = new ArrayList<>();
@@ -92,85 +232,55 @@ public class ReviewRepositoryCustomImpl {
             });
     }
 
-    List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception {
-        boolean DEBUG_SQL = false;
+
+
+
+
+
+    /*
+    find with or without external id with pagination and filtering options.
+     */
+
+    @Override
+    public List<Review> findByAnyExternalIdWithPagination(ReviewQueryOptions options) throws Exception{
+        return findByOptionalExternalIdWithPagination(null, options);
+    }
+
+    @Override
+    public List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception {
+        checkArgument(!(externalId == null || externalId.isEmpty()), "externalId cannot be null or empty");
+
+        return findByOptionalExternalIdWithPagination(externalId, options);
+    }
+
+
+    private List<Review> findByOptionalExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception {
         String columnStr = "id, external_id, author_name, score, title, comment, like_count, dislike_count, status, created_at";
 
         // make condition list
         ArrayList<String> conditionExprList = new ArrayList<>();
 
-        // add external id filter
-        if (externalId != null && !externalId.isEmpty()) {
-            // add condition for external id
+        // add condition for external id
+        if(externalId != null && !externalId.isEmpty()){
             conditionExprList.add("(external_id = ?)");
         }
 
-        if ((options.getStatusEnum() == Review.REVIEW_STATUS_MATCH_ALL)) {
-            // catch all, no need to add any condition
-        } else {
-            // check bitflags
-            if ((options.getStatusEnum() & Review.REVIEW_STATUS_APPROVED) != 0) {
-                conditionExprList.add("(status = " + Review.REVIEW_STATUS_APPROVED + ")");
-            }
-            if ((options.getStatusEnum() & Review.REVIEW_STATUS_PENDING) != 0) {
-                conditionExprList.add("(status = " + Review.REVIEW_STATUS_PENDING + ")");
-            }
-            if ((options.getStatusEnum() & Review.REVIEW_STATUS_REJECTED) != 0) {
-                conditionExprList.add("(status = " + Review.REVIEW_STATUS_REJECTED + ")");
-            }
-        }
-/*
-        record ScoreFilter(int min, int max) {
-            boolean isEmpty() {
-                return min() < 0 && max() < 0;
-            }
-        }
- */
+        // apply filters from options
+        applyReviewQueryOptions(conditionExprList, options);
 
-        var filterRangeSql = RangeQueryFilterBuilder.buildSqlQueryString(
-            "score",
-            options.getFilterScoreMin() > -1 ? options.getFilterScoreMin() : null,
-            options.getFilterScoreMax() > -1 ? options.getFilterScoreMax() : null,
-            true,
-            true,
-            ""
-        );
-
-        if(filterRangeSql != null && !filterRangeSql.isEmpty()) {
-            Logger.log("Adding filter range SQL: " + filterRangeSql);
-            conditionExprList.add(filterRangeSql);
-        }
-
-/*
-        // add score filter, if any
-        ScoreFilter filter = new ScoreFilter(options.getFilterScoreMin(), options.getFilterScoreMax());
-        if(!filter.isEmpty()) {
-            if((filter.min() > -1) && (filter.max() > -1)) {
-                // both min and max are set, add a between condition
-                conditionExprList.add("(score >= " + filter.min() + " AND score <= " + filter.max() + ")");
-            } else if (filter.min() > -1) {
-                // at least one filter is set, add a condition group for score
-                conditionExprList.add("(score >= " + filter.min() + ")");
-            } else {
-                // at least one filter is set, add a condition group for score
-                conditionExprList.add("(score <= " + filter.max() + ")");
-            }
-        }
-
- */
 
         // make where expr-list sql
         String whereStr = conditionExprList.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditionExprList);
 
         // make limit/offset sql
         String limitOffsetSql = options.getPageCursor().buildLimitOffsetSql();
-        if(!limitOffsetSql.isEmpty()) {
+        if(limitOffsetSql != null && !limitOffsetSql.isEmpty()) {
             limitOffsetSql = " " + limitOffsetSql;
         }
 
         // make order by sql
         String orderBySql = options.buildOrderBySql();
-        if(!orderBySql.isEmpty()) {
+        if(orderBySql != null && !orderBySql.isEmpty()) {
             orderBySql = " ORDER BY " + orderBySql;
         }
 
@@ -178,16 +288,33 @@ public class ReviewRepositoryCustomImpl {
         String sql = "SELECT " + columnStr + " FROM review" + whereStr + orderBySql + limitOffsetSql;
 
         return FSQLQuery.create(sql)
-            .debug(DEBUG_SQL)
             .bindIf(externalId != null, externalId)
             .fetchAll(Review.class);
     }
 
-    List<Review> findByAnyExternalIdWithPagination(ReviewQueryOptions options) throws Exception{
-        return findByExternalIdWithPagination(null, options);
+
+
+    @Override
+    public int countByExternalId(String externalId, ReviewQueryOptions options) throws Exception{
+        List<String> conditionExprList = new ArrayList<>();
+
+        // add condition for external id
+        checkArgument(externalId != null && !externalId.isEmpty(), "externalId cannot be null or empty");
+        conditionExprList.add("(external_id = ?)");
+
+        // apply filters from options
+        applyReviewQueryOptions(conditionExprList, options);
+
+        String sql = "SELECT COUNT(*) FROM review WHERE " + String.join(" AND ", conditionExprList);
+
+        return (int) FSQLQuery.create(sql)
+            .bind(externalId)
+            .selectCount();
     }
 
-    int countByExternalIdAndStatus(String externalId, int status) throws Exception{
+    public int countByExternalIdAndStatus(String externalId, int status) throws Exception{
+        checkArgument(externalId != null && !externalId.isEmpty(), "externalId cannot be null or empty");
+
         String sql = "SELECT COUNT(*) FROM review WHERE (external_id = ?) AND (status = ?)";
         return (int) FSQLQuery.create(sql)
             .bind(externalId)

@@ -1,6 +1,6 @@
 package root.database;
 
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;

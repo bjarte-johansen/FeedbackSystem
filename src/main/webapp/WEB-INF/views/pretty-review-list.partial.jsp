@@ -7,11 +7,13 @@
     data-order-by-enum="${currentOrderByEnum}"
     data-original-cursor="${pageCursor}"
     data-cursor="${pageCursor}"
-    data-score-filter-min="${scoreFilterMin}"
-    data-score-filter-max="${scoreFilterMax}"
     data-score-filter="${scoreFilter}"
-    data-review-count="${reviewStats.totalCount}">
-    <h3>Omtaler (${reviewStats.totalCount})</h3>
+    data-review-count="${reviewStats.totalCount}"
+    data-filtered-review-count="${totalFilteredCount}"
+    >
+
+    <div class="box">
+        <h3>Omtaler (${reviewStats.totalCount})</h3>
 
         <%@ include file="review-list-stats.partial.jsp" %>
 

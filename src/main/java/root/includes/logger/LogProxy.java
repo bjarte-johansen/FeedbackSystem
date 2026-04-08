@@ -1,4 +1,4 @@
-package root.includes.logger.logger;
+package root.includes.logger;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

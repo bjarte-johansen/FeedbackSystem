@@ -120,8 +120,6 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         return HANDLE_CACHE.computeIfAbsent(method, m -> {
             String name = m.getName();
 
-            // TODO: remove this test code
-
             // handle default repo method(s)
             if(name.equals("create")) return wrap((method_args) -> handleCreate(m, method_args));
             if(name.equals("update")) return wrap((method_args) -> handleUpdate(m, method_args));
@@ -229,7 +227,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
      * @throws Exception
      */
 
-    private Object handleSave(Method method, Object[] args) throws Exception {
+    private Object handleSave(Method method, Object[] args) {
         Object entityId = FSQLUtils.getEntityId(args[0], DEFAULT_ID_FIELD_NAME);
 
         if (entityId == null || convertToLongValueExactOrThrow(entityId) == 0L) {
@@ -251,7 +249,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
      * @throws Exception
      */
 
-    private Object handleCreate(Method method, Object[] args) throws Exception {
+    private Object handleCreate(Method method, Object[] args)  {
         Object entity = args[0];
 
         DataSourceManager.withVoid(conn -> {
@@ -267,10 +265,10 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         if (returnType == int.class || returnType == long.class) return FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME);
         if (returnType == Integer.class || returnType == Long.class) return FSQLUtils.getEntityId(entity, DEFAULT_ID_FIELD_NAME);
 
-        throw new Exception("Unsupported return type " + returnType);
+        throw new RuntimeException("Unsupported return type " + returnType);
     }
 
-    private Object handleUpdate(Method method, Object[] args) throws Exception {
+    private Object handleUpdate(Method method, Object[] args) {
         Object entity = args[0];
 
         int affectedRows = DataSourceManager.with(conn -> {
@@ -290,7 +288,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         if (returnType == boolean.class || returnType == Boolean.class) return affectedRows > 0;
         if (returnType == void.class || returnType == Void.class) return null;
 
-        throw new Exception("Unsupported return type " + returnType + "(" + returnType.getSimpleName() + "), found (" + ((Object) entity).getClass().getSimpleName() + ")");
+        throw new RuntimeException("Unsupported return type " + returnType + "(" + returnType.getSimpleName() + "), found (" + ((Object) entity).getClass().getSimpleName() + ")");
     }
 
 
@@ -299,7 +297,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
     handle find methods
      */
 
-    private Object handleFindBy(Method method, Object[] args) throws Exception {
+    private Object handleFindBy(Method method, Object[] args) {
         String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
         // create query & return result(s) based on return type

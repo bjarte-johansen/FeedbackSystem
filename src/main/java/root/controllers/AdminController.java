@@ -1,6 +1,7 @@
 package root.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
+//import org.apache.coyote.BadRequestException;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,32 +17,45 @@ import root.repositories.ReviewRepository;
 import root.repositories.ReviewerRepository;
 import root.services.ReviewService;
 
+import org.springframework.security.access.AccessDeniedException;
+//import java.nio.file.AccessDeniedException;
 import java.util.Map;
 
 @Controller
 public class AdminController {
-    //private static final Logger log = new Logger();
-    public static boolean DEBUG_ERRORS = true;
 
-    // TODO: must be false for production
+    // declare repos
+    private final ReviewRepository reviewRepo;
+    private final ReviewerRepository reviewerRepo;
+    private final ReviewService reviewService;
 
 
-    @Autowired
-    ReviewRepository reviewRepo;
+    /**
+     * Constructor with dependency injection.
+     * @param reviewRepo
+     * @param reviewerRepo
+     * @param reviewService
+     */
 
-    @Autowired
-    ReviewerRepository reviewerRepo;
-
-    @Autowired
-    ReviewService reviewService;
+    public AdminController(ReviewRepository reviewRepo, ReviewerRepository reviewerRepo, ReviewService reviewService) {
+        this.reviewRepo = reviewRepo;
+        this.reviewerRepo = reviewerRepo;
+        this.reviewService = reviewService;
+    }
 
 
     /*
     helper methods
      */
 
+    private void requireAdministratorRole() {
+        if (!AppContext.isAdministrator()) {
+            throw new AccessDeniedException("User does not have administrator privileges");
+        }
+    }
+
     private ResponseEntity<Void> markReviewWithStatus(long reviewId, int newStatus) throws Exception {
-        if(!AppContext.isAdministrator()) return ResponseEntity.status(401).build();
+        //requireAdministratorRole();
 
         reviewService.setReviewStatus(reviewId, newStatus);
 
@@ -64,12 +78,16 @@ public class AdminController {
      * @return
      * @throws Exception
      */
-    @PostMapping("/api/mark-review-approved/{customer}/{reviewId}")
-    public ResponseEntity<Void> markReviewAsApproved(@PathVariable Long customer, @PathVariable long reviewId) throws Exception {
-        // authorization check in markReviewWithStatus method
+
+    @PostMapping("/api/review/mark-approved")
+    public ResponseEntity<Void> markReviewAsApproved(@RequestParam long reviewId) throws Exception {
+        requireAdministratorRole();
 
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_APPROVED);
     }
+
+
+
 
 
     /**
@@ -79,12 +97,15 @@ public class AdminController {
      * @throws Exception
      */
 
-    @PostMapping("/api/mark-review-rejected/{customer}/{reviewId}")
-    public ResponseEntity<Void> markReviewAsRejected(@PathVariable Long customer, @PathVariable long reviewId) throws Exception {
-        // authorization check in markReviewWithStatus method
+    @PostMapping("/api/review/mark-rejected")
+    public ResponseEntity<Void> markReviewAsRejected(@RequestParam long reviewId) throws Exception {
+        requireAdministratorRole();
 
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_REJECTED);
     }
+
+
+
 
 
     /**
@@ -95,12 +116,15 @@ public class AdminController {
      * @throws Exception
      */
 
-    @PostMapping("/api/mark-review-pending/{customer}/{reviewId}")
-    public ResponseEntity<Void> markReviewAsPending(@PathVariable Long customer, @PathVariable long reviewId) throws Exception {
-        // authorization check in markReviewWithStatus method
+    @PostMapping("/api/review/mark-pending")
+    public ResponseEntity<Void> markReviewAsPending(@RequestParam Long reviewId) throws Exception {
+        requireAdministratorRole();
 
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_PENDING);
     }
+
+
+
 
 
     /**
@@ -113,23 +137,25 @@ public class AdminController {
      * @throws Exception
      */
 
-    @DeleteMapping("/api/delete-review/{tenantId}/{reviewId}")
+
+    // todo: fix route name (maybe /api/reviews/{reviewId} or similar), and add authorization check for tenantId
+    //  (should match the tenant of the review, or be a super admin)
+    @DeleteMapping("/api/review/delete")
     public ResponseEntity<Void> deleteReviewApi(
-        @PathVariable long tenantId,
-        @PathVariable long reviewId,
+        @RequestParam Long tenantId,
+        @RequestParam Long reviewId,
         HttpServletRequest req
     ) throws Exception {
-        try {
-            if(!AppContext.isAdministrator()) return ResponseEntity.status(401).build();
+        requireAdministratorRole();
 
+        try {
             // validate parameters
-            if(tenantId <= 0 || reviewId <= 0) throw new BadRequestException();
+            if((tenantId.compareTo(0L) <= 0) || (reviewId.compareTo(0L) <= 0))
+                throw new BadRequestException();
 
             reviewService.deleteById(reviewId);
 
             return ResponseEntity.ok().build();
-        } catch(BadRequestException e){
-            return ResponseEntity.badRequest().build();
         } catch(Exception e) {
             if(AppConfig.CONTROLLER_PRINT_STACK_TRACE_ON_ERROR) e.printStackTrace();
             return ResponseEntity.internalServerError().build();

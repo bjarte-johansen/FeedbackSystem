@@ -21,11 +21,18 @@ import java.time.Instant;
 public class Review implements IReview {
     /**
      * Vote type constants:
-     * 1 = Upvote
-     * -1 = Downvote
      */
     public static int VOTE_UP = 1;
     public static int VOTE_DOWN = 2;
+/*
+    public static boolean isValidVoteId(int vote) {
+        return vote == VOTE_UP || vote == VOTE_DOWN;
+    }
+
+    public static boolean isUpDownVote(int vote) {
+        return vote == VOTE_UP || vote == VOTE_DOWN;
+    }
+ */
 
     /**
      * Review status constants:
@@ -35,11 +42,11 @@ public class Review implements IReview {
      * 1 | 2 | 4 = Any (used for filtering, not an actual status)
      */
 
-    public static int REVIEW_STATUS_APPROVED = 1 << 0;
-    public static int REVIEW_STATUS_PENDING = 1 << 1;
-    public static int REVIEW_STATUS_REJECTED = 1 << 2;
+    public static final int REVIEW_STATUS_APPROVED = 1;
+    public static final int REVIEW_STATUS_PENDING = 2;
+    public static final int REVIEW_STATUS_REJECTED = 3;
 
-    public static int REVIEW_STATUS_MATCH_ALL = REVIEW_STATUS_APPROVED | REVIEW_STATUS_PENDING | REVIEW_STATUS_REJECTED;
+    //public static int REVIEW_STATUS_MATCH_ALL = REVIEW_STATUS_APPROVED | REVIEW_STATUS_PENDING | REVIEW_STATUS_REJECTED;
 
     private Long id;
     private String externalId;
@@ -202,9 +209,9 @@ public class Review implements IReview {
 
     public static String statusToString(int status) {
         return switch (status) {
-            case 0 -> "PENDING";
-            case 1 -> "APPROVED";
-            case 2 -> "REJECTED";
+            case Review.REVIEW_STATUS_PENDING -> "PENDING";
+            case Review.REVIEW_STATUS_APPROVED -> "APPROVED";
+            case Review.REVIEW_STATUS_REJECTED -> "REJECTED";
             default -> "UNKNOWN";
         };
     }

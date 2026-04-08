@@ -7,11 +7,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.HandlerMapping;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 
 import java.io.IOException;
-import java.util.Map;
 
 import static root.common.utils.Preconditions.checkArgument;
 
@@ -93,7 +91,8 @@ public class RequestContextFilter extends OncePerRequestFilter {
  */
 
         // set schema and tenant id
-        AppContext.currentTenantId.set(tenantId);
+        AppContext appContext = AppContext.getSingleton();
+        appContext.setTenantId(tenantId);
         AppRequestSchema.set(tenantSchema);
 
 

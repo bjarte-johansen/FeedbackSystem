@@ -5,8 +5,8 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import root.includes.quicktests.quicktests.DatabaseManager;
 import root.common.utils.RandomPastInstant;
-import root.includes.logger.logger.Logger;
-import root.includes.logger.logger.LoggerScope;
+import root.includes.logger.Logger;
+import root.includes.logger.LoggerScope;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 

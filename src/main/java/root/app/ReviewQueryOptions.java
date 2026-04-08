@@ -1,9 +1,36 @@
 package root.app;
 
 import root.app.includes.PageCursor;
+import root.includes.NumericRangeRecord;
 import root.models.Review;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+
+/**
+ * The ReviewQueryOptions class is a data structure that encapsulates various options for querying reviews from the
+ * database. It includes properties for pagination (page cursor), sorting order (order by enum), and filtering criteria
+ * (status filter list, score filter list, and score filter range). This class provides a convenient way to specify
+ * different query options when retrieving reviews, allowing for flexible and customizable queries based on different
+ * criteria such as review status, review scores, and sorting preferences..
+ * <p>
+ * The class includes constants for different sorting options, such as sorting by review ID, creation date, score, and
+ * review status (pending, approved, rejected). It also provides getter and setter methods for each property, as well as
+ * a utility method to build the SQL ORDER BY clause based on the specified sorting option. Overall, the
+ * ReviewQueryOptions class serves as a comprehensive container for various query options that can be used when fetching
+ * reviews from the database, allowing developers to easily customize their queries based on specific requirements
+ * <p>
+ * Note that scoreFilterRange takes presedence over scoreFilterList, as they are mutually exclusive. If scoreFilterRange
+ * is set, scoreFilterList will be cleared and ignored when building the query. If you want to use scoreFilterList,
+ * please set scoreFilterRange to null.
+ */
+
 public class ReviewQueryOptions {
+    public static final int OPTION_ORDER_NONE = 0;
+
     public static final int OPTION_ORDER_BY_ID_ASC = 1;
     public static final int OPTION_ORDER_BY_ID_DESC = 2;
 
@@ -13,15 +40,107 @@ public class ReviewQueryOptions {
     public static final int OPTION_ORDER_BY_SCORE_ASC = 8;
     public static final int OPTION_ORDER_BY_SCORE_DESC = 9;
 
-    public static final int OPTION_ORDER_BY_PENDING_FIRST = 20;
-    public static final int OPTION_ORDER_BY_APPROVED_FIRST = 21;
-    public static final int OPTION_ORDER_BY_REJECTED_FIRST = 22;
+    public static final int OPTION_ORDER_BY_STATUS_PENDING_FIRST = 20;
+    public static final int OPTION_ORDER_BY_STATUS_APPROVED_FIRST = 21;
+    public static final int OPTION_ORDER_BY_STATUS_REJECTED_FIRST = 22;
+
 
     private PageCursor pageCursor;
     private int orderByEnum;
-    private int statusEnum;
-    private int filterScoreMin;
-    private int filterScoreMax;
+
+    private final Set<Integer> statusFilterSet = new HashSet<>();
+    private final Set<Integer> scoreFilterSet = new HashSet<>();
+
+    private NumericRangeRecord<Integer> scoreFilterRange = null;
+
+
+    /*
+    score filter range
+     */
+
+    /**
+     * Returns the score filter range for the review query options. This value allows developers to specify a range of
+     * review scores to be included in the query results. The NumericRangeRecord object contains a minimum and maximum
+     * score value, and only reviews with scores that fall within this range will be included in the results when
+     * querying the database for reviews.
+     *
+     * @return
+     */
+
+    public NumericRangeRecord<Integer> getScoreFilterRange() {
+        return scoreFilterRange;
+    }
+
+
+    /**
+     * Sets the score filter range for the review query options. This value allows developers to specify a range of
+     * review scores to be included in the query results. The method accepts a NumericRangeRecord object that contains a
+     * minimum and maximum score value, and only reviews with scores that fall within this range will be included in the
+     * results when querying the database for reviews.
+     * <p>
+     * Will clear score filter list when setting score filter range, as they are mutually exclusive. If you want to use
+     * score filter list, please set score filter range to null.
+     *
+     * @param range
+     */
+
+    public void setScoreFilterRange(NumericRangeRecord<Integer> range) {
+        // clear score filter list
+        scoreFilterSet.clear();
+
+        // set score filter range
+        scoreFilterRange = range;
+    }
+
+
+
+
+
+    /*
+    status filter list
+     */
+
+    /**
+     * Returns the status filter set for the review query options. This set allows developers to specify multiple review
+     * status values to be included in the query results. By adding status values to this set (e.g., approved, pending,
+     * rejected), developers can filter reviews based on their status when querying the database, allowing for more
+     * flexible and customized filtering of reviews in the results. Using a Set instead of a List provides better
+     * performance for lookups and ensures that each status value is unique in the filter criteria.
+     *
+     * @return
+     */
+    public Set<Integer> getStatusFilterSet() {
+        return statusFilterSet;
+    }
+
+
+
+
+
+    /*
+    score filter list
+     */
+
+    /**
+     * Returns the score filter list for the review query options. This list allows developers to specify multiple
+     * review score values to be included in the query results. By adding score values to this list, developers can
+     * filter reviews based on their scores (e.g., 1 to 5) when querying the database, allowing for more flexible and
+     * customized filtering of reviews in the results.
+     *
+     * @return
+     */
+
+    public Set<Integer> getScoreFilterSet() {
+        return scoreFilterSet;
+    }
+
+
+
+
+
+    /*
+    review options
+     */
 
     /**
      * Default constructor for the ReviewQueryOptions class. Initializes a new instance of the ReviewQueryOptions class
@@ -47,11 +166,11 @@ public class ReviewQueryOptions {
      */
     public ReviewQueryOptions(PageCursor pageCursor, Integer statusEnum, Integer orderByEnum) {
         this.pageCursor = pageCursor;
-        this.statusEnum = statusEnum;
+        //this.statusEnum = statusEnum;
         this.orderByEnum = orderByEnum;
-        this.filterScoreMin = -1;
-        this.filterScoreMax = -1;
     }
+
+
 
 
 
@@ -94,6 +213,7 @@ public class ReviewQueryOptions {
         return orderByEnum;
     }
 
+
     /**
      * Sets the order by enum value for the review query options. This value determines the sorting order for the
      * reviews when querying the database. The method accepts an integer value that corresponds to a specific sorting
@@ -110,98 +230,6 @@ public class ReviewQueryOptions {
 
 
 
-    /*
-    filter by status
-     */
-
-    /**
-     * Returns the status enum value associated with the review query options. This value indicates the review status
-     * filter for the query, allowing developers to specify which reviews to include in the results based on their
-     * status (e.g., approved, pending, rejected). The method returns an integer value that corresponds to a specific
-     * review status or a combination of statuses, enabling flexible filtering of reviews when querying the database.
-     *
-     * @return
-     */
-    public int getStatusEnum() {
-        return statusEnum;
-    }
-
-    /**
-     * Sets the status enum value for the review query options. This value determines the review status filter for the
-     * query, allowing developers to specify which reviews to include in the results based on their status (e.g.,
-     * approved, pending, rejected). The method accepts an integer value that corresponds to a specific review status or
-     * a combination of statuses, enabling flexible filtering of reviews when querying the database. By setting this
-     * value, developers can control which reviews are included in the results based on their status, allowing for
-     * customized filtering of reviews when retrieving data from the database.
-     *
-     * @param statusEnum
-     */
-    public void setStatusEnum(int statusEnum) {
-        this.statusEnum = statusEnum;
-    }
-
-
-
-    /*
-    filter by score range
-     */
-
-
-    /**
-     * Returns the minimum score filter for the review query options. This value allows developers to specify a lower
-     * limit for the review scores to be included in the query results.
-     *
-     * @return
-     */
-    public int getFilterScoreMin() {
-        return filterScoreMin;
-    }
-
-
-    /**
-     * Sets the minimum score filter for the review query options. This value allows developers to specify a lower limit
-     * for the review scores to be included in the query results.
-     *
-     * @param filterScoreMin
-     */
-    public void setFilterScoreMin(int filterScoreMin) {
-        this.filterScoreMin = filterScoreMin;
-    }
-
-
-    /**
-     * Returns the maximum score filter for the review query options. This value allows developers to specify an upper
-     * limit for the review scores to be included in the query results.
-     *
-     * @return
-     */
-    public int getFilterScoreMax() {
-        return filterScoreMax;
-    }
-
-
-    /**
-     * Sets the maximum score filter for the review query options. This value allows developers to specify an upper
-     * limit for the review scores to be included in the query results.
-     *
-     * @param filterScoreMax
-     */
-    public void setFilterScoreMax(int filterScoreMax) {
-        this.filterScoreMax = filterScoreMax;
-    }
-
-
-    /**
-     * Checks if a score filter is applied in the review query options. This method returns true if either the minimum
-     * score filter or the maximum score filter is set to a value other than -1, indicating that a score filter is
-     * active and should be applied when querying the database for reviews.
-     *
-     * @return
-     */
-    public boolean hasScoreFilter() {
-        return filterScoreMin != -1 || filterScoreMax != -1;
-    }
-
 
     /*
     utility
@@ -214,31 +242,22 @@ public class ReviewQueryOptions {
      * @return
      */
     public String buildOrderBySql() {
-        // TODO: by status should by id DESC?
-        switch (orderByEnum) {
-            case OPTION_ORDER_BY_ID_ASC:
-                return "id ASC";
-            case OPTION_ORDER_BY_ID_DESC:
-                return "id DESC";
-            case OPTION_ORDER_BY_CREATED_AT_ASC:
-                return "createdAt ASC";
-            case OPTION_ORDER_BY_CREATED_AT_DESC:
-                return "createdAt DESC";
-
-            case OPTION_ORDER_BY_SCORE_ASC:
-                return "score ASC";
-            case OPTION_ORDER_BY_SCORE_DESC:
-                return "score DESC";
-
-            case OPTION_ORDER_BY_PENDING_FIRST:
-                return "status = " + Review.REVIEW_STATUS_PENDING + " DESC, id DESC";
-            case OPTION_ORDER_BY_APPROVED_FIRST:
-                return "status = " + Review.REVIEW_STATUS_APPROVED + " DESC, id DESC";
-            case OPTION_ORDER_BY_REJECTED_FIRST:
-                return "status = " + Review.REVIEW_STATUS_REJECTED + " DESC, id DESC";
-            default:
-                return "id ASC"; // default order
-        }
+        return switch (orderByEnum) {
+            case OPTION_ORDER_NONE -> ""; // no order by
+            case OPTION_ORDER_BY_ID_ASC -> "id ASC";
+            case OPTION_ORDER_BY_ID_DESC -> "id DESC";
+            case OPTION_ORDER_BY_CREATED_AT_ASC -> "createdAt ASC";
+            case OPTION_ORDER_BY_CREATED_AT_DESC -> "createdAt DESC";
+            case OPTION_ORDER_BY_SCORE_ASC -> "score ASC";
+            case OPTION_ORDER_BY_SCORE_DESC -> "score DESC";
+            case OPTION_ORDER_BY_STATUS_PENDING_FIRST ->
+                "(status = " + Review.REVIEW_STATUS_PENDING + ") DESC, id DESC";
+            case OPTION_ORDER_BY_STATUS_APPROVED_FIRST ->
+                "(status = " + Review.REVIEW_STATUS_APPROVED + ") DESC, id DESC";
+            case OPTION_ORDER_BY_STATUS_REJECTED_FIRST ->
+                "(status = " + Review.REVIEW_STATUS_REJECTED + ") DESC, id DESC";
+            default -> "id ASC"; // default order
+        };
     }
 
 
@@ -254,7 +273,9 @@ public class ReviewQueryOptions {
         return "ReviewQueryOptions{" +
             "cursor=" + pageCursor.toString() +
             ", orderByEnum=" + orderByEnum +
-            ", statusEnum=" + statusEnum +
+            ", statusFilterSet=" + statusFilterSet +
+            ", scoreFilterSet=" + scoreFilterSet +
+            ", scoreFilterRange=" + (scoreFilterRange == null ? "null" : scoreFilterRange.toString()) +
             '}';
     }
 }

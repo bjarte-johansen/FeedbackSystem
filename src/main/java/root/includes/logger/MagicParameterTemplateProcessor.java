@@ -1,4 +1,4 @@
-package root.includes.logger.logger;
+package root.includes.logger;
 
 import java.util.LinkedHashMap;
 import java.util.function.Function;

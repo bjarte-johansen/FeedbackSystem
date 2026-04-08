@@ -15,22 +15,18 @@ import root.app.includes.PageCursorEncoder;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.controllers.dto.NewReviewForm;
-import root.includes.logger.logger.Logger;
 import root.models.Review;
 import root.models.Reviewer;
 import root.app.ReviewQueryOptions;
 import root.repositories.ReviewVoteRepository;
 import root.repositories.ReviewerRepository;
 import root.repositories.ReviewRepository;
+import root.services.ReviewPageService;
 import root.services.ReviewService;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
-import java.util.function.Function;
 
 import static root.common.utils.Preconditions.checkArgument;
 //import root.models.repositories.JdbcReviewRepository;
@@ -50,77 +46,47 @@ public class DefaultController {
     @Autowired
     ReviewVoteRepository reviewVoteRepo;
 
-    // debugging flag
-    public static boolean DEBUG_ERRORS = true;
-
-    private static double roundToHalf(double v) {
-        return Math.round(v * 2.0) / 2.0;
-    }
-
-    // add a simple function to format double values to 2 decimals for display in JSP
-    private static Function<Double, String> CSS_DOUBLE_FORMATTER_POINT_FIVE = (v) -> String.format(Locale.US, "%.1f", roundToHalf(v)).replace(".", "-");
-    private static Function<Double, String> DOUBLE_FORMATTER_1 = (v) -> String.format(Locale.US, "%.1f", v);
-    //private static Function<Double, String> DOUBLE_FORMATTER_2 = (v) -> String.format(Locale.US, "%.1f", v);
-
-    // add a simple function to format double values to 2 decimals for display in JSP
-    private static Function<Instant, String> DD_MM_YYYY_FORMATTER = v -> {
-        if (v == null) return "";
-
-        return DateTimeFormatter.ofPattern("dd/MM/yyyy")
-            .withLocale(Locale.US)
-            .withZone(ZoneId.systemDefault())
-            .format(v);
-    };
-
-    // add a simple function to format Instant values to "days ago" format for display in JSP
-    private static Function<Instant, String> DAYS_AGO_FORMATTER = v -> {
-        if (v == null) return "";
-
-        long days = ChronoUnit.DAYS.between(v, Instant.now());
-        return String.valueOf(Math.max(0, days));
-    };
-
-
-
+    @Autowired
+    ReviewPageService reviewPageService;
 
 
     /*
-     * methods
+     * public helper methods
      */
 
-    private void addDefaultNewReviewFormValues(Model model) {
-        model.addAttribute("displayNameSuggestion", FunnyUserNameGenerator.generate());
-        model.addAttribute("titleSuggestion", IpsumLoremGenerator.generate(2 + (int) (Math.random() * 4)).replace(".", ""));
-        model.addAttribute("commentSuggestion", IpsumLoremGenerator.generate(7 + (int) (Math.random() * 15)));
-        model.addAttribute("scoreSuggestion", 1 + new Random().nextInt(5));
+    public static void addDefaultNewReviewFormValues(Map<String, Object> modelMap) {
+        modelMap.put("displayNameSuggestion", FunnyUserNameGenerator.generate());
+        modelMap.put("titleSuggestion", IpsumLoremGenerator.generate(2 + (int) (Math.random() * 4)).replace(".", ""));
+        modelMap.put("commentSuggestion", IpsumLoremGenerator.generate(7 + (int) (Math.random() * 15)));
+        modelMap.put("scoreSuggestion", 1 + new Random().nextInt(5));
     }
 
-    private void addSelectExternalIdPillData(Model model) throws Exception {
+    public static List<String> addSelectExternalIdPillData(Map<String, Object> modelMap, ReviewRepository reviewRepo) throws Exception {
         List<String> uniqueExternalIds = reviewRepo.findUniqueExternalIds();
-        model.addAttribute("uniqueExternalIds", uniqueExternalIds);
+        modelMap.put("uniqueExternalIds", uniqueExternalIds);
+        return uniqueExternalIds;
     }
 
-    private void addCursorToModel(Model model, int elementCount, PageCursor originalCursor) {
-        if (elementCount > 0) {
-            var prevCursor = originalCursor.previous();
-            var nextCursor = originalCursor.next();
+    public static void addCursorToModel(Map<String, Object> modelMap, int elementCount, PageCursor originalCursor) {
+        modelMap.put("cursorOffset", originalCursor.getOffset());
+        modelMap.put("cursorLimit", originalCursor.getLimit());
+        modelMap.put("cursorMaxOffset", elementCount);
+    }
 
-            if (nextCursor.getOffset() >= elementCount)
-                nextCursor.setOffset(elementCount - 1);
-
-            model.addAttribute("pagePrevCursor", PageCursorEncoder.encodeCursor(prevCursor));
-            model.addAttribute("pageNextCursor", PageCursorEncoder.encodeCursor(nextCursor));
+    public static PageCursor decodeOrCreateCursor(String cursorStr, int defaultLimit) {
+        if (cursorStr != null && !cursorStr.isBlank()) {
+            return PageCursorEncoder.decodeCursor(cursorStr);
         } else {
-            model.addAttribute("pageNextCursor", null);
-            model.addAttribute("pagePrevCursor", null);
+            return new PageCursor(0, defaultLimit);
         }
     }
 
+
+
+
+
     /*
-    private void addTotalReviewsForExternalIdToModel(Model model, String externalId) throws Exception{
-        long totalReviewCount = reviewRepo.countByExternalIdAndStatus(externalId, Review.REVIEW_STATUS_APPROVED);
-        model.addAttribute("totalReviewCount", totalReviewCount);
-    }
+    other methods
      */
 
     // used to extract the externalId from the request URI for the /reviews/{externalId} route. Must be used
@@ -138,13 +104,8 @@ public class DefaultController {
         return externalId;
     }
 
-    public PageCursor decodeOrCreateCursor(String cursorStr, int defaultLimit) {
-        if (cursorStr != null && !cursorStr.isBlank()) {
-            return PageCursorEncoder.decodeCursor(cursorStr);
-        } else {
-            return new PageCursor(0, defaultLimit);
-        }
-    }
+
+
 
 
     /**
@@ -156,6 +117,9 @@ public class DefaultController {
     public String error() {
         return "error";
     }
+
+
+
 
 
     /**
@@ -171,9 +135,10 @@ public class DefaultController {
 
     @GetMapping("/")
     public String index(Model model, HttpServletRequest req, RedirectAttributes ra) throws Exception {
-        //return showReviews("/product/1", null, ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC, model, req);
-        return "redirect:/show-reviews?externalId=";
+        return "redirect:/show-reviews?externalId=/invalid-path";
     }
+
+
 
 
 
@@ -197,13 +162,16 @@ public class DefaultController {
     }
 
 
+
+
+
     /**
      * Main route to show reviews for a given externalId. This is the main route of the application and is used to
      * display reviews for a given externalId with pagination and sorting. It also displays aggregate score stats for
      * the given externalId.
      *
      * @param externalId
-     * @param strEncodedCursor
+     * @param encodedCursor
      * @param model
      * @param req
      * @return
@@ -213,108 +181,26 @@ public class DefaultController {
     @GetMapping("/show-reviews")
     public String showReviews(
         @RequestParam String externalId,
-        @RequestParam(name = "cursor", defaultValue = "") String strEncodedCursor,
+        @RequestParam(name = "cursor", defaultValue = "") String encodedCursor,
         @RequestParam(name = "orderByEnum", defaultValue = ("" + ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC)) int orderByEnum,
-        @RequestParam(name = "scoreFilter", defaultValue = ("" + -1)) int scoreFilter,
-        @RequestParam(name = "scoreFilterMin", defaultValue = ("" + -1)) int scoreFilterMin,
-        @RequestParam(name = "scoreFilterMax", defaultValue = ("" + -1)) int scoreFilterMax,
+        @RequestParam(name = "scoreFilter", defaultValue = "-1") String scoreFilter,
         Model model,
         HttpServletRequest req
-    ) throws Exception {
-        model.addAttribute("scoreFilter", scoreFilter);
-        model.addAttribute("scoreFilterMin", scoreFilterMin);
-        model.addAttribute("scoreFilterMax", scoreFilterMax);
+    )  throws Exception {
+        Map<String, Object> vm = reviewPageService.buildReviewListingPage(
+            externalId,
+            encodedCursor,
+            orderByEnum,
+            scoreFilter
+            );
 
-        // add things like title etc
-        ControllerUtils.setDefaults(model);
-
-        // find all unique externalIds for reviews to display in the dropdown for quick navigation
-        // only used in demonstration interface
-        // TODO: remove for production code, should allways take an externalId as a parameter and not display
-        //  a dropdown of all externalIds
-        addSelectExternalIdPillData(model);
-
-        // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
-        // TODO: remove for production code, should have empty form
-        addDefaultNewReviewFormValues(model);
-
-        //String externalId = extractExternalIdFromRequest(req);
-        //externalId = URLDecoder.decode(externalId, StandardCharsets.UTF_8);
-        //Logger.log("External ID extracted from request: " + externalId);
-
-
-        // TODO: set to 1 for testing only
-        Long tenantId = AppContext.currentTenantId.get();
-        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
-        model.addAttribute("tenantId", AppContext.currentTenantId.get());
-
-        if(externalId == null || externalId.isBlank()) {
-            externalId = "empty-external-id";
-        }
-        checkArgument (externalId != null && !externalId.isBlank(), "externalId must be non-null and non-empty");
-
-        // decode cursor
-        PageCursor decodedCursor = decodeOrCreateCursor(strEncodedCursor, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
-
-        // set query options for fetching reviews, including pagination and sorting. We are only fetching approved reviews for display.
-        ReviewQueryOptions options = new ReviewQueryOptions();
-        options.setPageCursor(decodedCursor);
-        options.setStatusEnum(Review.REVIEW_STATUS_APPROVED);
-        options.setOrderByEnum(orderByEnum);
-
-        // apply score filter if any
-        if(scoreFilterMin > -1 || scoreFilterMax > -1) {
-            options.setFilterScoreMin(scoreFilterMin);
-            options.setFilterScoreMax(scoreFilterMax);
-        }else if(scoreFilter > -1) {
-            options.setFilterScoreMin(scoreFilter);
-            options.setFilterScoreMax(scoreFilter);
-        }
-
-        // get score stats for the given externalId and add to model
-        // this includes things like average score, total reviews, and score distribution for display in JSP
-        var reviewStats = reviewService.getScoreStatsHelper(externalId, Review.REVIEW_STATUS_APPROVED, options.getFilterScoreMin(), options.getFilterScoreMax());
-        model.addAttribute("reviewStats", reviewStats);
-
-        Logger.log("QueryOptions: " + options);
-
-        // add reviews to model for display in JSP
-        List<Review> reviews = reviewRepo.findByExternalIdWithPagination(externalId, options);
-        model.addAttribute("reviews", reviews);
-
-        LinkedHashMap<String, Integer> reviewListOrderOptions = new LinkedHashMap<>();
-        reviewListOrderOptions.put("Nyeste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
-        reviewListOrderOptions.put("Eldste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC);
-        reviewListOrderOptions.put("Score (høyeste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_DESC);
-        reviewListOrderOptions.put("Score (laveste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_ASC);
-        model.addAttribute("reviewListOrderOptions", reviewListOrderOptions);
-        model.addAttribute("currentOrderByEnum", orderByEnum);
-
-        ReviewQueryOptions dumpOptions = new ReviewQueryOptions();
-        dumpOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
-        dumpOptions.setStatusEnum(Review.REVIEW_STATUS_MATCH_ALL);
-        dumpOptions.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
-        List<Review> reviewDump = reviewRepo.findByExternalIdWithPagination(externalId, dumpOptions);
-        model.addAttribute("reviewDump", reviewDump);
-
-        // add cursor to model
-        addCursorToModel(model, (int) reviewStats.getTotalCount(), options.getPageCursor());
-        model.addAttribute("pageCursor", PageCursorEncoder.encodeCursor(options.getPageCursor()));
-
-        // add externalId to model for display in JSP and for use in form submission for new reviews
-        model.addAttribute("externalId", externalId);
-
-        // add formatters to model for display in JSP
-        model.addAttribute("dblFormatter1", DOUBLE_FORMATTER_1);
-        //model.addAttribute("dblFormatter2", DOUBLE_FORMATTER_2);
-        model.addAttribute("dateFormatter", DD_MM_YYYY_FORMATTER);
-        model.addAttribute("daysAgoFormatter", DAYS_AGO_FORMATTER);
-        model.addAttribute("dblFormatterCssPointFive", CSS_DOUBLE_FORMATTER_POINT_FIVE);
-
-        // TODO END: get scores for aggregate display of score distribution and average score
+        model.addAllAttributes(vm);
 
         return "index";
     }
+
+
+
 
 
     /**
@@ -325,24 +211,25 @@ public class DefaultController {
      * @return
      * @throws Exception
      */
-    @GetMapping("/api/make-review-html/{reviewId}")
+    @GetMapping("/api/review/build-html/{reviewId}")
     public String makeReviewHtml(@PathVariable long reviewId, Model model) throws Exception {
-
         Review review = reviewRepo.findById(reviewId).orElse(null);
         if (review == null) return "error";
 
         model.addAttribute("review", review);
 
         // add externalId to model for display in JSP and for use in form submission for new reviews
-        Long tenantId = AppContext.currentTenantId.get();
-        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
-        model.addAttribute("tenantId", tenantId);
+        AppContext appContext = AppContext.getSingleton();
+        model.addAttribute("tenantId", appContext.getTenantId());
 
         // add formatters to model for display in JSP
-        model.addAttribute("daysAgoFormatter", DAYS_AGO_FORMATTER);
+        model.addAttribute("daysAgoFormatter", ReviewPageService.DAYS_AGO_FORMATTER);
 
         return "pretty-review.partial";
     }
+
+
+
 
 
     /**
@@ -352,19 +239,21 @@ public class DefaultController {
      * @return
      */
 
-    @PostMapping("/api/like-review/{reviewId}")
+    @PostMapping("/api/review/{reviewId}/like")
     public ResponseEntity<Void> addReviewLike(
         @PathVariable long reviewId,
         HttpSession session,
-        HttpServletRequest req)
-    {
-
-        if(reviewService.addReviewVote(reviewId, Review.VOTE_UP, session.getId(), req.getRemoteAddr())) {
+        HttpServletRequest req
+    ) {
+        if (reviewService.submitVote(reviewId, Review.VOTE_UP, session.getId(), req.getRemoteAddr())) {
             return ResponseEntity.ok().build();
         }
 
         return ResponseEntity.noContent().build();
     }
+
+
+
 
 
     /**
@@ -374,19 +263,19 @@ public class DefaultController {
      * @return
      */
 
-    @PostMapping("/api/dislike-review/{reviewId}")
+    @PostMapping("/api/review/{reviewId}/dislike")
     public ResponseEntity<Void> addReviewDislike(
         @PathVariable long reviewId,
         HttpSession session,
-        HttpServletRequest req)
-    {
-
-        if(reviewService.addReviewVote(reviewId, Review.VOTE_DOWN, session.getId(), req.getRemoteAddr())) {
+        HttpServletRequest req
+    ) {
+        if (reviewService.submitVote(reviewId, Review.VOTE_DOWN, session.getId(), req.getRemoteAddr())) {
             return ResponseEntity.ok().build();
         }
 
         return ResponseEntity.noContent().build();
     }
+
 
 
 
@@ -404,36 +293,26 @@ public class DefaultController {
     public ResponseEntity<Void> submitReview(
         @ModelAttribute NewReviewForm form
     ) throws Exception {
+        List<String> errors = NewReviewForm.validate(form, new ArrayList<String>());
+        checkArgument(errors.isEmpty(), errors.toString());
 
-        try {
-            List<String> errors = NewReviewForm.validate(form, new ArrayList<String>());
-            if (!errors.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
+        Reviewer reviewer = reviewerRepo.findByEmail(form.email()).orElse(null);
+        checkArgument(reviewer != null, "Reviewer not found");
 
-            Reviewer reviewer = (Reviewer) reviewerRepo.findByEmail(form.email()).orElse(null);
-            if (Objects.isNull(reviewer)) {
-                return ResponseEntity.badRequest().build();
-            }
+        Review review = new Review();
+        review.setAuthorName(form.displayName());
+        review.setScore(form.score());
+        review.setComment(form.comment());
+        review.setExternalId(form.externalId());
+        review.setCreatedAt(Instant.now());
+        review.setTitle(form.title());
+        review.setStatus(Review.REVIEW_STATUS_PENDING);
 
-            Review review = new Review();
-            review.setAuthorName(form.displayName());
-            review.setScore(form.score());
-            review.setComment(form.comment());
-            review.setExternalId(form.externalId());
-            review.setCreatedAt(Instant.now());
-            review.setTitle(form.title());
-            review.setStatus(Review.REVIEW_STATUS_PENDING);
-
-            if (AppConfig.AUTO_APPROVE_NEW_REVIEWS /* NOTE: should be set to false for production */) {
-                review.setStatus(Review.REVIEW_STATUS_APPROVED);
-            }
-
-            reviewRepo.save(review);
-        } catch (Exception e) {
-            if (AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS) e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+        if (AppConfig.AUTO_APPROVE_NEW_REVIEWS /* NOTE: should be set to false for production */) {
+            review.setStatus(Review.REVIEW_STATUS_APPROVED);
         }
+
+        reviewRepo.save(review);
 
         return ResponseEntity.ok().build();
     }

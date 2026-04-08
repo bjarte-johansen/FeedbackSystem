@@ -7,7 +7,7 @@ import root.app.AppConfig;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.database.*;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 import root.models.Review;
 import root.models.Reviewer;
 import root.models.Tenant;
@@ -79,15 +79,13 @@ public class DatabaseManager {
         try (var p = Logger.scope("Inserting tenant", DEBUG)) {
             Tenant tenant = new Tenant();
             tenant.setName("Tenant 1");
-            tenant.setId(1L);
             tenant.setEmail("tenant-1@demo.only");
             tenant.setDomain("tenant1.demo.only");
             tenant.setApiKey("tenant-1-api-key");
             tenant.setPasswordHash(PasswordService.hash("tenant-1", "salt"));
             tenant.setPasswordSalt("salt");
-            tenant.setSchemaName("tenant_1");
+            tenant.setSchemaName("test");
 
-            //TenantRepository tenantRepo = RepositoryProxyConstructor.create(TenantRepository.class);
             tenantRepo.save(tenant);
 
             if(DEBUG) Logger.log("Inserted tenant: " + tenant);
@@ -182,10 +180,20 @@ public class DatabaseManager {
                 createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, increasingPastInstant.get()),
                 createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, increasingPastInstant.get()),
                 createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_PENDING, path3, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_PENDING, path3, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_REJECTED, path3, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_REJECTED, path3, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
 
                 createReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 1L, title.get(), comment.get(), 1, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 3L, title.get(), comment.get(), 4, increasingPastInstant.get())
-            );
+                createReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 3L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_PENDING, path2, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_PENDING, path2, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get())
+
+                );
 
             reviews.forEach(reviewRepo::save);
         }

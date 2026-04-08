@@ -45,32 +45,41 @@ public class FSQL {
     /*****************************************************/
     /* statement binding and execution logic             */
     /*****************************************************/
-    public static void bindNull(PreparedStatement ps, int index) throws SQLException {
-        ps.setNull(index, java.sql.Types.NULL);
+
+    public static void bindNull(PreparedStatement ps, int index) {
+        try {
+            ps.setNull(index, java.sql.Types.NULL);
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
     }
 
-    public static void bind(PreparedStatement ps, int index, Object v) throws SQLException {
-        switch (v) {
-            case Long l -> ps.setLong(index, l);
-            case Integer i -> ps.setInt(index, i);
-            case String s -> ps.setString(index, s);
-            case Boolean b -> ps.setBoolean(index, b);
-            case Double d -> ps.setDouble(index, d);
-            case Instant t -> ps.setTimestamp(index, java.sql.Timestamp.from(t));
-            case null -> ps.setNull(index, java.sql.Types.NULL);
-            default -> ps.setObject(index, v);
+    public static void bind(PreparedStatement ps, int index, Object v) {
+        try {
+            switch (v) {
+                case Long l -> ps.setLong(index, l);
+                case Integer i -> ps.setInt(index, i);
+                case String s -> ps.setString(index, s);
+                case Boolean b -> ps.setBoolean(index, b);
+                case Double d -> ps.setDouble(index, d);
+                case Instant t -> ps.setTimestamp(index, java.sql.Timestamp.from(t));
+                case null -> ps.setNull(index, java.sql.Types.NULL);
+                default -> ps.setObject(index, v);
+            }
+        }catch(SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
 
-    public static void bind(PreparedStatement ps, LinkedHashMap<String, Object> map) throws SQLException {
+    public static void bind(PreparedStatement ps, LinkedHashMap<String, Object> map) {
         int i = 1;
         for (Object v : map.values()) {
             bind(ps, i++, v);
         }
     }
 
-    public static void bind(PreparedStatement ps, Object[] values, int step) throws SQLException {
+    public static void bind(PreparedStatement ps, Object[] values, int step) {
         checkArgument(step > 0, "Step must be positive");
 
         int param = 1;
@@ -136,7 +145,7 @@ public class FSQL {
      * @return The quoted SQL identifier, wrapped in the appropriate quoting characters for the database.
      */
 
-    static String quoteIdentifier(String identifier) throws SQLException {
+    static String quoteIdentifier(String identifier) {
         String q = Bugs.getQuoteSymbol();
         return q + identifier + q;
     }
@@ -151,7 +160,7 @@ public class FSQL {
      * characters for the database.
      */
 
-    static List<String> quotedIdentifiers(List<String> identifiers) throws SQLException {
+    static List<String> quotedIdentifiers(List<String> identifiers) {
         int n = identifiers.size();
         String[] arr = new String[n];
 
@@ -173,7 +182,7 @@ public class FSQL {
      * @return
      */
 
-    static String[] quotedIdentifiers(String[] identifiers) throws SQLException {
+    static String[] quotedIdentifiers(String[] identifiers) {
         int n = identifiers.length;
         String[] arr = new String[n];
 

@@ -5,6 +5,7 @@ package root.includes;
  * Utility class to wrap lambdas that throw checked exceptions and rethrow them as unchecked exceptions.
  */
 
+@Deprecated
 public class Try {
     /**
      * Functional interface for a lambda that takes no arguments and returns a result, and can throw checked exceptions.
@@ -29,7 +30,7 @@ public class Try {
      * @param <R>
      */
     @FunctionalInterface
-    interface ThrowingFunction<T, R> {
+    public interface ThrowingFunction<T, R> {
         R apply(T t) throws Exception;
     }
 
@@ -40,7 +41,7 @@ public class Try {
      * @param <R>
      */
     @FunctionalInterface
-    interface ThrowingBiFunction<T, U, R> {
+    public interface ThrowingBiFunction<T, U, R> {
         R apply(T t, U u) throws Exception;
     }
 

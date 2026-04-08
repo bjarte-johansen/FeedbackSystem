@@ -1,9 +1,5 @@
 package root.app.includes;
 
-import java.util.Base64;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 
 /**
  * A simple encoder and decoder for the PageCursor. This is used to encode the cursor as a string that can be passed
@@ -12,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 
 public class PageCursorEncoder {
-    //static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * A simple encoding of the cursor as "offset,limit". This is not secure but it's simple and sufficient for our use

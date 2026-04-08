@@ -37,6 +37,7 @@ public class GenericEntityPersistence {
         return DEFAULT_ID_NAME;
     }
 
+    /*
     private static LinkedHashMap<String, FieldGetter> buildPropertyMapWithoutId(Object entity, String id_field_name, boolean requireNonEmpty) {
         return PROPERTY_MAP_CACHE.computeIfAbsent(entity.getClass(), clazz -> buildPropertyMapWithoutIdImpl(entity, id_field_name, requireNonEmpty));
     }
@@ -76,18 +77,6 @@ public class GenericEntityPersistence {
         return props;
     }
 
-    public static void setEntityId(Object entity, String id_field_name, Object id) throws Exception {
-        var actualField = entity.getClass().getDeclaredField(id_field_name);
-        actualField.setAccessible(true);
-        actualField.set(entity, id);
-    }
-
-    public static Object getEntityId(Object entity, String id_field_name) throws Exception {
-        var actualField = entity.getClass().getDeclaredField(id_field_name);
-        actualField.setAccessible(true);
-        return actualField.get(entity);
-    }
-
     private static Object[] extractPropertyValues(Object entity, Map<String, FieldGetter> props) throws Exception {
         Object[] prop_val_arr = new Object[props.size()];
         int i = 0;
@@ -96,6 +85,20 @@ public class GenericEntityPersistence {
         }
         return prop_val_arr;
     }
+    */
+
+    private static void setEntityId(Object entity, String id_field_name, Object id) throws Exception {
+        var actualField = entity.getClass().getDeclaredField(id_field_name);
+        actualField.setAccessible(true);
+        actualField.set(entity, id);
+    }
+
+    private static Object getEntityId(Object entity, String id_field_name) throws Exception {
+        var actualField = entity.getClass().getDeclaredField(id_field_name);
+        actualField.setAccessible(true);
+        return actualField.get(entity);
+    }
+
 
 
     /**
@@ -127,25 +130,26 @@ public class GenericEntityPersistence {
         String parenColumnListSql;
         String parenPlaceholdersSql;
 
-        if(true) {
-            EntityMeta meta = EntityMeta.create(entity.getClass());
-            columnNameArr = meta.getNonIdColumnNames();
-            columnValueArr = meta.getNonIdPropertyValues(entity);
+        // extract column names and values from entity using EntityMeta
+        EntityMeta meta = EntityMeta.create(entity.getClass());
+        columnNameArr = meta.getNonIdColumnNames();
+        columnValueArr = meta.getNonIdPropertyValues(entity);
 
-            // Build the SQL insert statement
-            parenColumnListSql = "(" + String.join(", ", columnNameArr) + ")";
-            parenPlaceholdersSql = SqlFactory.createParenPlaceholdersSql(columnNameArr.length);
-        }else {
-            // Build a map of property names to their getter functions, excluding the ID field
-            var props = buildPropertyMapWithoutId(entity, id_field_name, true);
+        // Build the SQL insert statement
+        parenColumnListSql = "(" + String.join(", ", columnNameArr) + ")";
+        parenPlaceholdersSql = SqlFactory.createParenPlaceholdersSql(columnNameArr.length);
 
-            columnNameArr = props.keySet().toArray(new String[0]);
-            columnValueArr = extractPropertyValues(entity, props);
+        /*
+        // Build a map of property names to their getter functions, excluding the ID field
+        var props = buildPropertyMapWithoutId(entity, id_field_name, true);
 
-            // Build the SQL insert statement
-            parenColumnListSql = "(" + String.join(", ", columnNameArr) + ")";
-            parenPlaceholdersSql = "(" + String.join(", ", Collections.nCopies(columnNameArr.length, "?")) + ")";
-        }
+        columnNameArr = props.keySet().toArray(new String[0]);
+        columnValueArr = extractPropertyValues(entity, props);
+
+        // Build the SQL insert statement
+        parenColumnListSql = "(" + String.join(", ", columnNameArr) + ")";
+        parenPlaceholdersSql = "(" + String.join(", ", Collections.nCopies(columnNameArr.length, "?")) + ")";
+        */
 
         String sql = "INSERT INTO " + table_name + parenColumnListSql + " VALUES " + parenPlaceholdersSql;
 
@@ -190,37 +194,34 @@ public class GenericEntityPersistence {
 
         String[] columnNameArr;
         Object[] columnValueArr;
-
         String setClauseSql;
 
         Object entityId = getEntityId(entity, id_field_name);
-
         checkArgument(entityId instanceof Number, "Entity must have numeric ID field for update operation");
 
-        if(true) {
-            EntityMeta meta = EntityMeta.create(entity.getClass());
-            columnNameArr = meta.getNonIdColumnNames();
-            columnValueArr = meta.getNonIdPropertyValues(entity);
+        // extract column names and values from entity using EntityMeta
+        EntityMeta meta = EntityMeta.create(entity.getClass());
+        columnNameArr = meta.getNonIdColumnNames();
+        columnValueArr = meta.getNonIdPropertyValues(entity);
 
-            StringBuilder setClauseBuilder = new StringBuilder(512);
-            for(int i = 0; i < columnNameArr.length; i++) {
-                if (i > 0) setClauseBuilder.append(", ");
-                setClauseBuilder.append(columnNameArr[i]).append(" = ?");
-            }
-            setClauseSql = setClauseBuilder.toString();
-        }else {
-            // Build a map of property names to their getter functions, excluding the ID field
-            var props = buildPropertyMapWithoutId(entity, id_field_name, true);
-
-            // Build the SQL insert statement
-            setClauseSql = props.keySet().stream()
-                .map(key -> key + " = ?")
-                .collect(Collectors.joining(", "));
-
-            columnValueArr = extractPropertyValues(entity, props);
+        StringBuilder setClauseBuilder = new StringBuilder(512);
+        for(int i = 0; i < columnNameArr.length; i++) {
+            if (i > 0) setClauseBuilder.append(", ");
+            setClauseBuilder.append(columnNameArr[i]).append(" = ?");
         }
+        setClauseSql = setClauseBuilder.toString();
 
+        /*
+        // Build a map of property names to their getter functions, excluding the ID field
+        var props = buildPropertyMapWithoutId(entity, id_field_name, true);
 
+        // Build the SQL insert statement
+        setClauseSql = props.keySet().stream()
+            .map(key -> key + " = ?")
+            .collect(Collectors.joining(", "));
+
+        columnValueArr = extractPropertyValues(entity, props);
+        */
 
         var sql = "UPDATE " + table_name + " SET " + setClauseSql + " WHERE " + id_field_name + " = ?";
 

@@ -28,13 +28,15 @@ public class ControllerHelper {
         return this;
     }
 
-    public String redirect(RedirectAttributes ra, String path) throws Exception{
+    public String redirect(RedirectAttributes ra, String path) {
         ra.addFlashAttribute("successMessage", successMessage);
         ra.addFlashAttribute("errorMessage", errorMessage);
 
         return "redirect:" + path;
     }
-    public String redirect(String path) throws Exception{
+
+/*
+    public String redirect(String path) {
         return "redirect:" + path;
     }
 
@@ -47,7 +49,6 @@ public class ControllerHelper {
         model.addAttribute("errorMessage", message);
     }
 
-
     //
     public static void setSuccessMessage(RedirectAttributes ra, String message) {
         ra.addFlashAttribute("successMessage", message);
@@ -56,4 +57,5 @@ public class ControllerHelper {
     public static void setSuccessMessage(Model model, String message) {
         model.addAttribute("successMessage", message);
     }
+ */
 }

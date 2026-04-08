@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import root.App;
 import root.app.AppRequestSchema;
 import root.database.DataSourceManager;
-import root.includes.logger.logger.Logger;
 import root.includes.quicktests.quicktests.DatabaseManager;
 import root.repositories.TenantRepository;
 
@@ -52,6 +51,7 @@ CREATE TABLE IF NOT EXISTS review_vote (
         };
 
         List<App.ConnectionStatementRunnable> patchers = List.of(
+            patchAddREviewVoteTable,
             patchAddStatusFieldForReview,
             patchAddStatusIndexDescSortedForReview
         );
@@ -59,10 +59,10 @@ CREATE TABLE IF NOT EXISTS review_vote (
         // return lambda executer that runs the patchers
 
         for (var tenant : tenantRepo.findAll()) {
-            String schema = "test"; // TODO: use tenant.getSchemaName();
-            try(var _1 = Logger.scope("Patching schema " + schema)) {
+            //String schema = tenant.getSchemaName(); // TODO: use tenant.getSchemaName();
+            //try(var _1 = Logger.scope("Patching schema " + schema)) {
                 // TODO: bug here, its implemented twice that we do the test schema for some reason, need to investigate and fix this
-                try (var _2 = AppRequestSchema.withThreadSchema("test")) {
+                try (var _2 = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
                     try (var conn = DataSourceManager.getConnection()) {
                         try (var st = conn.createStatement()) {
                             for (var patcher : patchers)
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS review_vote (
                         }
                     }
                 }
-            }
+            //}
         }
     }
 }

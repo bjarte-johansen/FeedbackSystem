@@ -1,7 +1,7 @@
 package root.database;
 
 import root.database.connectionproviders.CustomConnectionProvider;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 
 import java.sql.Connection;
 

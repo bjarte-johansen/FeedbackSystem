@@ -103,6 +103,15 @@ public class Tenant implements ITenant {
     @Override
     public String toString()
     {
-        return "Tenant{id=" + id + ", name='" + name + "', domain='" + domain + "', api_key='" + apiKey + "', email='" + email + "'}";
+        return "Tenant{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", domain='" + domain + '\'' +
+                ", apiKey='" + apiKey + '\'' +
+                ", email='" + email + '\'' +
+                ", passwordHash='" + passwordHash + '\'' +
+                ", passwordSalt='" + passwordSalt + '\'' +
+                ", schemaName='" + schemaName + '\'' +
+                '}';
     }
 }

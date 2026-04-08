@@ -1,4 +1,4 @@
-package root.includes.logger.logger;
+package root.includes.logger;
 
 class LoggerFormatType {
     public static final int YAML = 1;

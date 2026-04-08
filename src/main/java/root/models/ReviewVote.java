@@ -4,6 +4,16 @@ import root.interfaces.HasId;
 
 import java.time.Instant;
 
+
+/**
+ * The ReviewVote class represents a vote (upvote or downvote) on a review. It contains information about the review being
+ * voted on, the session and IP address of the voter, the value of the vote, and the timestamp of when the vote was
+ * created.
+ *
+ * This class is NOT intended to be used directly by the application code. Instead, it should be managed through the
+ * ReviewVoteRepository and the ReviewService, which will handle the business logic and data access for review votes.
+ */
+
 public class ReviewVote implements HasId {
     private Long id;
     private Long reviewId;

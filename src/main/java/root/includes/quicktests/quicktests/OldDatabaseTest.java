@@ -2,7 +2,7 @@ package root.includes.quicktests.quicktests;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 import root.models.Reviewer;
 import root.services.PasswordService;
 import root.repositories.ReviewRepository;

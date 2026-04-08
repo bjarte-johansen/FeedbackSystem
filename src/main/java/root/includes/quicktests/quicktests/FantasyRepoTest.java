@@ -2,7 +2,7 @@ package root.includes.quicktests.quicktests;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 import root.includes.quicktests.quicktests.repofun.Fantasy;
 import root.includes.quicktests.quicktests.repofun.FantasyRepository;
 
@@ -21,19 +21,16 @@ public class FantasyRepoTest {
     }
 
     public static void report(String action, boolean found) {
-        String title = action + ": found boolean";
         Logger.log(action);
         Logger.tab().log(found ? "true" : "false");
     }
 
     public static void report(String action, int number) {
-        String title = action + ": found number " + number;
         Logger.log(action);
         Logger.tab().log(number);
     }
 
     public static void report(String action, Object entity) {
-        String title = action + ": found object";
         Logger.log(action);
         Logger.tab().log(entity);
     }
@@ -44,7 +41,6 @@ public class FantasyRepoTest {
         testRepoFindById(repo);
         testRepoCount(repo);
         testFindAll(repo);
-
 
         testFindByEmailLike(repo);
         testFindById(repo);

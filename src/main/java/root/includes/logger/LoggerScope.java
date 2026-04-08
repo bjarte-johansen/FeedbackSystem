@@ -1,4 +1,4 @@
-package root.includes.logger.logger;
+package root.includes.logger;
 
 @FunctionalInterface
 public interface LoggerScope extends AutoCloseable{

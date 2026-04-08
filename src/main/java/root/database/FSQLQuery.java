@@ -1,6 +1,6 @@
 package root.database;
 
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 
 import java.sql.*;
 import java.util.*;
@@ -225,22 +225,26 @@ public class FSQLQuery {
         return this;
     }
 
-    private <T> T execute(QueryExecutor<T> executor) throws Exception {
-        if (ownsConnection) {
-            T result = null;
+    private <T> T execute(QueryExecutor<T> executor) {
+        try {
+            if (ownsConnection) {
+                T result = null;
 
-            Connection oldConn = conn;
-            try {
-                conn = DataSourceManager.getConnection();
-                result = executor.run(conn);
-            } finally {
-                conn.close();
-                conn = oldConn;
+                Connection oldConn = conn;
+                try {
+                    conn = DataSourceManager.getConnection();
+                    result = executor.run(conn);
+                } finally {
+                    conn.close();
+                    conn = oldConn;
+                }
+
+                return result;
+            } else {
+                return executor.run(conn);
             }
-
-            return result;
-        } else {
-            return executor.run(conn);
+        }catch(Exception e) {
+            throw new RuntimeException("Error executing query: " + e.getMessage(), e);
         }
     }
 
@@ -362,7 +366,7 @@ public class FSQLQuery {
         });
     }
 
-    public <T> List<T> fetchAll(Class<T> clazz) throws Exception {
+    public <T> List<T> fetchAll(Class<T> clazz) {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ps.executeQuery();
@@ -385,7 +389,7 @@ public class FSQLQuery {
         });
     }
 
-    public <T> Optional<T> fetchOne(Class<T> clazz) throws Exception {
+    public <T> Optional<T> fetchOne(Class<T> clazz) {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ps.executeQuery();
@@ -408,22 +412,22 @@ public class FSQLQuery {
 
 
     @FunctionalInterface
-    public interface ResultSetConsumer<R> {
+    public interface ResultSetFunction<R> {
         R accept(ResultSet rs) throws Exception;
     }
 
     @FunctionalInterface
-    public interface ResultSetRowConsumer<R> {
+    public interface ResultSetRowIndexFunction<R> {
         R accept(ResultSet rs, int rowIndex) throws Exception;
     }
 
-    public <R> R fetchCallback(ResultSetConsumer<R> resultSetConsumer) throws Exception {
+    public <R> R fetchCallback(ResultSetFunction<R> resultSetFunction) throws Exception {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ps.executeQuery();
 
                 try (ResultSet rs = ps.getResultSet()) {
-                    return resultSetConsumer.accept(rs);
+                    return resultSetFunction.accept(rs);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -431,7 +435,7 @@ public class FSQLQuery {
         });
     }
 
-    public <R> List<R> fetchCallback(ResultSetRowConsumer<R> resultSetConsumer) throws Exception {
+    public <R> List<R> fetchCallback(ResultSetRowIndexFunction<R> resultSetConsumer) throws Exception {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ps.executeQuery();

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import root.app.AppConfig;
 import root.app.AppContext;
 import root.database.*;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 import root.models.Review;
 import root.includes.proxyrepo.RepositoryProxyConstructor;
 import root.includes.quicktests.quicktests.FantasyRepoTest;
@@ -50,7 +50,7 @@ public class Main {
             Logger.caller(4).log("This is the caller functions information.");
         }
 
-        try(var ignore = Logger.scope("Testing Logger...")) {
+        try(var _ = Logger.scope("Testing Logger...")) {
             Logger.log("This is a log message.");
             Logger.warn("This is a warning message.");
             Logger.error("This is an error message.");
@@ -64,7 +64,7 @@ public class Main {
 
         //var bean = ctx.getBean(FantasyRepository.class); // @Autowired works
 
-        appContext = new AppContext();
+        appContext = AppContext.getSingleton();
         appContext.initSingleTenantConnectionProvider(
             new CustomDataSource(AppConfig.TEST)
         );

@@ -7,8 +7,6 @@ public class AppConfig {
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test", "h184905", "pass", "test");
     public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
 
-    public static String SESSION_ROOT_KEY = "feedback_app_session";
-    public static String SESSION_REVIEW_LIKE_MAP_KEY = "review_user_like_map";
 
     public static int DEFAULT_REVIEW_VOTE_EXPIRATION_IN_DAYS = 30;
 
@@ -17,6 +15,9 @@ public class AppConfig {
     //  which can lead to security issues and performance degradation.
     public static boolean CONTROLLER_PRINT_REQUEST_PARAMS = true;
     public static boolean CONTROLLER_PRINT_STACK_TRACE_ON_ERROR = true;
+
+    // TODO: must be set to false for production
+    public static boolean TESTING_MODE = true;
 
     // TODO: must be set to false in production, otherwise all reviews will be automatically approved without moderation.
     public static boolean AUTO_APPROVE_NEW_REVIEWS = true;

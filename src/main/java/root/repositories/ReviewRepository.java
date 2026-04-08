@@ -6,6 +6,7 @@ import root.models.Review;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -15,34 +16,32 @@ import java.util.List;
 
 
 
-public interface ReviewRepository extends ProxyRepository<Review, Long> {
-    //List<Review> findByStatusAndExternalId(int status, String externalId) throws Exception;
-
+public interface ReviewRepository extends ProxyRepository<Review, Long>, ReviewRepositoryInterface{
     List<Review> findByExternalId(String externalId) throws Exception;
-    List<Review> findByScoreAndExternalId(int score, String externalId) throws Exception;
-
     long countByExternalId(String externalId) throws Exception;
 
-    void addVoteReport(long reviewId) throws Exception;
-    void addVoteUp(long reviewId, int offset) throws Exception;
-    void addVoteDown(long reviewId, int offset) throws Exception;
+    //void addVoteReport(long reviewId) throws Exception;
+    //void incrementLikeVote(long reviewId, int delta) throws Exception;
+    //void incrementDislikeVote(long reviewId, int delta) throws Exception;
 
-    void updateReviewStatus(long reviewId, int newStatus) throws Exception;
+    //void updateReviewStatus(long reviewId, int newStatus) throws Exception;
+
+
+    //void addVote(long reviewId, int voteId, int offset, String sessionId, String ipAddress) throws Exception;
+
 
     // stats
-    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, int filterScoreMin, int filterScoreMax) throws Exception;
+    //LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> scoreFilterSet) throws Exception;
 
     // find unique review ids
     List<String> findUniqueExternalIds() throws Exception;
 
-    // main method to find reviews by external id with pagination and sorting
-    //List<Review> findByExternalIdWithPagination(String externalId, Long prevId, Long nextId, int limit, int statusEnum, int orderByEnum) throws Exception;
-    List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception;
+    // find by external id, with query options (pagination, sorting, filtering, etc.)
+    //List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception;
+
+    // find without external id, with query options (pagination, sorting, filtering, etc.)
     List<Review> findAllExternalIdsWithPagination(ReviewQueryOptions options) throws Exception;
 
-    int countByExternalIdAndStatus(String externalId, int status) throws Exception;
+    int countByExternalId(String externalId, ReviewQueryOptions options) throws Exception;
 
-    default void sayHello(String msg) {
-        System.out.println("hello world from ReviewRepository, msg: " + msg);
-    }
 }

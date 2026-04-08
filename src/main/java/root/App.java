@@ -7,22 +7,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import root.app.AppContext;
 
-import root.includes.logger.logger.Logger;
+import root.app.AppRequestSchema;
+import root.includes.logger.Logger;
 import root.repositories.ReviewRepository;
 import root.repositories.TenantRepository;
 import root.services.DatabaseService;
-import root.utils.WhereQueryBuilder;
 
 import java.sql.Connection;
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 
 @SpringBootApplication
 public class App implements CommandLineRunner {
-    private static AppContext appContext;
+    //private static AppContext appContext;
 
     public static void main(String[] args) throws Exception {
         SpringApplication app = new SpringApplication(App.class);
@@ -36,17 +33,13 @@ public class App implements CommandLineRunner {
     @Override
     @Order(0)
     public void run(String... args) throws Exception {
-        initAppContext();
+        AppContext.getSingleton();
 
         Logger.log();
     }
 
     public static void initAppContext() {
-        if(appContext != null) {
-            Logger.warn("AppContext is already initialized, skipping re-initialization");
-            return;
-        }
-        appContext = new AppContext();
+
     }
 
     @Bean
@@ -56,10 +49,14 @@ public class App implements CommandLineRunner {
         return (args) -> {
             Logger.log("running app startup tasks...");
 
-            initAppContext();
+            // Initialize AppContext singleton (e.g. to initialize database connection pool and other shared resources)
+            AppContext.getSingleton();
+            AppRequestSchema.set("test");
 
             databaseService.executeDatabasePatches();
             databaseService.resetDemoData();
+
+            AppRequestSchema.remove();;
 
             //WhereQueryBuilder.test();
         };

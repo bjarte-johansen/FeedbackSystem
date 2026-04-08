@@ -1,16 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
-<script>
-function toggleReviewForm() {
-    jQuery(".form--submit-review-form").toggle().removeClass("d-none");
-    return false;
-}
-</script>
-
 <div class="box-virtual submit-review-form">
-    <br>
-    <a href="#" onclick="toggleReviewForm();">Legg til ny omtale</a>
-
     <form class="ajax reload-on-success form--submit-review-form d-none" action="${pageContext.request.contextPath}/api/submit-review" method="post">
         <p class="alert alert-info">
             Benytt "test@test.com" og "Abacus556!" som epost og passord for å unngå å måtte verifisere konto.

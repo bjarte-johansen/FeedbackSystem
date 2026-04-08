@@ -1,6 +1,6 @@
-package root.includes.logger.logger.colorschemes;
+package root.includes.logger.colorschemes;
 
-import root.includes.logger.logger.ElementType;
+import root.includes.logger.ElementType;
 
 public interface AnsiColorScheme {
     String getReset();

@@ -1,4 +1,4 @@
-package root.includes.logger.logger.colorschemes;
+package root.includes.logger.colorschemes;
 
 public class IntelliJDarkAnsi implements AnsiColorScheme {
     public static final String RESET = "\033[0m";

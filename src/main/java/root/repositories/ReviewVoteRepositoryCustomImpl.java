@@ -31,7 +31,7 @@ public class ReviewVoteRepositoryCustomImpl {
                 .update();
         } catch (Exception e) {
             e.printStackTrace();
-            return 0; // Indicate an error
+            throw new RuntimeException(e);
         }
     }
 
@@ -54,7 +54,7 @@ public class ReviewVoteRepositoryCustomImpl {
                 .delete();
         } catch (Exception e) {
             e.printStackTrace();
-            return 0;
+            throw new RuntimeException(e);
         }
     }
 
@@ -80,7 +80,7 @@ public class ReviewVoteRepositoryCustomImpl {
                 .orElse(0);
         } catch (Exception e) {
             e.printStackTrace();
-            return 0; // Indicate an error
+            throw new RuntimeException(e);
         }
     }
 
@@ -92,6 +92,7 @@ public class ReviewVoteRepositoryCustomImpl {
                 .delete();
         } catch (Exception e) {
             e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }

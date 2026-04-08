@@ -2,7 +2,7 @@ package root.app;
 
 import root.includes.proxyrepo.RepositoryProxyConstructor;
 import root.common.utils.KissWordWrapper;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 
 
 /**

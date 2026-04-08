@@ -10,8 +10,10 @@ import java.util.Map;
  */
 
 public class ReviewAggregateScoreHelper {
+    /*
     public record Score(double percentOfTotal, long count) {
     }
+     */
 
     private double averageScore;
     private long totalCount;

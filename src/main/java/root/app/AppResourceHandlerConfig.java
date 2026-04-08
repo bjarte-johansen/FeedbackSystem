@@ -3,7 +3,7 @@ package root.app;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 
 /**
  * TODO: this file only works on localhost, it messes with paths on TomEe, must fix

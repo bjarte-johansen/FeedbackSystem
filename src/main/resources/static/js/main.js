@@ -1,13 +1,12 @@
 let Utils = {
-    requireNonNull: function(value, name = "value") {
+    requireNonNull: function (value, name = "value") {
         if (value == null) { // catches null AND undefined
             throw new Error(`${name} must not be null`);
         }
         return value;
-    },
-    validateInputElement(el) {
+    }, validateInputElement(el) {
         el.setCustomValidity("");
-        if(!el.checkValidity()) {
+        if (!el.checkValidity()) {
             el.reportValidity();
             return false;
         }
@@ -17,32 +16,34 @@ let Utils = {
 
 var Review = {
     utils: {
-        incrementElementTextBy: function(el, delta) {
+
+        /*
+        // deprecated in favor of loading the entire review element(s)
+        incrementElementTextBy: function (el, delta) {
             const $el = $(el);
             const iOldValue = parseInt($el.text()) || 0;
             $el.text(iOldValue + Number(delta));
         }
+         */
     },
 
-    triggerClientOrderByEnumChange(select) {
-        const $reviewList = $(select).closest(".review--list");
-        if(!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
-
-        const val = parseInt($(select).val());
-        $reviewList.attr("data-order-by-enum", val);
-
+    triggerClientOrderByEnumChange() {
         Review.reloadReviewList();
     },
 
-    triggerClientScoreFilterChange(select){
-        const $reviewList = $(select).closest(".review--list");
-        if(!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
-
-        const val = parseInt($(select).val());
-        $reviewList.attr("data-score-filter", val);
-
+    triggerClientScoreFilterChange() {
         Review.reloadReviewList();
     },
+
+
+    /**
+     * Constructs a URLSearchParams object based on the data attributes of the given $reviewList element. This is
+     * used to build the query parameters for the API call when reloading the review list. It checks for attributes
+     * like data-external-id, data-order-by-enum, data-score-filter, and data-cursor, and includes them in the search
+     * parameters if they are present.
+     * @param $reviewList
+     * @returns {URLSearchParams}
+     */
 
     buildSearchParamsFromReviewList($reviewList) {
         const params = new URLSearchParams();
@@ -57,15 +58,6 @@ var Review = {
             params.set("orderByEnum", orderByEnum);
         }
 
-        /*
-        const scoreFilterMin = $reviewList.attr("score-filter-min");
-        const scoreFilterMax = $reviewList.attr("score-filter-max");
-        if (scoreFilterMin !== undefined && scoreFilterMax !== undefined) {
-            params.set("scoreFilterMin", scoreFilterMin);
-            params.set("scoreFilterMax", scoreFilterMax);
-        }
-        */
-
         const scoreFilter = $reviewList.attr("data-score-filter");
         if (scoreFilter !== undefined) {
             params.set("scoreFilter", scoreFilter);
@@ -79,29 +71,36 @@ var Review = {
         return params;
     },
 
-    updateReviewListFromUI(){
+
+    /**
+     * Reads the current state of the review list UI (like sorting and filtering options) and updates the corresponding
+     * data attributes on the .review--list element. This ensures that when reloadReviewList is called, it uses the
+     * latest user-selected options to construct the search parameters for the API call.
+     */
+
+    updateReviewListFromUI() {
         const $reviewList = $(".review--list");
-        if(!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
+        if (!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
 
         const $orderByEnumSelect = $(".review--list select[name='orderByEnum']");
-        if($orderByEnumSelect.length !== 0) {
+        if ($orderByEnumSelect.length !== 0) {
             const orderByEnumValue = parseInt($orderByEnumSelect.val());
             $reviewList.attr("data-order-by-enum", orderByEnumValue);
         }
 
         const $scoreFilter = $(".review--list select[name='scoreFilter']");
-        if($scoreFilter.length !== 0) {
+        if ($scoreFilter.length !== 0) {
             const filterValue = $scoreFilter.val();
-            //$reviewList.attr("data-score-filter-min", filterValue);
-            //$reviewList.attr("data-score-filter-max", filterValue);
             $reviewList.attr("data-score-filter", filterValue);
         }
     },
 
-    reloadReviewList: function(){
+    reloadReviewList: function () {
         Review.updateReviewListFromUI();
 
         const $reviewList = $(".review--list");
+        if (!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
+
         const params = Review.buildSearchParamsFromReviewList($reviewList);
 
         const url = new URL(window.location.href);
@@ -111,11 +110,20 @@ var Review = {
         window.location.href = url.toString();
     },
 
-    nextReviewListPage: function(offset = 1){
+
+    /**
+     * Calculates the next page cursor based on the current cursor and review count, then updates the data-cursor
+     * attribute on the .review--list element and calls reloadReviewList to fetch the next set of reviews. It ensures
+     * that the cursor does not exceed the total review count, which would indicate an invalid page.
+     * The offset parameter allows for moving multiple pages at once (e.g., offset=2 to skip ahead two pages).
+     * @param offset
+     */
+
+    nextReviewListPage: function (offset = 1) {
         offset = offset || 1;
 
         const $reviewList = $(".review--list");
-        if(!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
+        if (!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
 
         const reviewCount = parseInt($reviewList.attr("data-review-count")) || 0;
 
@@ -128,17 +136,30 @@ var Review = {
 
         Review.reloadReviewList();
     },
-    prevReviewListPage: function(){
+
+
+    /**
+     * Calculates the previous page cursor based on the current cursor and review count, then updates the data-cursor
+     * attribute on the .review--list element and calls reloadReviewList to fetch the previous set of reviews. It ensures
+     * that the cursor does not go below 0, which would indicate an invalid page.
+     */
+
+    prevReviewListPage: function () {
         Review.nextReviewListPage(-1);
     },
 
-    reloadReview: function(reviewId) {
+
+    /**
+     * reload a single review element by its ID. This is used after actions that affect a specific review
+     * (like liking, disliking, or changing its status) to fetch the updated HTML for that review and replace the
+     * existing review element in the DOM.
+     */
+
+    reloadReview: function (reviewId) {
         console.log("Review.reloadReview called with reviewId:", reviewId);
 
         $.ajax({
-            url: `/api/make-review-html/${reviewId}`,
-            method: "GET",
-            success: function(html) {
+            url: `/api/review/build-html/${reviewId}`, method: "GET", success: function (html) {
                 const $newReview = $(html);
                 const $oldReview = $(`.review--list .review[data-review-id="${reviewId}"]`);
                 if ($oldReview.length) {
@@ -148,8 +169,7 @@ var Review = {
                     console.warn(`Old review element with ID ${reviewId} not found for replacement.`);
                 }
                 console.log('-----------------------------------------------------------');
-            },
-            error: function(xhr, status, error) {
+            }, error: function (xhr, status, error) {
                 console.error(`Failed to reload review with ID ${reviewId}:`, status, error);
             }
         });
@@ -158,44 +178,44 @@ var Review = {
     handlers: {
 
         // like/dislike events
-        likeReviewDone: function(form, res){
+        likeReviewDone: function (form, res) {
             console.log("Review.formHandlers.likeReviewDone called");
+            if (res.status !== 200) return;
 
-            Review.reloadReview($(form).closest(".review").data("review-id"));
-        },
-        dislikeReviewDone: function(form, res) {
+            const reviewId = $(form).closest(".review").data("review-id");
+            Review.reloadReview(reviewId);
+        }, dislikeReviewDone: function (form, res) {
             console.log("Review.formHandlers.dislikeReviewDone called");
+            if (res.status !== 200) return;
 
-            Review.reloadReview($(form).closest(".review").data("review-id"));
+            const reviewId = $(form).closest(".review").data("review-id");
+            Review.reloadReview(reviewId);
         },
 
         // review management events
-        deleteReviewDone: function(form, res) {
+        deleteReviewDone: function (form, res) {
             console.log("Review.formHandlers.deleteReviewDone called");
-        },
-        submitReviewDone: function(form, res){
+        }, submitReviewDone: function (form, res) {
             console.log("Review.formHandlers.submitReviewDone called");
         },
 
         // status marking events
-        markApprovedReviewDone: function(form, res){
-            if(res.status !== 200) return;
+        markApprovedReviewDone: function (form, res) {
+            if (res.status !== 200) return;
 
             console.log("Review.formHandlers.markApprovedReviewDone called");
-        },
-        markRejectedReviewDone: function(form, res){
-            if(res.status !== 200) return;
+        }, markRejectedReviewDone: function (form, res) {
+            if (res.status !== 200) return;
 
             console.log("Review.formHandlers.markRejectedReviewDone called");
-        },
-        markPendingReviewDone: function(form, res){
-            if(res.status !== 200) return;
+        }, markPendingReviewDone: function (form, res) {
+            if (res.status !== 200) return;
 
             console.log("Review.formHandlers.markPendingReviewDone called");
         }
     },
 
-    invokeHandler: function(name, form, res){
+    invokeHandler: function (name, form, res) {
         const handler = this.handlers[name];
         if (typeof handler === "function") {
             handler(form, res);
@@ -206,17 +226,16 @@ var Review = {
     }
 };
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener("submit", async e => {
         const form = e.target.closest("form");
-        if(!form) return;
+        if (!form) return;
 
         if (!form.matches(".ajax")) return;
         e.preventDefault();
 
         const res = await fetch(form.action, {
-            method: (form.method || "POST").toUpperCase(),
-            body: new FormData(form)
+            method: (form.method || "POST").toUpperCase(), body: new FormData(form)
         });
 
         const key = "[FormPoster]";
@@ -233,23 +252,35 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
 
-        if(!res.ok) {
+        if (!res.ok) {
             console.warn(key, "Form submission failed", "HTTP error", res.status);
             return;
         }
 
         console.log(key, "Form submission succeeded");
 
-        if(form.matches(".reload-on-success")) {
+        if (form.matches(".reload-on-success")) {
             location.reload();
             return;
         }
 
-        if (form.dataset.handler){
+        if (form.dataset.handler) {
             const fn = Review.handlers[form.dataset.handler];
-            if(fn) fn(form, res);
+            if (fn) fn(form, res);
         }
     });
 
     console.log("main.js loaded");
 });
+
+
+
+// TODO: refactor this function, used with "Legg til ny omtale" button, to be more generic and reusable for toggling
+//  any form or element, not just the review form. It should also be renamed to reflect its more general purpose.
+
+function toggleReviewForm() {
+    $(".form--submit-review-form")
+        .toggle()
+        .removeClass("d-none");
+    return false;
+}

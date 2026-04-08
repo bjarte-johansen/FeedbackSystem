@@ -27,6 +27,8 @@ public record NewReviewForm(
 ) {
     /**
      * Validates the NewReviewForm DTO and populates the provided errors list with any validation errors found.
+     * No need for spring-mvc validators here, as this is a simple DTO and we want to keep validation logic centralized
+     * and straightforward.
      *
      * @param dto
      * @param errors

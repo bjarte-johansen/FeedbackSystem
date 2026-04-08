@@ -1,4 +1,4 @@
-package root.includes.logger.logger;
+package root.includes.logger;
 
 public class LoggerConfiguration {
     public boolean enabled                          = true;

@@ -4,6 +4,7 @@ package root.includes;
  * Utility class for working with bit flags.
  */
 
+@Deprecated
 public class BitFlags {
     /**
      * Checks if a specific flag is set in the given flags integer.

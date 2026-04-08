@@ -5,8 +5,8 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import root.includes.quicktests.quicktests.DatabaseManager;
-import root.includes.logger.logger.Logger;
-import root.includes.logger.logger.LoggerScope;
+import root.includes.logger.Logger;
+import root.includes.logger.LoggerScope;
 import root.repositories.ReviewRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

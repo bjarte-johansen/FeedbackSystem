@@ -5,24 +5,35 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import root.database.CustomDataSource;
 import root.database.DataSourceManager;
 import root.database.connectionproviders.CustomConnectionProvider;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
+
+import static root.common.utils.Preconditions.checkArgument;
 
 public class AppContext {
+    private static final AppContext INSTANCE = new AppContext();
+    private static ThreadLocal<Long> currentTenantId = new ThreadLocal<>();
+
     private CustomDataSource ds;
-    public static ThreadLocal<Long> currentTenantId = new ThreadLocal<>();
 
     /**
      * Initializes the application context, including data sources and connection providers.
      * Also prints the application text banner.
      */
 
-    public AppContext() {
+    private AppContext() {
+        initialize();
+    }
+
+    private void initialize() {
         // print app text banner
         AppTextBanner.print();
 
-
         // initialize data sources and connection providers
         initDatasourceAndConnectionProvider();
+    }
+
+    public static AppContext getSingleton() {
+        return AppContext.INSTANCE;
     }
 
     public void initDatasourceAndConnectionProvider() {
@@ -56,6 +67,25 @@ public class AppContext {
         Logger.log("Initialized " + connectionProvider.getClass().getSimpleName() + " connection provider");
     }
 
+/*
+    public ThreadLocal<Long> getCurrentTenantIdStorage() {
+        return currentTenantId;
+    }
+ */
+
+    public void setTenantId(Long tenantId) {
+        currentTenantId.set(tenantId);
+    }
+
+    public Long getTenantId() {
+        var tenantId = currentTenantId.get();
+        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
+        return tenantId;
+    }
+
+    public void removeTenantId() {
+        currentTenantId.remove();
+    }
 
     /**
      * Get the administrator ID from the current HTTP session.
@@ -94,43 +124,4 @@ public class AppContext {
         }
         return true;
     }
-
-
-    /*
-    main event triggers
-     */
-
-    //triggerChanged(entity.class, entity.getId(), whatChanged, whenChanged);
-
-/*
-    class SystemMessage{
-        public String systemEventId;
-
-        public SystemMessage(String systemEventId) {
-            this.systemEventId = systemEventId;
-        }
-
-        @Override
-        public String toString() {
-            return "SystemMessage{id='" + systemEventId + "'}";
-        }
-    }
-
-    class EventMarkReviewStatsDirtyArgs extends SystemMessage {
-        public String externalId;
-
-        public EventMarkReviewStatsDirtyArgs(String systemEventId, String externalId) {
-            super(EventMarkReviewStatsDirtyArgs.class.getSimpleName());
-            this.externalId = externalId;
-        }
-
-        @Override
-        public String toString() {
-            return "EventMarkReviewStatsDirtyArgs{externalId='" + externalId + "'}";
-        }
-    }
-
-    class
-*/
-
 }

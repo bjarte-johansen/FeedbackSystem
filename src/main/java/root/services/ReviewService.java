@@ -3,12 +3,12 @@ package root.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.app.AppConfig;
-import root.app.AppContext;
 import root.controllers.ReviewAggregateScoreHelper;
-import root.includes.logger.logger.Logger;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewVoteRepository;
+
+import java.util.Set;
 
 @Service
 public class ReviewService {
@@ -31,6 +31,10 @@ public class ReviewService {
     }
  */
 
+
+
+
+
     /*
     things that do NOT require administrator privileges:
      */
@@ -44,20 +48,17 @@ public class ReviewService {
      * @throws Exception
      */
 
-    private void addReviewVote(long reviewId, int newVoteId, int delta) throws Exception {
+    private void incrementVote(long reviewId, int newVoteId, int delta) throws Exception {
+        // we must ignore invalid vote ids, because when a user removes their vote, we call this method with
+        // newVoteId = 0, which is not a valid vote id but we should ignore it and just decrement the old vote.
+
         if (newVoteId == Review.VOTE_UP) {
-            reviewRepo.addVoteUp(reviewId, delta);
+            reviewRepo.incrementLikeVote(reviewId, delta);
         } else if (newVoteId == Review.VOTE_DOWN) {
-            reviewRepo.addVoteDown(reviewId, delta);
-        }else{
-            throw new Exception("Invalid vote id");
+            reviewRepo.incrementDislikeVote(reviewId, delta);
         }
-        /*
-        else if(voteType == Review.VOTE_REPORT){
-            reviewRepo.addVoteReport(reviewId, delta);
-        }
-        */
     }
+
 
     /**
      * Adds a vote to the review. voteType should be either Review.VOTE_UP or Review.VOTE_DOWN.
@@ -66,8 +67,8 @@ public class ReviewService {
      * @param voteType
      * @throws Exception
      */
-    private void addReviewVote(long reviewId, int voteType) throws Exception {
-        addReviewVote(reviewId, voteType, 1);
+    private void incrementVote(long reviewId, int voteType) throws Exception {
+        incrementVote(reviewId, voteType, 1);
     }
 
 
@@ -78,9 +79,10 @@ public class ReviewService {
      * @param voteType
      * @throws Exception
      */
-    private void removeReviewVote(long reviewId, int voteType) throws Exception {
-        addReviewVote(reviewId, voteType, -1);
+    private void decrementVote(long reviewId, int voteType) throws Exception {
+        incrementVote(reviewId, voteType, -1);
     }
+
 
     /**
      * Adds a vote to the review. If the user has already voted the same way, it does nothing. If the user has voted the
@@ -94,33 +96,34 @@ public class ReviewService {
      * @throws Exception
      */
 
-    public boolean addReviewVote(long reviewId, int newVoteId, String sessionId, String remoteIp) {
+    public boolean submitVote(long reviewId, int newVoteId, String sessionId, String remoteIp) {
         try {
-            int oldVoteId = reviewVoteRepo.getVote((int) reviewId, sessionId, remoteIp);
+            int oldVoteId = reviewVoteRepo.getVote(reviewId, sessionId, remoteIp);
 
             if (newVoteId != oldVoteId) {
-                // remove like/dislike from review
-                if (oldVoteId == Review.VOTE_UP) {
-                    removeReviewVote(reviewId, Review.VOTE_UP);
-                } else if (oldVoteId == Review.VOTE_DOWN) {
-                    removeReviewVote(reviewId, Review.VOTE_DOWN);
+                // adjust old vote count, if exists
+                if(oldVoteId == Review.VOTE_UP || oldVoteId == Review.VOTE_DOWN) {
+                    incrementVote(reviewId, oldVoteId, -1);
                 }
+
+                // increment counter for new vote
+                incrementVote(reviewId, newVoteId, 1);
 
                 // remove old vote record, if exists
                 reviewVoteRepo.removeVote(reviewId, sessionId);
 
-                // add new vote
-                addReviewVote(reviewId, newVoteId);
+                // add new vote record
                 reviewVoteRepo.addVote(reviewId, newVoteId, sessionId, remoteIp);
 
                 return true;
             }
         } catch (Exception e) {
-            if(AppConfig.CONTROLLER_PRINT_STACK_TRACE_ON_ERROR) e.printStackTrace();
+            if (AppConfig.CONTROLLER_PRINT_STACK_TRACE_ON_ERROR) e.printStackTrace();
         }
 
         return false;
     }
+
 
 
 
@@ -137,8 +140,6 @@ public class ReviewService {
      */
 
     public void deleteById(long reviewId) throws Exception {
-        AppContext.checkIsAdministrator();
-
         reviewRepo.deleteById(reviewId);
     }
 
@@ -152,16 +153,16 @@ public class ReviewService {
      */
 
     public void setReviewStatus(long reviewId, int newStatus) throws Exception {
-        AppContext.checkIsAdministrator();
-
         reviewRepo.updateReviewStatus(reviewId, newStatus);
     }
+
+
+
 
 
     /*
     other things
      */
-
 
     /**
      * Gets the review score statistics for a given externalId. This method calculates the average score, total count,
@@ -173,8 +174,8 @@ public class ReviewService {
      * @return
      * @throws Exception
      */
-    public ReviewAggregateScoreHelper getScoreStatsHelper(String externalId, int defaultScore, int filterScoreMin, int filterScoreMax) throws Exception {
-        var scoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId, filterScoreMin, filterScoreMax);
+    public ReviewAggregateScoreHelper getScoreStatsHelper(String externalId, int defaultScore, Set<Integer> scoreFilterSet) throws Exception {
+        var filteredScoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId, scoreFilterSet);
 
         var scoreStats = new ReviewAggregateScoreHelper();
 
@@ -182,7 +183,7 @@ public class ReviewService {
         long totalCount = 0;
 
         for (int i = 5; i >= 1; i--) {
-            long hits = scoreMap.getOrDefault(i, 0);
+            long hits = filteredScoreMap.getOrDefault(i, 0);
             totalScoreSum += hits * i;
             totalCount += hits;
         }
@@ -193,7 +194,7 @@ public class ReviewService {
         scoreStats.setTotalScore(totalScoreSum);
 
         for (int i = 5; i >= 1; i--) {
-            int hits = scoreMap.getOrDefault(i, 0);
+            int hits = filteredScoreMap.getOrDefault(i, 0);
             double pct = avg(hits, totalCount, 0.0) * 100.0;
             scoreStats.getScoreDistribution().put(i, pct);
             scoreStats.getScoreCounts().put(i, hits);

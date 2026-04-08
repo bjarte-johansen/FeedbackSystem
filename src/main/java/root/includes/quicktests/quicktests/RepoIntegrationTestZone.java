@@ -3,7 +3,7 @@ package root.includes.quicktests.quicktests;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import root.database.*;
-import root.includes.logger.logger.Logger;
+import root.includes.logger.Logger;
 import root.interfaces.IReview;
 import root.models.Review;
 import root.repositories.ReviewRepository;
@@ -80,8 +80,8 @@ public class RepoIntegrationTestZone {
         }
 
         {
-            var resultsByScoreAndExternalId = reviewRepo.findByScoreAndExternalId(4, "2");
-            printEntities(resultsByScoreAndExternalId, "reviews by author and external id");
+            //var resultsByScoreAndExternalId = reviewRepo.findByScoreAndExternalId(4, "2");
+            //printEntities(resultsByScoreAndExternalId, "reviews by author and external id");
 
             var results = reviewRepo.findAll();
             reviewRepo.deleteAll(results);
