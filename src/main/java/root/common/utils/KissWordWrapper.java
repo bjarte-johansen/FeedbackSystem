@@ -5,6 +5,7 @@ package root.common.utils;
  * It does not handle hyphenation or other complex cases, but it is fast and simple.
  */
 
+@Deprecated
 public class KissWordWrapper {
     /**
      * Wraps the input string to the specified maximum column width, breaking lines at spaces.

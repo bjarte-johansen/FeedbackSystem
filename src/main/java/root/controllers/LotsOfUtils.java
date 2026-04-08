@@ -13,6 +13,15 @@ import java.util.List;
 public class LotsOfUtils {
 
     /**
+     * @see #parseCsvIntList(String, String)
+     */
+
+    public static List<Integer> parseCsvIntList(String s) {
+        return parseCsvIntList(s, ",");
+    }
+
+
+    /**
      * Parses a comma-separated string of integers into a list of integers. Example: "1, 2, 3" -> List.of(1, 2, 3) -
      * Handles null or empty input by returning an empty list. - Trims whitespace around numbers.
      *
@@ -24,10 +33,10 @@ public class LotsOfUtils {
      *  extra spaces, invalid numbers)
      */
 
-    public static List<Integer> parseCsvIntList(String s) {
+    public static List<Integer> parseCsvIntList(String s, String delimiter) {
         if (s == null || s.isEmpty()) return List.of();
 
-        String[] parts = s.split(",");
+        String[] parts = s.split(delimiter);
 
         List<Integer> result = new ArrayList<>(parts.length);
         for (String p : parts) {
@@ -35,4 +44,5 @@ public class LotsOfUtils {
         }
         return result;
     }
+
 }

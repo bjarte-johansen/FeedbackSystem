@@ -1,7 +1,6 @@
 package root.app;
 
 import root.includes.proxyrepo.RepositoryProxyConstructor;
-import root.common.utils.KissWordWrapper;
 import root.includes.logger.Logger;
 
 
@@ -47,7 +46,9 @@ public class AppTextBanner {
         printDashedLines(3);
         printEmptyLines(1);
 
-        Logger.log(KissWordWrapper.wordwrap(RepositoryProxyConstructor.getDeveloperWarningMessages(), 80));
+        String wrapped = RepositoryProxyConstructor.getDeveloperWarningMessages()
+            .replaceAll("(.{1," + 80 + "})(?:\\s+|$)", "$1\n");
+        Logger.log(wrapped);
 
         printEmptyLines(1);
         printDashedLines(3);

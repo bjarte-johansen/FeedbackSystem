@@ -8,7 +8,6 @@ import root.services.PasswordService;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewerRepository;
 import root.repositories.TenantRepository;
-import root.includes.PasswordSaltGenerator;
 
 import java.time.Instant;
 import java.util.List;
@@ -27,6 +26,9 @@ class OldDatabaseTest {
     @Autowired
     ReviewRepository reviewRepo;
 
+    @Autowired
+    PasswordService passwordService;
+
     public void run() throws Exception {
         try (var ignore = Logger.scope("Running DBTest...", DEBUG)) {
 
@@ -42,15 +44,14 @@ class OldDatabaseTest {
         String authorEmail,
         String authorDisplayName,
         String authorPassword
-    ) throws Exception {
-        String authorPasswordSalt = PasswordSaltGenerator.generate(16);
-        String authorPasswordHash = PasswordService.hash(authorPassword, authorPasswordSalt);
+    ) {
+        String authorPasswordHash = passwordService.hash(authorPassword);
 
         Reviewer reviewer = new Reviewer();
         reviewer.setEmail(authorEmail);
         reviewer.setDisplayName(authorDisplayName);
         reviewer.setPasswordHash(authorPasswordHash);
-        reviewer.setPasswordSalt(authorPasswordSalt);
+        //reviewer.setPasswordSalt(authorPasswordSalt);
         reviewer.setCreatedAt(Instant.now());
 
         reviewerRepo.save(reviewer);

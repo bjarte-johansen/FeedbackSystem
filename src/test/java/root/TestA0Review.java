@@ -4,7 +4,6 @@ package root;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import root.includes.quicktests.quicktests.DatabaseManager;
-import root.common.utils.RandomPastInstant;
 import root.includes.logger.Logger;
 import root.includes.logger.LoggerScope;
 import root.models.Review;
@@ -13,6 +12,7 @@ import root.repositories.ReviewRepository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.Instant;
 
 
 @SpringBootTest
@@ -53,7 +53,7 @@ public class TestA0Review extends TestA0Base{
         r.setTitle("title" + suffix);
         r.setLikeCount(0);
         r.setDislikeCount(0);
-        r.setCreatedAt(RandomPastInstant.generate(java.time.Duration.ofDays(1), java.time.Duration.ofDays(30)));
+        r.setCreatedAt(Instant.now());
         reviewRepo.save(r);
     }
 

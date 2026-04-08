@@ -1,7 +1,6 @@
-package root;
+package root.deprecated;
 
-import org.junit.jupiter.api.Test;
-
+/*
 import static root.includes.StringFormatter.stringf;
 
 @Deprecated
@@ -14,3 +13,4 @@ public class StringFormatterTest {
         stringf("%% done");
     }
 }
+*/

@@ -38,6 +38,9 @@ public class DatabaseManager {
     @Autowired
     ReviewRepository reviewRepo;
 
+    @Autowired
+    PasswordService passwordService;
+
     public static DatabaseManager create(){
         return new DatabaseManager();
     }
@@ -82,7 +85,7 @@ public class DatabaseManager {
             tenant.setEmail("tenant-1@demo.only");
             tenant.setDomain("tenant1.demo.only");
             tenant.setApiKey("tenant-1-api-key");
-            tenant.setPasswordHash(PasswordService.hash("tenant-1", "salt"));
+            tenant.setPasswordHash(passwordService.hash("tenant-1"));
             tenant.setPasswordSalt("salt");
             tenant.setSchemaName("test");
 
@@ -114,15 +117,15 @@ public class DatabaseManager {
     }
     private void insertAuthors() throws SQLException, Exception {
         // TODO: move to
-        var passwordHashForPasswordPass = PasswordService.hash("pass", "salt");
+        var passwordHashForPasswordPass = passwordService.hash("myPassword1");
 
         List<Reviewer> reviewers = List.of(
-            createReviewer("test@test.com", "Leif", passwordHashForPasswordPass, "salt", Instant.now(), Instant.now()),
-            createReviewer("alice@example.com", "Alice", "hash1", "salt1", Instant.now(), Instant.now()),
-            createReviewer("bob@example.com", "Bob", "hash2", "salt2", Instant.now(), Instant.now()),
-            createReviewer("charlie@example.com", "Charlie", "hash3", "salt3", Instant.now(), Instant.now()),
-            createReviewer("diana@example.com", "Diana", "hash4", "salt4", Instant.now(), Instant.now()),
-            createReviewer("eve@example.com", "Eve", "hash5", "salt5", Instant.now(), Instant.now())
+            createReviewer("test@test.com", "Leif", passwordHashForPasswordPass, "", Instant.now(), Instant.now()),
+            createReviewer("alice@example.com", "Alice", "hash1", "", Instant.now(), Instant.now()),
+            createReviewer("bob@example.com", "Bob", "hash2", "", Instant.now(), Instant.now()),
+            createReviewer("charlie@example.com", "Charlie", "hash3", "", Instant.now(), Instant.now()),
+            createReviewer("diana@example.com", "Diana", "hash4", "", Instant.now(), Instant.now()),
+            createReviewer("eve@example.com", "Eve", "hash5", "", Instant.now(), Instant.now())
         );
 
         reviewers.forEach(reviewerRepo::save);

@@ -157,7 +157,7 @@ public class DefaultController {
         session.invalidate();
 
         return ControllerHelper.create()
-            .withSuccess("Session cleared successfully.")
+            .withStatus(true, "Session cleared successfully.")
             .redirect(ra, "/");
     }
 

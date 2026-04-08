@@ -19,8 +19,7 @@ import root.services.ReviewService;
 
 import org.springframework.security.access.AccessDeniedException;
 //import java.nio.file.AccessDeniedException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 public class AdminController {
@@ -74,7 +73,26 @@ public class AdminController {
 
     @GetMapping("/admin-dashboard")
     public String adminDashboard(Model model) throws Exception{
+        return showPendingReviews("-1", model);
+    }
+
+
+    @GetMapping("/admin-dashboard/pending-review")
+    public String showPendingReviews(
+        @RequestParam(defaultValue = "-1") String strReviewStatusFilter,
+        Model model
+    ) throws Exception{
         //requireAdministratorRole();
+
+        // decode reviewStatusFilter from CSV string to set of integers. If the filter contains -1, we want to include
+        // all statuses, so we add all possible statuses to the filter set.
+        Set<Integer> reviewStatusFilterSet = new HashSet<>(LotsOfUtils.parseCsvIntList(strReviewStatusFilter));
+        if(reviewStatusFilterSet.contains(-1)){
+            reviewStatusFilterSet.addAll(List.of(
+                Review.REVIEW_STATUS_PENDING,
+                Review.REVIEW_STATUS_APPROVED,
+                Review.REVIEW_STATUS_REJECTED));
+        }
 
         // add data to model for select externalId pill in admin dashboard JSP. This will be used to filter reviews by externalId.
         DefaultController.addSelectExternalIdPillData(model.asMap(), reviewRepo);
@@ -83,15 +101,22 @@ public class AdminController {
         // specific sorting order.
         ReviewQueryOptions dumpOptions = new ReviewQueryOptions();
         dumpOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
-        dumpOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_PENDING);
-        dumpOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_REJECTED);
-        dumpOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
+        dumpOptions.getStatusFilterSet().addAll(reviewStatusFilterSet);
         dumpOptions.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
 
         // add dump to model for display in JSP. This is just for demonstration purposes to show how to fetch all
         // reviews for a given externalId with pagination and sorting, and should be removed for production code.
-        List<Review> reviewDump = reviewRepo.findByAnyExternalIdWithPagination(dumpOptions);
-        model.addAttribute("reviewDump", reviewDump);
+        List<Review> reviews = reviewRepo.findByAnyExternalIdWithPagination(dumpOptions);
+        model.addAttribute("reviews", reviews);
+
+        // add ordering options to model
+        LinkedHashMap<String, Object> reviewStatusFilterOptions = new LinkedHashMap<>();
+        reviewStatusFilterOptions.put("Venter", Review.REVIEW_STATUS_PENDING);
+        reviewStatusFilterOptions.put("Godkjent", Review.REVIEW_STATUS_APPROVED);
+        reviewStatusFilterOptions.put("Avvist", Review.REVIEW_STATUS_REJECTED);
+        reviewStatusFilterOptions.put("Alle", -1);
+        model.addAttribute("reviewStatusFilterOptions", reviewStatusFilterOptions);
+        model.addAttribute("currentReviewStatusFilter", strReviewStatusFilter);
 
         return "admin-dashboard";
     }

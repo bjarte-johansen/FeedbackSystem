@@ -9,8 +9,15 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.naming.ldap.Control;
+import java.util.ArrayList;
+import java.util.List;
+
 @Component
 public class ControllerHelper {
+    public boolean status = true;
+    public String statusMessage = null;
+
     public String errorMessage = null;
     public String successMessage = null;
 
@@ -18,19 +25,22 @@ public class ControllerHelper {
         return new ControllerHelper();
     }
 
-    public ControllerHelper withError(String message) {
-        this.errorMessage = message;
-        return this;
-    }
-
-    public ControllerHelper withSuccess(String message) {
-        this.successMessage = message;
+    public ControllerHelper withStatus(boolean status, String message) {
+        this.status = status;
+        this.statusMessage = message;
         return this;
     }
 
     public String redirect(RedirectAttributes ra, String path) {
-        ra.addFlashAttribute("successMessage", successMessage);
-        ra.addFlashAttribute("errorMessage", errorMessage);
+        ra.addFlashAttribute("status", status);
+        ra.addFlashAttribute("statusMessage", statusMessage);
+
+        // old code so keep it in
+        if(status) {
+            ra.addFlashAttribute("successMessage", successMessage);
+        }else {
+            ra.addFlashAttribute("errorMessage", errorMessage);
+        }
 
         return "redirect:" + path;
     }

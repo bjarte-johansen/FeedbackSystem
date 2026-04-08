@@ -215,6 +215,16 @@ public class Review implements IReview {
         };
     }
 
+    public static int getPendingStatusConst(){
+        return REVIEW_STATUS_PENDING;
+    }
+    public static int getApprovedStatusConst(){
+        return REVIEW_STATUS_APPROVED;
+    }
+    public static int getRejectedStatusConst(){
+        return REVIEW_STATUS_REJECTED;
+    }
+
     /**
      * Returns a human-readable string representing how long ago the review was created, formatted in Norwegian.
      *

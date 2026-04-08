@@ -1,8 +1,9 @@
 package root.services;
 
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
+import static root.common.utils.Preconditions.checkArgument;
 
 
 /**
@@ -15,57 +16,34 @@ import java.util.Objects;
 public class PasswordService {
 
     /**
-     * Generate a random salt for password hashing.
-     *
-     * @return Generated salt
-     */
-
-    public static String generateSalt() {
-        // Implement a secure random salt generator
-        // For demonstration purposes, we'll use a simple random string (not recommended for production)
-
-        // TODO/DEBUG: Replace with a secure random salt generator
-        return Long.toHexString(Double.doubleToLongBits(Math.random()));
-    }
-
-
-    /**
-     * Hash a password with a given salt.
+     * Hash a password with, generates its own salt.
      *
      * @param password Password to hash
-     * @param salt Salt to use for hashing
      * @return Hashed password
      */
 
-    public static String hash(String password, String salt) {
-        Objects.requireNonNull(password, "Password cannot be null");
-        Objects.requireNonNull(salt, "Salt cannot be null");
+    public String hash(String password) {
+        checkArgument(password != null && !password.isBlank(), "Password cannot be null or blank");
+        checkArgument(password.length() >= 8, "Password must be at least 8 characters long");
+        checkArgument(password.matches("^[A-Za-z0-9@#$%^&+=!._-]+$"), "Password contains invalid characters");
 
-        // Implement a secure hashing algorithm, e.g., bcrypt, scrypt, or Argon2
-        // For demonstration purposes, we'll use a simple hash (not recommended for production)
-
-        // TODO/DEBUG: Replace with a secure hashing algorithm
-        String saltedPassword = salt + ";" + password;
-        return Integer.toHexString(saltedPassword.hashCode());
+        return BCrypt.hashpw(password, BCrypt.gensalt());
     }
+
 
 
     /**
      * Verify a password against a stored hash and salt.
      *
      * @param password Password to verify
-     * @param salt Salt used for hashing
      * @param storedHash Stored hash to compare against
      * @return True if the password is correct, false otherwise
      */
 
-    public static boolean verify(String password, String salt, String storedHash) {
-        Objects.requireNonNull(password, "Password cannot be null");
-        Objects.requireNonNull(salt, "Salt cannot be null");
-        Objects.requireNonNull(storedHash, "StoredHash cannot be null");
+    public boolean verify(String password, String storedHash) {
+        checkArgument(password != null, "Password cannot be null");
+        checkArgument(storedHash != null, "Stored hash cannot be null");
 
-        // compute the hash of the provided password and salt, and compare it to the stored hash
-        String computedHash = hash(password, salt);
-        return computedHash.equals(storedHash);
+        return BCrypt.checkpw(password, storedHash);
     }
 }

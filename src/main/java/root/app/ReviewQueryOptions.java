@@ -29,6 +29,20 @@ import java.util.Set;
  */
 
 public class ReviewQueryOptions {
+
+    /*
+     * Constants for sorting options:
+     *
+     * when converting to string using buildOrderBySql(), these constants will be translated to corresponding
+     * SQL ORDER BY clauses that determine how the review results are sorted when retrieved from the database.
+     *
+     * Add "id DESC" as the secondary sorting criteria for all order by options to ensure consistent ordering of
+     * reviews with the same primary sorting value, and to provide a deterministic order for reviews when the primary
+     * sorting criteria is the same.
+     *
+     * ALWAYS Use buildOrderBySql() to convert the orderByEnum value to a corresponding SQL ORDER BY clause.
+     */
+
     public static final int OPTION_ORDER_NONE = 0;
 
     public static final int OPTION_ORDER_BY_ID_ASC = 1;

@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.interfaces.IUserVerificationService;
 import root.models.UserVerificationRecord;
-import root.includes.VerificationDigitsGenerator;
+import root.includes.VerificationCodeDigitsGenerator;
 import root.repositories.ReviewerRepository;
 
 import java.time.Instant;
@@ -15,6 +15,9 @@ public class UserVerificationService implements IUserVerificationService {
 
     @Autowired
     private ReviewerRepository reviewerRepo;
+
+    //@Autowired
+    //private UserVerificationRecordRepository userVerificationRecordRepo;
 
     @Override
     public Long getExpirationDurationSeconds() {
@@ -35,9 +38,10 @@ public class UserVerificationService implements IUserVerificationService {
         long expirationDurationSeconds = getExpirationDurationSeconds();
         Instant expiresAt = Instant.now().plusSeconds(expirationDurationSeconds);
 
-        String verificationCode = VerificationDigitsGenerator.generate(6);
+        String verificationCode = VerificationCodeDigitsGenerator.generate(6);
 
         UserVerificationRecord verificationRecord = new UserVerificationRecord(userId, verificationCode, expiresAt);
+        //userVer
 
         // TODO: persist verificationRecord
         throw new UnsupportedOperationException("Implement logic to save verification code");
