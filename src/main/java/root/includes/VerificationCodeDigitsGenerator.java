@@ -21,6 +21,8 @@ public class VerificationCodeDigitsGenerator {
      */
 
     public static String generate(int numberOfDigits) {
+        if(numberOfDigits <= 0) throw new IllegalArgumentException("Number of digits must be positive.");
+
         char[] out = new char[numberOfDigits];
 
         for(int i=0; i<numberOfDigits; i++) {

@@ -20,12 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import root.includes.proxyrepo.ProxyFactoryBeans;
 
-@ComponentScan("root")
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {
-    PasswordService.class,
-    ProxyFactoryBeans.class
-})
+@SpringBootTest
 public class TestPasswordGenerator {
     @Autowired
     private PasswordService passwordService;

@@ -3,6 +3,7 @@ package root;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 import root.includes.logger.Logger;
 import root.includes.logger.LoggerScope;
 import root.models.Review;
@@ -15,6 +16,7 @@ import java.time.Instant;
 
 
 @SpringBootTest
+@ActiveProfiles("test")
 public class TestA0Review extends TestA0Base{
     LoggerScope __logger;
 

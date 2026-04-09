@@ -49,6 +49,9 @@ public class DefaultController {
     @Autowired
     ReviewPageService reviewPageService;
 
+    @Autowired
+    AppContext appContext;
+
 
 
     /**
@@ -198,7 +201,6 @@ public class DefaultController {
         model.addAttribute("review", review);
 
         // add externalId to model for display in JSP and for use in form submission for new reviews
-        AppContext appContext = AppContext.getSingleton();
         model.addAttribute("tenantId", appContext.getTenantId());
 
         // add formatters to model for display in JSP

@@ -12,8 +12,6 @@
         <%@ include file="external-id-pills.jsp" %>
 
         <div class="box">
-            ${reviewStatusFilterOptions}
-
             <!-- order by dropdown -->
             <select name="reviewStatusFilter" onchange="Review.reloadReviewList()">
                 <c:forEach var="option" items="${reviewStatusFilterOptions}">
@@ -24,13 +22,10 @@
 
         <div class="box review--list"
             data-external-id="${externalId}"
-            data-order-by-enum="${currentOrderByEnum}"
-            data-original-cursor="${pageCursor}"
             data-cursor="${pageCursor}"
             data-status-filter="${currentReviewStatusFilter}"
             data-score-filter="${scoreFilter}"
-            data-review-count="${reviewStats.totalCount}"
-            data-detailed-review-count="${scoreCountsJson}"
+            data-review-count="${totalStatusFilterCount}"
             >
 
                 <!-- show review dump for debugging -->

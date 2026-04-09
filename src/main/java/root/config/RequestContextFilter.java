@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -19,6 +20,9 @@ import static root.common.utils.Preconditions.checkArgument;
 @Component("myRequestContextFilter")
 @Order(1)
 public class RequestContextFilter extends OncePerRequestFilter {
+    @Autowired
+    private AppContext appContext;
+
     private static int requestFilterCount = 0;
 
 
@@ -62,6 +66,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
     }
 
 
+
     @Override
     protected void doFilterInternal(
         HttpServletRequest req,
@@ -102,7 +107,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
             Logger.log("Resolved tenant information: id = " + tenantId + ", schema = " + tenantSchema);
 
             // set schema and tenant id
-            AppContext appContext = AppContext.getSingleton();
+            //AppContext appContext = AppContext.getSingleton();
             appContext.setTenantId(tenantId);
             AppRequestSchema.set(tenantSchema);
 
@@ -113,9 +118,6 @@ public class RequestContextFilter extends OncePerRequestFilter {
         }
 
         requestFilterCount++;
-
-
-
 
         if(AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS) {
             // print request parameters for debugging

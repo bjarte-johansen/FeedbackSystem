@@ -110,4 +110,9 @@ public class TestA0Base {
 
         __logger.close();
     }
+
+    @Test
+    public void __dummy__dummy__dummy__(){
+
+    }
 }

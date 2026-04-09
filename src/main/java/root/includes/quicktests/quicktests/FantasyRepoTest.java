@@ -3,6 +3,7 @@ package root.includes.quicktests.quicktests;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import root.includes.logger.Logger;
+import root.includes.proxyrepo.RepositoryProxyConstructor;
 import root.includes.quicktests.quicktests.repofun.Fantasy;
 import root.includes.quicktests.quicktests.repofun.FantasyRepository;
 
@@ -11,8 +12,8 @@ import java.util.List;
 
 @Component
 public class FantasyRepoTest {
-    @Autowired
-    FantasyRepository repo;// = RepositoryProxyConstructor.create(FantasyRepository.class);
+    //@Autowired
+    FantasyRepository repo = RepositoryProxyConstructor.create(FantasyRepository.class);
 
     public static void report(String action, List<?> entities) {
         Logger.logf("%s: found list of %d entities", action, entities.size());

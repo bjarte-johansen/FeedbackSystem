@@ -1,6 +1,7 @@
 package root;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +25,8 @@ class AppConfigMain {}
 public class Main {
     public static boolean PRINT_META_DATA_AT_STARTUP = false;
 
-    private static AppContext appContext;
+    @Autowired
+    AppContext appContext;
 
     @Autowired
     FantasyRepoTest fantasyRepoTest;
@@ -59,15 +61,21 @@ public class Main {
         }
     }
 
+    CommandLineRunner run() {
+        return args -> {
+            //appContext = AppContext.getSingleton();
+            appContext.initSingleTenantConnectionProvider(
+                new CustomDataSource(AppConfig.CURRENT_CONNECTION_PARAMS)
+            );
+        };
+    }
+
     public static void main(String[] args) throws Throwable{
         var ctx = new AnnotationConfigApplicationContext(AppConfigMain.class);
 
         //var bean = ctx.getBean(FantasyRepository.class); // @Autowired works
 
-        appContext = AppContext.getSingleton();
-        appContext.initSingleTenantConnectionProvider(
-            new CustomDataSource(AppConfig.TEST)
-        );
+
 
         FantasyRepoTest fantasyRepoTest = ctx.getBean(FantasyRepoTest.class);
         fantasyRepoTest.run();

@@ -3,7 +3,6 @@ package root.controllers;
 import jakarta.servlet.http.HttpServletRequest;
 //import org.apache.coyote.BadRequestException;
 import org.apache.coyote.BadRequestException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,7 +11,7 @@ import root.app.AppConfig;
 import root.app.AppContext;
 import root.app.ReviewQueryOptions;
 import root.app.includes.PageCursor;
-import root.includes.logger.Logger;
+import root.includes.Utils;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewerRepository;
@@ -20,7 +19,10 @@ import root.services.ReviewService;
 
 import org.springframework.security.access.AccessDeniedException;
 //import java.nio.file.AccessDeniedException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 
 @Controller
 public class AdminController {
@@ -29,6 +31,7 @@ public class AdminController {
     private final ReviewRepository reviewRepo;
     private final ReviewerRepository reviewerRepo;
     private final ReviewService reviewService;
+    private final AppContext appContext;
 
 
     /**
@@ -38,10 +41,11 @@ public class AdminController {
      * @param reviewService
      */
 
-    public AdminController(ReviewRepository reviewRepo, ReviewerRepository reviewerRepo, ReviewService reviewService) {
+    public AdminController(ReviewRepository reviewRepo, ReviewerRepository reviewerRepo, ReviewService reviewService, AppContext appContext) {
         this.reviewRepo = reviewRepo;
         this.reviewerRepo = reviewerRepo;
         this.reviewService = reviewService;
+        this.appContext = appContext;
     }
 
 
@@ -50,7 +54,7 @@ public class AdminController {
      */
 
     private void requireAdministratorRole() {
-        if (!AppContext.isAdministrator()) {
+        if (!appContext.isAdministrator()) {
             throw new AccessDeniedException("User does not have administrator privileges");
         }
     }
@@ -74,7 +78,7 @@ public class AdminController {
 
     @GetMapping("/admin-dashboard")
     public String adminDashboard(Model model) throws Exception{
-        return showPendingReviews("-1", model);
+        return showPendingReviews("", model);
     }
 
 
@@ -83,24 +87,32 @@ public class AdminController {
         @RequestParam(defaultValue = "-1") String statusFilter,
         Model model
     ) throws Exception{
+        return showReviewList(statusFilter, model);
+    }
+
+    @GetMapping("/admin/reviews")
+    public String showReviewList(
+        @RequestParam(defaultValue = "-1") String statusFilter,
+        Model model
+    ) throws Exception{
         //requireAdministratorRole();
 
         // decode reviewStatusFilter from CSV string to set of integers. If the filter contains -1, we want to include
         // all statuses, so we add all possible statuses to the filter set.
-        Set<Integer> reviewStatusFilterSet = new HashSet<>(
-            LotsOfUtils.parseCsvIntList(statusFilter)
-            );
-        Logger.log("Admin dashboard - review status filter set: " + reviewStatusFilterSet);
+        Set<Integer> reviewStatusFilterSet = new HashSet<>(Utils.parseCsvIntList(statusFilter));
+        //Logger.log("Admin dashboard - review status filter set: " + reviewStatusFilterSet);
 
-        if(reviewStatusFilterSet.contains(-1) || reviewStatusFilterSet.isEmpty()) {
+        if(reviewStatusFilterSet.contains(-1) || reviewStatusFilterSet.isEmpty()){
+            reviewStatusFilterSet.remove(-1);
+
             reviewStatusFilterSet.addAll(List.of(
                 Review.REVIEW_STATUS_PENDING,
                 Review.REVIEW_STATUS_APPROVED,
                 Review.REVIEW_STATUS_REJECTED)
-                );
-            reviewStatusFilterSet.remove(-1);
+            );
         }
-        Logger.log("Admin dashboard - review status filter set: " + reviewStatusFilterSet);
+
+        //Logger.log("Admin dashboard - review status filter set: " + reviewStatusFilterSet);
 
         // add data to model for select externalId pill in admin dashboard JSP. This will be used to filter reviews by externalId.
         ControllerUtils.addSelectExternalIdPillData(model.asMap(), reviewRepo);
@@ -110,21 +122,19 @@ public class AdminController {
         ReviewQueryOptions options = new ReviewQueryOptions();
         options.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
         options.getStatusFilterSet().addAll(reviewStatusFilterSet);
+        options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
 
-        if(reviewStatusFilterSet.size() == 1 && reviewStatusFilterSet.contains(Review.REVIEW_STATUS_PENDING)) {
-            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
-        }
-        if(reviewStatusFilterSet.size() == 1 && reviewStatusFilterSet.contains(Review.REVIEW_STATUS_REJECTED)) {
-            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_REJECTED_FIRST);
-        }
-        if(reviewStatusFilterSet.size() == 1 && reviewStatusFilterSet.contains(Review.REVIEW_STATUS_APPROVED)) {
-            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_APPROVED_FIRST);
+        if(reviewStatusFilterSet.size() == 1) {
+            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
         }
 
         // add dump to model for display in JSP. This is just for demonstration purposes to show how to fetch all
         // reviews for a given externalId with pagination and sorting, and should be removed for production code.
         List<Review> reviews = reviewRepo.findByAnyExternalIdWithPagination(options);
         model.addAttribute("reviews", reviews);
+
+        int totalStatusFilterCount = reviewRepo.countByAnyExternalId(options);
+        model.addAttribute("totalStatusFilterCount", totalStatusFilterCount);
 
 
         // add ordering options to model
@@ -135,6 +145,15 @@ public class AdminController {
         reviewStatusFilterOptions.put("Alle", -1);
         model.addAttribute("reviewStatusFilterOptions", reviewStatusFilterOptions);
         model.addAttribute("currentReviewStatusFilter", statusFilter);
+
+        // add a simple function to format Instant values to "days ago" format for display in JSP
+        Function<Instant, String> DAYS_AGO_FORMATTER = v -> {
+            if (v == null) return "";
+
+            long days = ChronoUnit.DAYS.between(v, Instant.now());
+            return String.valueOf(Math.max(0, days));
+        };
+        model.addAttribute("daysAgoFormatter", DAYS_AGO_FORMATTER);
 
         return "admin/admin-dashboard";
     }

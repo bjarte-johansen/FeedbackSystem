@@ -8,10 +8,8 @@ import root.app.ReviewQueryOptions;
 import root.app.includes.PageCursor;
 import root.app.includes.PageCursorEncoder;
 import root.controllers.ControllerUtils;
-import root.controllers.DefaultController;
-import root.controllers.LotsOfUtils;
+import root.includes.Utils;
 import root.controllers.ReviewAggregateScoreHelper;
-import root.includes.logger.Logger;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewerRepository;
@@ -40,7 +38,12 @@ public class ReviewPageService {
     }
 
     // add a simple function to format double values to 2 decimals for display in JSP
-    public static Function<Double, String> CSS_DOUBLE_FORMATTER_POINT_FIVE = (v) -> String.format(Locale.US, "%.1f", roundToHalf(v)).replace(".", "-");
+    public static Function<Double, String> CSS_DOUBLE_FORMATTER_POINT_FIVE = (v) -> {
+        v = Math.round(v * 2.0) / 2.0;
+        String s = String.format(Locale.US, "%.1f", v);
+        return s.replace(".", "-");
+    };
+
     public static Function<Double, String> DOUBLE_FORMATTER_1 = (v) -> String.format(Locale.US, "%.1f", v);
     //private static Function<Double, String> DOUBLE_FORMATTER_2 = (v) -> String.format(Locale.US, "%.1f", v);
 
@@ -63,27 +66,19 @@ public class ReviewPageService {
     };
 
 
+    private final AppContext appContext;
     private final ReviewRepository reviewRepo;
     private final ReviewerRepository reviewerRepo;
     private final ReviewService reviewService;
 
-    public ReviewPageService(ReviewRepository reviewRepo, ReviewerRepository reviewerRepo, ReviewService reviewService) {
+    public ReviewPageService(ReviewRepository reviewRepo, ReviewerRepository reviewerRepo, ReviewService reviewService, AppContext appContext) {
         this.reviewRepo = reviewRepo;
         this.reviewerRepo = reviewerRepo;
         this.reviewService = reviewService;
+        this.appContext = appContext;
     }
 
-/*
-    private int getApprovedReviewsTotalCount(String externalId) throws Exception{
-        ReviewQueryOptions totalFilterCountOptions = new ReviewQueryOptions();
-        totalFilterCountOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
-        totalFilterCountOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
-        totalFilterCountOptions.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_NONE);
-
-        return reviewRepo.countByExternalId(externalId, totalFilterCountOptions);
-    }
- */
-    private LinkedHashMap<String, Object> getOrderByOptionsMap() {
+    private static LinkedHashMap<String, Object> getOrderByOptionsMap() {
         LinkedHashMap<String, Object> reviewListOrderOptions = new LinkedHashMap<>();
         reviewListOrderOptions.put("Nyeste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
         reviewListOrderOptions.put("Eldste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC);
@@ -91,13 +86,8 @@ public class ReviewPageService {
         reviewListOrderOptions.put("Score (laveste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_ASC);
         return reviewListOrderOptions;
     }
-/*
-    private void addReviewsOrderByOptionsToModel(Map<String, Object> modelMap, int currentOrderByEnum) {
-    }
 
- */
-
-    private void addFormattersToModel(Map<String, Object> modelMap) {
+    private static void addFormattersToModel(Map<String, Object> modelMap) {
         // add formatters to model for display in JSP
         modelMap.put("dblFormatter1", DOUBLE_FORMATTER_1);
         modelMap.put("dateFormatter", DD_MM_YYYY_FORMATTER);
@@ -168,7 +158,7 @@ public class ReviewPageService {
 
         // get tenant id or tenant name / something
         // TODO: figure out tenant handling and how to display tenant info in the interface.
-        Long tenantId = AppContext.getSingleton().getTenantId();
+        Long tenantId = appContext.getTenantId();
         checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
         modelMap.put("tenantId", tenantId);
 
@@ -193,7 +183,7 @@ public class ReviewPageService {
 
         // add score filter to options if set
         if (scoreFilter != null && !scoreFilter.isBlank() && !scoreFilter.equals("-1")) {
-            List<Integer> scoreFilterList = LotsOfUtils.parseCsvIntList(scoreFilter);
+            List<Integer> scoreFilterList = Utils.parseCsvIntList(scoreFilter);
             options.getScoreFilterSet().addAll(scoreFilterList);
         }
 
@@ -243,7 +233,7 @@ public class ReviewPageService {
 
         // get tenant id or tenant name / something
         // TODO: figure out tenant handling and how to display tenant info in the interface.
-        Long tenantId = AppContext.getSingleton().getTenantId();
+        Long tenantId = appContext.getTenantId();
         checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
         modelMap.put("tenantId", tenantId);
 
@@ -268,7 +258,7 @@ public class ReviewPageService {
 
         // add score filter to options if set
         if (scoreFilter != null && !scoreFilter.isBlank() && !scoreFilter.equals("-1")) {
-            List<Integer> scoreFilterList = LotsOfUtils.parseCsvIntList(scoreFilter);
+            List<Integer> scoreFilterList = Utils.parseCsvIntList(scoreFilter);
             options.getScoreFilterSet().addAll(scoreFilterList);
         }
 

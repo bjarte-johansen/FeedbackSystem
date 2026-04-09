@@ -159,7 +159,7 @@ public class DatabaseManager {
 
             int[] firstDay = {-365 * 2};
 
-            Supplier<Instant> increasingPastInstant = () -> Instant.now().plus(Duration.ofDays(firstDay[0] += 30));
+            Supplier<Instant> increasingPastInstant = () -> Instant.now().plus(Duration.ofDays(firstDay[0] += 10));
 
             Supplier<String> username = FunnyUserNameGenerator::generate;
             Supplier<String> title = () -> IpsumLoremGenerator.generate(2 + (int) (Math.random() * 3));

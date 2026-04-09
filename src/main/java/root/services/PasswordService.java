@@ -2,6 +2,7 @@ package root.services;
 
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
+import root.app.AppConfig;
 
 import static root.common.utils.Preconditions.checkArgument;
 
@@ -24,8 +25,8 @@ public class PasswordService {
 
     public String hash(String password) {
         checkArgument(password != null && !password.isBlank(), "Password cannot be null or blank");
-        checkArgument(password.length() >= 8, "Password must be at least 8 characters long");
-        checkArgument(password.matches("^[A-Za-z0-9@#$%^&+=!._-]+$"), "Password contains invalid characters");
+        checkArgument(password.length() >= AppConfig.MIN_PASSWORD_LENGTH, "Password must be at least 8 characters long");
+        checkArgument(password.matches(AppConfig.VALID_PASSWORD_REGEX), "Password contains invalid characters");
 
         return BCrypt.hashpw(password, BCrypt.gensalt());
     }

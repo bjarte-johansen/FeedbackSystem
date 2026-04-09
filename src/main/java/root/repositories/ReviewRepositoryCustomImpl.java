@@ -316,6 +316,19 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .selectCount();
     }
 
+    @Override
+    public int countByAnyExternalId(ReviewQueryOptions options) throws Exception{
+        List<String> conditionExprList = new ArrayList<>(20);
+
+        // apply filters from options
+        applyReviewQueryOptions(conditionExprList, options);
+
+        String sql = "SELECT COUNT(*) FROM review WHERE " + String.join(" AND ", conditionExprList);
+
+        return (int) FSQLQuery.create(sql)
+            .selectCount();
+    }
+
     public int countByExternalIdAndStatus(String externalId, int status) throws Exception{
         checkArgument(externalId != null && !externalId.isEmpty(), "externalId cannot be null or empty");
 

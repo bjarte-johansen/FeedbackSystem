@@ -23,4 +23,6 @@ public interface ReviewRepositoryInterface {
 
     int countByExternalId(String externalId, ReviewQueryOptions options) throws Exception;
     int countByExternalIdAndStatus(String externalId, int status) throws Exception;
+
+    int countByAnyExternalId(ReviewQueryOptions options) throws Exception;
 }

@@ -23,6 +23,13 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+        </dependency>
+
         <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
@@ -97,17 +104,15 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
             <version>17.0.0</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>no.hvl.dat108</groupId>
-            <artifactId>dat109prosjekt</artifactId>
-            <version>1.0.0</version>
-        </dependency>
+
+
 
     </dependencies>
 
@@ -146,6 +151,22 @@
         <finalName>oblig39</finalName>
 
         <plugins>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <execution>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -2,7 +2,7 @@ package root.includes.proxyrepo;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import root.includes.quicktests.quicktests.repofun.FantasyRepository;
+import root.includes.quicktests.quicktests.repofun.*;
 import root.models.ReviewVote;
 import root.repositories.*;
 
@@ -15,7 +15,7 @@ import java.util.Map;
 public class RepositoryProxyConstructor {
     public static ArrayList<String> MODEL_PACKAGE_SEARCH_PATH = new ArrayList<>(List.of(
         "root.models",
-        "root.repofun"
+        "root.includes.quicktests.quicktests.repofun"
     ));
 
     public static String getDeveloperWarningMessages() {

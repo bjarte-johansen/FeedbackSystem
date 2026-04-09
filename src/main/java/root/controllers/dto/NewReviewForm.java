@@ -1,8 +1,8 @@
 package root.controllers.dto;
 
-import org.springframework.lang.NonNull;
+import root.app.AppConfig;
+import root.includes.Utils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static root.common.utils.Preconditions.checkArgument;
@@ -25,6 +25,10 @@ public record NewReviewForm(
     String title,
     String comment
 ) {
+    public NewReviewForm{
+        email = org.jsoup.Jsoup.parse(email).text();
+    }
+
     /**
      * Validates the NewReviewForm DTO and populates the provided errors list with any validation errors found.
      * No need for spring-mvc validators here, as this is a simple DTO and we want to keep validation logic centralized
@@ -34,23 +38,31 @@ public record NewReviewForm(
      * @param errors
      * @return
      */
+
     public static List<String> validate(NewReviewForm dto, List<String> errors){
         checkArgument(dto != null, "DTO cannot be null.");
         checkArgument(errors != null, "Error list cannot be null.");
+        //errors = errors != null ? errors : new ArrayList<String>();
 
-        // Validate input parameters (you can add more validation as needed)
-        if (errors.isEmpty() && (dto.tenantId() <= 0 || dto.score() < 1 || dto.score() > 5)) {
-            errors.add("Invalid input parameters.");
-        }
+        try {
+            // Validate input parameters (you can add more validation as needed)
+            checkArgument(dto.tenantId > 0, "Tenant ID must be a positive number.");
+            checkArgument(dto.score >= 1 && dto.score <= 5, "Score must be between 1 and 5.");
 
-        if(errors.isEmpty() && (dto.email().isEmpty() || dto.password().isEmpty())) {
-            errors.add("Email and password are required.");
-        }
+            if (AppConfig.ENABLE_CLIENT_EMAIL_AND_PASSWORD_REQUIRED) {
+                Utils.requireValidEmail(dto.email());
+                Utils.requireValidPassword(dto.password());
 
-        if(errors.isEmpty() && !(dto.email().equals("test@test.com") && dto.password().equals("Abacus556!"))) {
-            errors.add("Test credentials (email: \"test@test.com\", pass: \"pass\" are required to submit a review.");
+                checkArgument(
+                    dto.email().equals("test@test.com") && dto.password().equals("Abacus556!"),
+                    "Invalid test credentials (email: \"test@test.com\", pass: \"Abacus556!\" are required to submit a review.");
+            }
+        }catch(Exception e){
+            errors.add(e.getMessage() != null ? e.getMessage() : "An unknown error occurred during validation.");
         }
 
         return errors;
     }
+
+
 }

@@ -10,6 +10,7 @@
 
 package root;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -30,7 +31,8 @@ import java.util.*;
 
 @SpringBootApplication
 public class App implements CommandLineRunner {
-    //private static AppContext appContext;
+    @Autowired
+    AppContext appContext;
 
     public static void main(String[] args) throws Exception {
         SpringApplication app = new SpringApplication(App.class);
@@ -44,9 +46,14 @@ public class App implements CommandLineRunner {
     @Override
     @Order(0)
     public void run(String... args) throws Exception {
-        AppContext.getSingleton();
+        //AppContext.getSingleton();
 
-        Logger.log();
+        Logger.log("Application started with args: " + Arrays.toString(args));
+
+         // Initialize AppContext singleton (e.g. to initialize database connection pool and other shared resources)
+         //AppContext.getSingleton();
+
+         //Logger.log("AppContext initialized successfully");
     }
 
     public static void initAppContext() {
@@ -66,20 +73,8 @@ public class App implements CommandLineRunner {
             AppConfig.OVERRIDE_TENANT_SCHEMA = "test";
             AppConfig.OVERRIDE_TENANT_ID = 1;
 
-            /*
-            // Initialize AppContext singleton (e.g. to initialize database connection pool and other shared resources)
-            AppContext.getSingleton();
 
-
-
-            //
-            AppRequestSchema.set(AppConfig.OVERRIDE_TENANT_SCHEMA);
-             */
-
-            Logger.log("running app startup tasks...");
-
-            // Initialize AppContext singleton (e.g. to initialize database connection pool and other shared resources)
-            AppContext.getSingleton();
+            // set default schema for setup
             AppRequestSchema.set("test");
 
             // patch database

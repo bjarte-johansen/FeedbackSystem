@@ -214,6 +214,15 @@ public class Review implements IReview {
         };
     }
 
+    public static String statusToNorwegianString(int status) {
+        return switch (status) {
+            case Review.REVIEW_STATUS_PENDING -> "Til vurdering";
+            case Review.REVIEW_STATUS_APPROVED -> "Godkjent";
+            case Review.REVIEW_STATUS_REJECTED -> "Avvist";
+            default -> "Ukjent status";
+        };
+    }
+
 
     /** Returns the constant value for the pending review status. */
     public static int getPendingStatusConst() { return REVIEW_STATUS_PENDING; }

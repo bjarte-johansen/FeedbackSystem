@@ -10,6 +10,8 @@
     </form>
     -->
 
+    <button disabled>Status: ${review.statusToNorwegianString(review.status)}</button>
+
     <c:if test="${review.status != review.getApprovedStatusConst()}">
     <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/review/mark-approved" method="post">
         <input type="hidden" name="tenantId" value="${tenantId}">

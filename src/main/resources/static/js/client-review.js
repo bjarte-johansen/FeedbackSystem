@@ -40,6 +40,8 @@ var Review = {
          */
 
         createPageCursor: function (offset, limit) {
+            if(offset < 0) throw new Error("Offset must be non-negative");
+
             return {
                 "offset": offset,
                 "limit": limit,
@@ -47,8 +49,9 @@ var Review = {
                 reset: function(){
                     return Review.utils.createPageCursor(0, this.limit);
                 },
-                advance: function (delta, maxOffset = Number.MAX_SAFE_INTEGER) {
-                    const newOffset = Review.utils.clamp(this.offset + delta, 0, maxOffset - 1);
+                advance: function (pageDelta, maxOffset = Number.MAX_SAFE_INTEGER) {
+                    let newOffset = Review.utils.clamp(this.offset + pageDelta * this.limit, 0, maxOffset);
+                    newOffset = Math.floor(newOffset / this.limit) * this.limit; // ensure offset is always a multiple of limit
                     return Review.utils.createPageCursor(newOffset, this.limit);
                 },
 
@@ -62,22 +65,62 @@ var Review = {
             };
         },
 
-        createPageCursorFromString: function (cursorStr, offsetDelta, maxOffset) {
+        createPageCursorFromString: function (cursorStr, pageDelta, maxOffset) {
             const cursorArr = (cursorStr || ("0," + Number.MAX_SAFE_INTEGER)).split(",");
             cursorArr[0] = Review.utils.parseIntOr(cursorArr?.[0] ?? "0", 0);
             cursorArr[1] = Review.utils.parseIntOr(cursorArr?.[1] ?? "" + Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
 
+            console.log("Creating page cursor from string:", cursorStr, "parsed values:", cursorArr);
+
             let cursor = Review.utils.createPageCursor(cursorArr[0], cursorArr[1]);
 
-            if((offsetDelta !== null && offsetDelta !== undefined) && (maxOffset !== null && maxOffset !== undefined)) {
-                cursor = cursor.advance(offsetDelta, maxOffset);
+            if((pageDelta !== null && pageDelta !== undefined) && (maxOffset !== null && maxOffset !== undefined)) {
+                cursor = cursor.advance(pageDelta, maxOffset);
+                console.log("advancing cursor with offsetDelta:", cursor.toString());
             }
             return cursor;
         },
     },
 
+    client: {
+        resetReviewListFilters: function () {
+            const $reviewList = $(".review--list");
+            if (!$reviewList.length) return console.warn("No .review--list element found");
 
-    triggerClientOrderByEnumChange() {
+            const $activeFilters = $reviewList.find(".active-filters");
+
+            $activeFilters.find(".items").empty();
+
+            $reviewList.find("select[name='scoreFilter']").val(-1);
+            $reviewList.find("select[name='orderByEnum']").val($reviewList.attr("data-order-by-enum") || -1);
+            $activeFilters.addClass('d-none');
+
+            console.log("orderByEnum", $reviewList.attr("data-order-by-enum"));
+
+            Review.reloadReviewList();
+        }
+    },
+
+
+    triggerClientOrderByEnumChange(select) {
+        const $reviewList = $('.review--list');
+        if($reviewList.length === 0) return console.warn("No .review--list element found");
+
+        const $select = $(select);
+        const text = $select.find(':selected').text();
+
+        const $activeFilters = $reviewList.find('.active-filters');
+        $activeFilters.find('.order-by-enum').remove();
+
+        const $clone = $activeFilters.find('.templates .btn').clone();
+        $clone.removeClass('d-none')
+            .addClass('order-by-enum')
+            .text("Sorter: " + text);
+
+        //$reviewList.find('.active-filters').find('.items .btn').remove();
+        $activeFilters.find('.items').append($clone);
+        $activeFilters.removeClass('d-none').show();
+
         Review.reloadReviewList();
     },
 
@@ -214,7 +257,7 @@ var Review = {
         });
     },
 
-    nextReviewListPage: function (offset = 1) {
+    nextReviewListPage: function (pageDelta = 1) {
         const fnGetScoreFilterAsIntArray = function () {
             const scoreFilterStr = $reviewList.attr("data-score-filter");
             if (!scoreFilterStr) return [];
@@ -223,7 +266,7 @@ var Review = {
         }
 
 
-        offset = offset || 1;
+        pageDelta = pageDelta || 1;
 
         const $reviewList = $(".review--list");
         if (!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
@@ -244,9 +287,11 @@ var Review = {
             maxPageOffset = accumulatedReviewCount > 0 ? accumulatedReviewCount : maxPageOffset;
         }
 
+        //console.log("maxPageOffset", maxPageOffset, accumulatedReviewCount);
+
         // advance the cursor by the given offset, ensuring it does not exceed the maximum offset
         let cursor = Review.utils.createPageCursorFromString($reviewList.attr("data-cursor"));
-        cursor = cursor.advance(offset * cursor.limit, maxPageOffset - 1);
+        cursor = cursor.advance(pageDelta, maxPageOffset - 1);
         $reviewList.attr("data-cursor", cursor.toString());
 
         Review.reloadReviewList();

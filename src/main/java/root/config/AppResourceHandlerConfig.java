@@ -7,6 +7,7 @@ import org.springframework.core.env.Profiles;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import root.includes.logger.Logger;
+import root.services.LocalService;
 
 /**
  * TODO: this file only works on localhost, it messes with paths on TomEe, must fix
@@ -14,8 +15,16 @@ import root.includes.logger.Logger;
 
 @Configuration
 public class AppResourceHandlerConfig implements WebMvcConfigurer {
+    @Autowired
+    private LocalService localService;
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // only do this routine when running locally
+        if(!localService.isLocal()) {
+            Logger.log("not running locally, skipping resource handler config");
+            return;
+        }
 
         String path = System.getProperty("user.dir"); // project root
 

@@ -1,5 +1,6 @@
 package root.app;
 
+import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import root.database.CustomDataSource;
@@ -9,8 +10,9 @@ import root.includes.logger.Logger;
 
 import static root.common.utils.Preconditions.checkArgument;
 
+@Component
 public class AppContext {
-    private static final AppContext INSTANCE = new AppContext();
+    private static AppContext INSTANCE;
     private static ThreadLocal<Long> currentTenantId = new ThreadLocal<>();
 
     private CustomDataSource ds;
@@ -20,7 +22,7 @@ public class AppContext {
      * Also prints the application text banner.
      */
 
-    private AppContext() {
+    public AppContext() {
         initialize();
     }
 
@@ -33,6 +35,9 @@ public class AppContext {
     }
 
     public static AppContext getSingleton() {
+        if (INSTANCE == null) {
+            INSTANCE = new AppContext();
+        }
         return AppContext.INSTANCE;
     }
 
@@ -40,8 +45,8 @@ public class AppContext {
         // FIXME:
         //  set to true to use test tenant schema, otherwise tentants schema which needs to be supplied in
         //  routes to controller via id or name that we encode to schema name
-        ds = new CustomDataSource(AppConfig.TEST);
-        ds.warm(10);
+        ds = new CustomDataSource(AppConfig.CURRENT_CONNECTION_PARAMS);
+        //ds.warm(0);
 
         if (AppConfig.USE_TEST_TENANT) {
             initSingleTenantConnectionProvider(ds);
