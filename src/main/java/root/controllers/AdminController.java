@@ -12,6 +12,7 @@ import root.app.AppConfig;
 import root.app.AppContext;
 import root.app.ReviewQueryOptions;
 import root.app.includes.PageCursor;
+import root.includes.logger.Logger;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewerRepository;
@@ -79,35 +80,52 @@ public class AdminController {
 
     @GetMapping("/admin-dashboard/pending-review")
     public String showPendingReviews(
-        @RequestParam(defaultValue = "-1") String strReviewStatusFilter,
+        @RequestParam(defaultValue = "-1") String statusFilter,
         Model model
     ) throws Exception{
         //requireAdministratorRole();
 
         // decode reviewStatusFilter from CSV string to set of integers. If the filter contains -1, we want to include
         // all statuses, so we add all possible statuses to the filter set.
-        Set<Integer> reviewStatusFilterSet = new HashSet<>(LotsOfUtils.parseCsvIntList(strReviewStatusFilter));
-        if(reviewStatusFilterSet.contains(-1)){
+        Set<Integer> reviewStatusFilterSet = new HashSet<>(
+            LotsOfUtils.parseCsvIntList(statusFilter)
+            );
+        Logger.log("Admin dashboard - review status filter set: " + reviewStatusFilterSet);
+
+        if(reviewStatusFilterSet.contains(-1) || reviewStatusFilterSet.isEmpty()) {
             reviewStatusFilterSet.addAll(List.of(
                 Review.REVIEW_STATUS_PENDING,
                 Review.REVIEW_STATUS_APPROVED,
-                Review.REVIEW_STATUS_REJECTED));
+                Review.REVIEW_STATUS_REJECTED)
+                );
+            reviewStatusFilterSet.remove(-1);
         }
+        Logger.log("Admin dashboard - review status filter set: " + reviewStatusFilterSet);
 
         // add data to model for select externalId pill in admin dashboard JSP. This will be used to filter reviews by externalId.
-        DefaultController.addSelectExternalIdPillData(model.asMap(), reviewRepo);
+        ControllerUtils.addSelectExternalIdPillData(model.asMap(), reviewRepo);
 
         // create dump options for fetching all reviews for the given externalId without pagination and with a
         // specific sorting order.
-        ReviewQueryOptions dumpOptions = new ReviewQueryOptions();
-        dumpOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
-        dumpOptions.getStatusFilterSet().addAll(reviewStatusFilterSet);
-        dumpOptions.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
+        ReviewQueryOptions options = new ReviewQueryOptions();
+        options.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
+        options.getStatusFilterSet().addAll(reviewStatusFilterSet);
+
+        if(reviewStatusFilterSet.size() == 1 && reviewStatusFilterSet.contains(Review.REVIEW_STATUS_PENDING)) {
+            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
+        }
+        if(reviewStatusFilterSet.size() == 1 && reviewStatusFilterSet.contains(Review.REVIEW_STATUS_REJECTED)) {
+            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_REJECTED_FIRST);
+        }
+        if(reviewStatusFilterSet.size() == 1 && reviewStatusFilterSet.contains(Review.REVIEW_STATUS_APPROVED)) {
+            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_APPROVED_FIRST);
+        }
 
         // add dump to model for display in JSP. This is just for demonstration purposes to show how to fetch all
         // reviews for a given externalId with pagination and sorting, and should be removed for production code.
-        List<Review> reviews = reviewRepo.findByAnyExternalIdWithPagination(dumpOptions);
+        List<Review> reviews = reviewRepo.findByAnyExternalIdWithPagination(options);
         model.addAttribute("reviews", reviews);
+
 
         // add ordering options to model
         LinkedHashMap<String, Object> reviewStatusFilterOptions = new LinkedHashMap<>();
@@ -116,7 +134,7 @@ public class AdminController {
         reviewStatusFilterOptions.put("Avvist", Review.REVIEW_STATUS_REJECTED);
         reviewStatusFilterOptions.put("Alle", -1);
         model.addAttribute("reviewStatusFilterOptions", reviewStatusFilterOptions);
-        model.addAttribute("currentReviewStatusFilter", strReviewStatusFilter);
+        model.addAttribute("currentReviewStatusFilter", statusFilter);
 
         return "admin-dashboard";
     }

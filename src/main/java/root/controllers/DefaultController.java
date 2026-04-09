@@ -50,63 +50,6 @@ public class DefaultController {
     ReviewPageService reviewPageService;
 
 
-    /*
-     * public helper methods
-     */
-
-    public static void addDefaultNewReviewFormValues(Map<String, Object> modelMap) {
-        modelMap.put("displayNameSuggestion", FunnyUserNameGenerator.generate());
-        modelMap.put("titleSuggestion", IpsumLoremGenerator.generate(2 + (int) (Math.random() * 4)).replace(".", ""));
-        modelMap.put("commentSuggestion", IpsumLoremGenerator.generate(7 + (int) (Math.random() * 15)));
-        modelMap.put("scoreSuggestion", 1 + new Random().nextInt(5));
-    }
-
-    public static List<String> addSelectExternalIdPillData(Map<String, Object> modelMap, ReviewRepository reviewRepo) throws Exception {
-        List<String> uniqueExternalIds = reviewRepo.findUniqueExternalIds();
-        modelMap.put("uniqueExternalIds", uniqueExternalIds);
-        return uniqueExternalIds;
-    }
-
-    public static void addCursorToModel(Map<String, Object> modelMap, int elementCount, PageCursor originalCursor) {
-        modelMap.put("cursorOffset", originalCursor.getOffset());
-        modelMap.put("cursorLimit", originalCursor.getLimit());
-        modelMap.put("cursorMaxOffset", elementCount);
-    }
-
-    public static PageCursor decodeOrCreateCursor(String cursorStr, int defaultLimit) {
-        if (cursorStr != null && !cursorStr.isBlank()) {
-            return PageCursorEncoder.decodeCursor(cursorStr);
-        } else {
-            return new PageCursor(0, defaultLimit);
-        }
-    }
-
-
-
-
-
-    /*
-    other methods
-     */
-
-    // used to extract the externalId from the request URI for the /reviews/{externalId} route. Must be used
-    // allow for complex routing
-    private String extractExternalIdFromRequest(HttpServletRequest req) {
-        String path = (String) req.getAttribute(
-            org.springframework.web.servlet.HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-
-        String bestMatch = (String) req.getAttribute(
-            org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
-
-        String externalId = new org.springframework.util.AntPathMatcher()
-            .extractPathWithinPattern(bestMatch, path);
-
-        return externalId;
-    }
-
-
-
-
 
     /**
      * Simple route to display an error page. This is just for demonstration purposes and should be replaced with proper

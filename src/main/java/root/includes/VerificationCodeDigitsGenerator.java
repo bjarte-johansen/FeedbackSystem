@@ -20,8 +20,7 @@ public class VerificationCodeDigitsGenerator {
      * @return A random numeric string of the specified length.
      */
 
-    public static String generate(int numberOfDigits)
-    {
+    public static String generate(int numberOfDigits) {
         char[] out = new char[numberOfDigits];
 
         for(int i=0; i<numberOfDigits; i++) {

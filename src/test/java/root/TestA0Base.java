@@ -4,7 +4,6 @@ package root;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import root.includes.quicktests.quicktests.DatabaseManager;
 import root.includes.logger.Logger;
 import root.includes.logger.LoggerScope;
 import root.repositories.ReviewRepository;

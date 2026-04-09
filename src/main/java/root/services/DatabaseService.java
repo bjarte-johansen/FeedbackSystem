@@ -5,7 +5,8 @@ import org.springframework.stereotype.Service;
 import root.App;
 import root.app.AppRequestSchema;
 import root.database.DataSourceManager;
-import root.includes.quicktests.quicktests.DatabaseManager;
+import root.DatabaseManager;
+import root.models.Review;
 import root.repositories.TenantRepository;
 
 import java.util.List;
@@ -47,7 +48,13 @@ CREATE TABLE IF NOT EXISTS review_vote (
 
         // create lambda patcher
         App.ConnectionStatementRunnable patchAddStatusIndexDescSortedForReview = (c, st) -> {
-            st.execute("CREATE INDEX IF NOT EXISTS idx_review_status_1_created ON review(created_at DESC) WHERE status = 1");
+            // drop old indexes if they exist, we will replace them with new ones that are sorted by id desc and filtered by status
+            st.execute("DROP INDEX IF EXISTS idx_review_status_1_created;");
+            st.execute("DROP INDEX IF EXISTS idx_review_status_equals_1;");
+
+            st.execute("CREATE INDEX IF NOT EXISTS idx_review_status_approved ON review(id DESC) WHERE status = " + Review.REVIEW_STATUS_APPROVED);
+            st.execute("CREATE INDEX IF NOT EXISTS idx_review_status_pending ON review(id DESC) WHERE status = " + Review.REVIEW_STATUS_PENDING);
+            st.execute("CREATE INDEX IF NOT EXISTS idx_review_status_rejected ON review(id DESC) WHERE status = " + Review.REVIEW_STATUS_REJECTED);
         };
 
         List<App.ConnectionStatementRunnable> patchers = List.of(

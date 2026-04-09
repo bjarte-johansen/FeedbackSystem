@@ -20,7 +20,5 @@
 
             <span class="comment mb-4">${review.comment}</span>
 
-            <c:if test="${review.status == review.getPendingStatusConst()}">
-                <%@ include file="admin-review-moderate-buttons.jsp" %>
-            </c:if>
+            <%@ include file="admin-review-moderate-buttons.jsp" %>
         </div>

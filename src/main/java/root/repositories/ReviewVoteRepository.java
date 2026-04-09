@@ -4,7 +4,7 @@ import root.database.FSQLQuery;
 import root.includes.proxyrepo.ProxyRepository;
 import root.models.ReviewVote;
 
-public interface ReviewVoteRepository extends ProxyRepository<ReviewVote,Long> {
+public interface ReviewVoteRepository extends ProxyRepository<ReviewVote, Long> {
 
     /**
      * Votes a review. If the user has already voted, it updates the existing vote.

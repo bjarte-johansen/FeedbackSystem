@@ -96,7 +96,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
         }
     }
 
-    private void buildStatusConditions(List<String> conditionExprList, Set<Integer> statusFilter) {
+    private void buildStatusFilterConditions(List<String> conditionExprList, Set<Integer> statusFilter) {
         if (statusFilter != null && !statusFilter.isEmpty()) {
             if(isContiguous(statusFilter)) {
                 int min = Collections.min(statusFilter);
@@ -113,7 +113,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
     private void applyReviewQueryOptions(List<String> conditionExprList, ReviewQueryOptions options) {
         // filter by status
         Set<Integer> statusFilterSet = options.getStatusFilterSet();
-        buildStatusConditions(conditionExprList, statusFilterSet);
+        buildStatusFilterConditions(conditionExprList, statusFilterSet);
 
         // filter by score range (scoreFilterRange and scoreFilterList are mutually exclusive. If range is valid,
         // it will be used, otherwise filter by list (if any)).
@@ -160,7 +160,6 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .update();
     }
 
-
     @Override
     public void incrementLikeVote(long reviewId, int delta) throws Exception {
         String sql = "UPDATE review SET like_count = LEAST(32767, GREATEST(0, like_count + ?)) WHERE id = ?";
@@ -169,7 +168,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .bind(delta)
             .bind(reviewId)
             .update();
-    };
+    }
 
     @Override
     public void incrementDislikeVote(long reviewId, int delta) throws Exception {
@@ -179,7 +178,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .bind(delta)
             .bind(reviewId)
             .update();
-    };
+    }
 
     @Override
     public void updateReviewStatus(long reviewId, int newStatus) throws Exception {
@@ -189,7 +188,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .bind(newStatus)
             .bind(reviewId)
             .update();
-    };
+    }
 
 
     @Override
@@ -204,7 +203,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             return res;
         };
 
-        List<String> conditionExprList = new ArrayList<>();
+        List<String> conditionExprList = new ArrayList<>(20);
         conditionExprList.add("(external_id = ?)");
         conditionExprList.add("(status = ?)");
 
@@ -220,7 +219,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .bind(externalId)
             .bind(Review.REVIEW_STATUS_APPROVED)
             .fetchCallback(fnReadResultSet);
-    };
+    }
 
     @Override
     public List<String> findUniqueExternalIds() throws Exception{
@@ -236,7 +235,6 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
                 return result;
             });
     }
-
 
 
 
@@ -263,7 +261,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
         String columnStr = "id, external_id, author_name, score, title, comment, like_count, dislike_count, status, created_at";
 
         // make condition list
-        ArrayList<String> conditionExprList = new ArrayList<>();
+        ArrayList<String> conditionExprList = new ArrayList<>(20);
 
         // add condition for external id
         if(externalId != null && !externalId.isEmpty()){
@@ -302,7 +300,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
 
     @Override
     public int countByExternalId(String externalId, ReviewQueryOptions options) throws Exception{
-        List<String> conditionExprList = new ArrayList<>();
+        List<String> conditionExprList = new ArrayList<>(20);
 
         // add condition for external id
         checkArgument(externalId != null && !externalId.isEmpty(), "externalId cannot be null or empty");

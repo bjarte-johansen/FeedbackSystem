@@ -4,7 +4,7 @@
 
         <!-- TODO: figure out if we can remove tenantId from rendering to data attributes safely -->
 
-        <div class="box review review--review-${review.id}" data-review-id="${review.id}" data-tenant-id="${tenantId}">
+        <div class="box review review--review-${review.id} mb-2" data-review-id="${review.id}" data-tenant-id="${tenantId}">
             <div class="score-outer mb-0">
                 <strong class="score-text">${review.score}/5</strong> <span class="score score-${review.score}"></span>
             </div>
@@ -36,9 +36,5 @@
                     </form>
                 </span>
             </div>
-
-<!--
-            <%@ include file="admin-review-moderate-buttons.jsp" %>
-            -->
 
         </div>

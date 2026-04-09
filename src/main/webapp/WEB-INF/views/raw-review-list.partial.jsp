@@ -28,8 +28,6 @@
                 <td>${review.score}</td>
                 <td>${review.title}</td>
                 <td>${review.comment}</td>
-                <!--               <td>toString() equals ${review}</td> -->
-
                 <td>
                     <%@ include file="admin-review-moderate-buttons.jsp" %>
                 </td>

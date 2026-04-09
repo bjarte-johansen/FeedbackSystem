@@ -4,10 +4,7 @@ import root.app.includes.PageCursor;
 import root.includes.NumericRangeRecord;
 import root.models.Review;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -41,6 +38,8 @@ public class ReviewQueryOptions {
      * sorting criteria is the same.
      *
      * ALWAYS Use buildOrderBySql() to convert the orderByEnum value to a corresponding SQL ORDER BY clause.
+     *
+     * Important: remember to update OPTION_ORDER_BY_MAP method if you add new order by options.
      */
 
     public static final int OPTION_ORDER_NONE = 0;
@@ -58,7 +57,21 @@ public class ReviewQueryOptions {
     public static final int OPTION_ORDER_BY_STATUS_APPROVED_FIRST = 21;
     public static final int OPTION_ORDER_BY_STATUS_REJECTED_FIRST = 22;
 
+    private static final Map<Integer, String> OPTION_ORDER_BY_MAP = Map.ofEntries(
+        Map.entry(OPTION_ORDER_NONE, ""),
+        Map.entry(OPTION_ORDER_BY_ID_ASC, "id ASC"),
+        Map.entry(OPTION_ORDER_BY_ID_DESC, "id DESC"),
+        Map.entry(OPTION_ORDER_BY_CREATED_AT_ASC, "createdAt ASC"),
+        Map.entry(OPTION_ORDER_BY_CREATED_AT_DESC, "createdAt DESC"),
+        Map.entry(OPTION_ORDER_BY_SCORE_ASC, "score ASC"),
+        Map.entry(OPTION_ORDER_BY_SCORE_DESC, "score DESC"),
+        Map.entry(OPTION_ORDER_BY_STATUS_PENDING_FIRST, "(status = " + Review.REVIEW_STATUS_PENDING + ") DESC, id DESC"),
+        Map.entry(OPTION_ORDER_BY_STATUS_APPROVED_FIRST, "(status = " + Review.REVIEW_STATUS_APPROVED + ") DESC, id DESC"),
+        Map.entry(OPTION_ORDER_BY_STATUS_REJECTED_FIRST, "(status = " + Review.REVIEW_STATUS_REJECTED + ") DESC, id DESC")
+    );
 
+
+    // Instance properties
     private PageCursor pageCursor;
     private int orderByEnum;
 
@@ -164,7 +177,7 @@ public class ReviewQueryOptions {
      * methods provided in the class.
      */
     public ReviewQueryOptions() {
-        this(new PageCursor(), -1, -1);
+        this(new PageCursor(), -1);
     }
 
     /**
@@ -175,12 +188,11 @@ public class ReviewQueryOptions {
      * customized query options to be set when creating an instance of the ReviewQueryOptions class.
      *
      * @param pageCursor
-     * @param statusEnum
      * @param orderByEnum
      */
-    public ReviewQueryOptions(PageCursor pageCursor, Integer statusEnum, Integer orderByEnum) {
+
+    public ReviewQueryOptions(PageCursor pageCursor, Integer orderByEnum) {
         this.pageCursor = pageCursor;
-        //this.statusEnum = statusEnum;
         this.orderByEnum = orderByEnum;
     }
 
@@ -223,6 +235,7 @@ public class ReviewQueryOptions {
      *
      * @return
      */
+
     public int getOrderByEnum() {
         return orderByEnum;
     }
@@ -255,23 +268,9 @@ public class ReviewQueryOptions {
      *
      * @return
      */
+
     public String buildOrderBySql() {
-        return switch (orderByEnum) {
-            case OPTION_ORDER_NONE -> ""; // no order by
-            case OPTION_ORDER_BY_ID_ASC -> "id ASC";
-            case OPTION_ORDER_BY_ID_DESC -> "id DESC";
-            case OPTION_ORDER_BY_CREATED_AT_ASC -> "createdAt ASC";
-            case OPTION_ORDER_BY_CREATED_AT_DESC -> "createdAt DESC";
-            case OPTION_ORDER_BY_SCORE_ASC -> "score ASC";
-            case OPTION_ORDER_BY_SCORE_DESC -> "score DESC";
-            case OPTION_ORDER_BY_STATUS_PENDING_FIRST ->
-                "(status = " + Review.REVIEW_STATUS_PENDING + ") DESC, id DESC";
-            case OPTION_ORDER_BY_STATUS_APPROVED_FIRST ->
-                "(status = " + Review.REVIEW_STATUS_APPROVED + ") DESC, id DESC";
-            case OPTION_ORDER_BY_STATUS_REJECTED_FIRST ->
-                "(status = " + Review.REVIEW_STATUS_REJECTED + ") DESC, id DESC";
-            default -> "id ASC"; // default order
-        };
+        return OPTION_ORDER_BY_MAP.getOrDefault(getOrderByEnum(), "id ASC");
     }
 
 

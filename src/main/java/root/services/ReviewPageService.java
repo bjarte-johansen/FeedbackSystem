@@ -6,6 +6,7 @@ import root.app.AppContext;
 import root.app.ReviewQueryOptions;
 import root.app.includes.PageCursor;
 import root.app.includes.PageCursorEncoder;
+import root.controllers.ControllerUtils;
 import root.controllers.DefaultController;
 import root.controllers.LotsOfUtils;
 import root.models.Review;
@@ -77,13 +78,13 @@ public class ReviewPageService {
         // only used in demonstration interface
         // TODO: remove for production code, should allways take an externalId as a parameter and not display
         //  a dropdown of all externalIds
-        List<String> uniqueExternalIds = DefaultController.addSelectExternalIdPillData(modelMap, reviewRepo);
+        List<String> uniqueExternalIds = ControllerUtils.addSelectExternalIdPillData(modelMap, reviewRepo);
 
 
         if(AppConfig.TESTING_MODE) {
             // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
             // TODO: remove for production code, should have empty form
-            DefaultController.addDefaultNewReviewFormValues(modelMap);
+            ControllerUtils.addDefaultNewReviewFormValues(modelMap);
         }
 
 
@@ -119,7 +120,7 @@ public class ReviewPageService {
 
 
         // decode cursor
-        PageCursor decodedCursor = DefaultController.decodeOrCreateCursor(strEncodedCursor, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
+        PageCursor decodedCursor = ControllerUtils.decodeOrCreateCursor(strEncodedCursor, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
 
 
         // build review query options based on request parameters.
@@ -186,7 +187,7 @@ public class ReviewPageService {
 
         // add cursor to model
         // set query options for fetching reviews, including pagination and sorting. We are only fetching approved reviews for display.
-        DefaultController.addCursorToModel(modelMap, (int) reviewStats.getTotalCount(), decodedCursor);
+        ControllerUtils.addCursorToModel(modelMap, (int) reviewStats.getTotalCount(), decodedCursor);
         modelMap.put("pageCursor", PageCursorEncoder.encodeCursor(decodedCursor));
 
 

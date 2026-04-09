@@ -13,8 +13,9 @@
 
         <div class="box">
             ${reviewStatusFilterOptions}
+
             <!-- order by dropdown -->
-            <select name="currentReviewStatusFilterOptions" onchange="alert('not implemented yet')">
+            <select name="reviewStatusFilter" onchange="AdminReview.triggerClientReviewStatusFilterChange(this)">
                 <c:forEach var="option" items="${reviewStatusFilterOptions}">
                     <option value="${option.value}" <c:if test="${option.value == currentReviewStatusFilter}">selected</c:if>>${option.key}</option>
                 </c:forEach>
@@ -26,6 +27,7 @@
             data-order-by-enum="${currentOrderByEnum}"
             data-original-cursor="${pageCursor}"
             data-cursor="${pageCursor}"
+            data-status-filter="${currentReviewStatusFilter}"
             data-score-filter="${scoreFilter}"
             data-review-count="${reviewStats.totalCount}"
             data-filtered-review-count="${totalFilteredCount}"
