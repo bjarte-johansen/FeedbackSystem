@@ -1,11 +1,16 @@
 package root.app;
 
 import root.database.DataSourceConnectionParams;
+import root.models.Tenant;
+import root.services.PasswordService;
 
 
 public class AppConfig {
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test", "h184905", "pass", "test");
     public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
+
+
+
 
 
     public static int DEFAULT_REVIEW_VOTE_EXPIRATION_IN_DAYS = 30;
@@ -18,6 +23,21 @@ public class AppConfig {
 
     // TODO: must be set to false for production
     public static boolean TESTING_MODE = true;
+
+    public static boolean OVERRIDE_TENANT = true;
+    public static String OVERRIDE_TENANT_SCHEMA = "test";
+    public static long OVERRIDE_TENANT_ID = 1;
+    /*
+    public static Tenant OVERRIDE_TENANT_OBJECT = new Tenant(
+        "test",
+        "test.com",
+        "test-api-key",
+        "test@test.com",
+        (new PasswordService()).hash("test"),
+        "ignore",
+        "test"
+    );
+     */
 
     // TODO: must be set to false in production, otherwise all reviews will be automatically approved without moderation.
     public static boolean AUTO_APPROVE_NEW_REVIEWS = true;

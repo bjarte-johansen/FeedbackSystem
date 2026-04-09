@@ -1,7 +1,7 @@
 <!-- header -->
-<%@ include file="header.jsp" %>
+<%@ include file="admin-header.jsp" %>
 
-    <h1>Client interface</h1>
+    <h1>Admin interface</h1>
 
     <div class="box">
         <a href="${pageContext.request.contextPath}/clear-session" class="btn btn-primary">Clear session</a>
@@ -30,7 +30,6 @@
             data-status-filter="${currentReviewStatusFilter}"
             data-score-filter="${scoreFilter}"
             data-review-count="${reviewStats.totalCount}"
-            data-filtered-review-count="${totalFilteredCount}"
             >
 
                 <!-- show review dump for debugging -->

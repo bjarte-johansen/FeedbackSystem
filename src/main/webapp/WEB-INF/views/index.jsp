@@ -1,5 +1,5 @@
 <!-- header -->
-<%@ include file="header.jsp" %>
+<%@ include file="client-header.jsp" %>
 
     <h1>Client interface</h1>
 
@@ -15,13 +15,6 @@
         <%@ include file="pretty-review-list.partial.jsp" %>
     </div>
 
-    <h1>Administrator interface</h1>
-    <div class="box review--admin-interface">
-        <%@ include file="show-external-ids.jsp" %>
-
-        <!-- show review dump for debugging -->
-        <%@ include file="raw-review-list.partial.jsp" %>
-    </div>
 
 <!-- footer -->
 <%@ include file="footer.jsp" %>

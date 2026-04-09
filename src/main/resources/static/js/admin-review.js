@@ -277,7 +277,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    console.log("main.js loaded");
+    console.log("admin-review.js loaded");
 });
 
 

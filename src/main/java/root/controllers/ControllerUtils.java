@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-@Deprecated
 public class ControllerUtils {
 
     /**
@@ -22,7 +21,7 @@ public class ControllerUtils {
      * @param model
      */
     public static void setDefaults(Model model) {
-        model.addAttribute("defaultTitle", "Review System");
+        //model.addAttribute("defaultTitle", "Review System");
     }
 
 
@@ -71,7 +70,8 @@ public class ControllerUtils {
     public static void addCursorToModel(Map<String, Object> modelMap, int elementCount, PageCursor originalCursor) {
         modelMap.put("cursorOffset", originalCursor.getOffset());
         modelMap.put("cursorLimit", originalCursor.getLimit());
-        modelMap.put("cursorMaxOffset", elementCount);
+        //modelMap.put("cursorMaxOffset", elementCount);
+        modelMap.put("pageCursor", PageCursorEncoder.encodeCursor(originalCursor));
     }
 
 

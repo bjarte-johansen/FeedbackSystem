@@ -1,3 +1,13 @@
+/**
+ * This file is part of the "Where You At?" application (https://whereyouat.app).
+ *
+ * IMPORTANT: To enable localhost development profile, add the following line to run config VM options:
+ *      -Dspring.profiles.active=local to VM options (run configuration)
+ * IMPORTANT: to enable any schema, set the schema in AppRequestSchema before any database access is made, for example
+ * by adding the following line to the beginning of the startup method:
+ * */
+
+
 package root;
 
 import org.springframework.boot.CommandLineRunner;
@@ -5,6 +15,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
+import root.app.AppConfig;
 import root.app.AppContext;
 
 import root.app.AppRequestSchema;
@@ -49,15 +60,37 @@ public class App implements CommandLineRunner {
         return (args) -> {
             Logger.log("running app startup tasks...");
 
+            // override configs for testing purposes, in production these would be set by the environment or
+            // application properties
+            AppConfig.OVERRIDE_TENANT = true;
+            AppConfig.OVERRIDE_TENANT_SCHEMA = "test";
+            AppConfig.OVERRIDE_TENANT_ID = 1;
+
+            /*
+            // Initialize AppContext singleton (e.g. to initialize database connection pool and other shared resources)
+            AppContext.getSingleton();
+
+
+
+            //
+            AppRequestSchema.set(AppConfig.OVERRIDE_TENANT_SCHEMA);
+             */
+
+            Logger.log("running app startup tasks...");
+
             // Initialize AppContext singleton (e.g. to initialize database connection pool and other shared resources)
             AppContext.getSingleton();
             AppRequestSchema.set("test");
 
+            // patch database
             databaseService.executeDatabasePatches();
+
+            // reset demo data
             databaseService.resetDemoData();
 
-            AppRequestSchema.remove();;
+            AppRequestSchema.remove();
 
+            // old test
             //WhereQueryBuilder.test();
         };
     }

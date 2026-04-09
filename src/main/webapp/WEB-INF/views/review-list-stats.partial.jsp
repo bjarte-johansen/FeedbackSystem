@@ -1,5 +1,5 @@
 <div class="box">
-    <h3>Sammendrag</h3>
+    <h3>Omtaler (${reviewStats.totalCount})</h3>
 
     <div class="grid mb-4">
         <div class="grid-col-6">

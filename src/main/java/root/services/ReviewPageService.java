@@ -21,9 +21,16 @@ import java.util.*;
 import java.util.function.Function;
 
 import static root.common.utils.Preconditions.checkArgument;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class ReviewPageService {
+    static final ObjectMapper M = new ObjectMapper();
+
+
+    /*
+    lambda helper methods
+     */
     private static double roundToHalf(double v) {
         return Math.round(v * 2.0) / 2.0;
     }
@@ -62,6 +69,25 @@ public class ReviewPageService {
         this.reviewService = reviewService;
     }
 
+    private int getApprovedReviewsTotalCount(String externalId) throws Exception{
+        ReviewQueryOptions totalFilterCountOptions = new ReviewQueryOptions();
+        totalFilterCountOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
+        totalFilterCountOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
+        totalFilterCountOptions.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_NONE);
+
+        return reviewRepo.countByExternalId(externalId, totalFilterCountOptions);
+    }
+
+    private void addReviewsOrderByOptionsToModel(Map<String, Object> modelMap, int currentOrderByEnum) {
+        LinkedHashMap<String, Integer> reviewListOrderOptions = new LinkedHashMap<>();
+        reviewListOrderOptions.put("Nyeste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
+        reviewListOrderOptions.put("Eldste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC);
+        reviewListOrderOptions.put("Score (høyeste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_DESC);
+        reviewListOrderOptions.put("Score (laveste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_ASC);
+        modelMap.put("reviewListOrderOptions", reviewListOrderOptions);
+        modelMap.put("currentOrderByEnum", currentOrderByEnum);
+    }
+
     public Map<String, Object> buildReviewListingPage(
         String externalId,
         String strEncodedCursor,
@@ -88,6 +114,13 @@ public class ReviewPageService {
         }
 
 
+        // get tenant id or tenant name / something
+        // TODO: figure out tenant handling and how to display tenant info in the interface.
+        Long tenantId = AppContext.getSingleton().getTenantId();
+        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
+        modelMap.put("tenantId", tenantId);
+
+
         // real decoding of externalId from request URI for the /reviews/{externalId} route.
         // This allows for more complex routing and is more flexible than using a request parameter, but requires more
         // setup and handling in the controller. For simplicity, we are using a request parameter for the externalId
@@ -96,14 +129,6 @@ public class ReviewPageService {
         //String externalId = extractExternalIdFromRequest(req);
         //externalId = URLDecoder.decode(externalId, StandardCharsets.UTF_8);
         //Logger.log("External ID extracted from request: " + externalId);
-
-
-        // get tenant id or tenant name / something
-        // TODO: figure out tenant handling and how to display tenant info in the interface.
-        Long tenantId = AppContext.getSingleton().getTenantId();
-        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
-        modelMap.put("tenantId", tenantId);
-
 
         // get externalId from request parameter and validate. If not set, use the first unique externalId from
         // the database for demonstration purposes.
@@ -148,46 +173,17 @@ public class ReviewPageService {
         modelMap.put("reviewStats", reviewStats);
 
 
-        // get total filtered count for the given externalId and add to model for display in JSP. This is used for
-        // pagination and display purposes to show how many reviews are available for the given externalId with the
-        // current filters applied.
-        ReviewQueryOptions totalFilterCountOptions = new ReviewQueryOptions();
-        totalFilterCountOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
-        totalFilterCountOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
-        totalFilterCountOptions.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_NONE);
-
-        int totalFilteredCount = reviewRepo.countByExternalId(externalId, totalFilterCountOptions);
-        modelMap.put("totalFilteredCount", totalFilteredCount);
+        // add total approved reviews count for the given externalId to model for display in JSP.
+        //modelMap.put("totalFilteredCount", reviewStats.getTotalCount());
 
 
         // add ordering options to model
-        LinkedHashMap<String, Integer> reviewListOrderOptions = new LinkedHashMap<>();
-        reviewListOrderOptions.put("Nyeste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
-        reviewListOrderOptions.put("Eldste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC);
-        reviewListOrderOptions.put("Score (høyeste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_DESC);
-        reviewListOrderOptions.put("Score (laveste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_ASC);
-        modelMap.put("reviewListOrderOptions", reviewListOrderOptions);
-        modelMap.put("currentOrderByEnum", orderByEnum);
-
-
-        // create dump options for fetching all reviews for the given externalId without pagination and with a
-        // specific sorting order.
-        ReviewQueryOptions dumpOptions = new ReviewQueryOptions();
-        dumpOptions.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
-        dumpOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_PENDING);
-        dumpOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_REJECTED);
-        dumpOptions.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
-        dumpOptions.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
-
-        // add dump to model for display in JSP. This is just for demonstration purposes to show how to fetch all
-        // reviews for a given externalId with pagination and sorting, and should be removed for production code.
-        List<Review> reviewDump = reviewRepo.findByAnyExternalIdWithPagination(dumpOptions);
-        modelMap.put("reviewDump", reviewDump);
+        addReviewsOrderByOptionsToModel(modelMap, orderByEnum);
 
 
         // add cursor to model
         // set query options for fetching reviews, including pagination and sorting. We are only fetching approved reviews for display.
-        ControllerUtils.addCursorToModel(modelMap, (int) reviewStats.getTotalCount(), decodedCursor);
+        //ControllerUtils.addCursorToModel(modelMap, (int) reviewStats.getTotalCount(), decodedCursor);
         modelMap.put("pageCursor", PageCursorEncoder.encodeCursor(decodedCursor));
 
 
@@ -198,6 +194,17 @@ public class ReviewPageService {
         modelMap.put("dblFormatterCssPointFive", CSS_DOUBLE_FORMATTER_POINT_FIVE);
 
         // TODO END: get scores for aggregate display of score distribution and average score
+
+        return modelMap;
+    }
+
+    public Map<String, Object> buildPartialReviewListingPage(
+        String externalId,
+        String strEncodedCursor,
+        int orderByEnum,
+        String scoreFilter
+    ) throws Exception {
+        Map<String, Object> modelMap = new HashMap<>();
 
         return modelMap;
     }

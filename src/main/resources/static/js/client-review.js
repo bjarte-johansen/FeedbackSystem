@@ -270,7 +270,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    console.log("main.js loaded");
+    console.log("client-review.js loaded");
 });
 
 

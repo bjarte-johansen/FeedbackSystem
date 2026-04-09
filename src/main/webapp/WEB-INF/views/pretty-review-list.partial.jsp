@@ -8,13 +8,9 @@
     data-original-cursor="${pageCursor}"
     data-cursor="${pageCursor}"
     data-score-filter="${scoreFilter}"
-    data-review-count="${reviewStats.totalCount}"
-    data-filtered-review-count="${totalFilteredCount}"
-    >
+    data-review-count="${reviewStats.totalCount}">
 
-    <div class="box">
-        <h3>Omtaler (${reviewStats.totalCount})</h3>
-
+    <div class="box-virtual mb-4">
         <%@ include file="review-list-stats.partial.jsp" %>
 
         <!-- form to submit new review -->
@@ -23,7 +19,7 @@
 
     <div class="box">
         <!-- score filter dropdown -->
-        <select name="scoreFilter" onchange="Review.triggerClientScoreFilterChange(this)">
+        <select name="scoreFilter" onchange="Review.reloadReviewList()">
             <option value="${scoreFilter}" selected}></option>
 
             <c:forEach var="i" begin="1" end="5">
@@ -33,7 +29,7 @@
         </select>
 
         <!-- order by dropdown -->
-        <select name="orderByEnum" onchange="Review.triggerClientOrderByEnumChange(this)">
+        <select name="orderByEnum" onchange="Review.reloadReviewList()">
             <c:forEach var="orderByOption" items="${reviewListOrderOptions}" varStatus="loop">
                 <option value="${orderByOption.value}" ${orderByOption.value == currentOrderByEnum ? 'selected' : ''}>${orderByOption.key}</option>
             </c:forEach>

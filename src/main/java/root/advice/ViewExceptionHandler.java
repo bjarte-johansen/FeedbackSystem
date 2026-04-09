@@ -1,4 +1,4 @@
-package root.controllers;
+package root.advice;
 
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;

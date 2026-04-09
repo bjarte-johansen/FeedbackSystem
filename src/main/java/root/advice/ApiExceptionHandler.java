@@ -1,4 +1,4 @@
-package root.controllers;
+package root.advice;
 
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.ResponseEntity;

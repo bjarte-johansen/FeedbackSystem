@@ -142,6 +142,27 @@ public class DefaultController {
         return "index";
     }
 
+    @GetMapping("/api/reviews/render/html")
+    public String renderReviewsAsHtml(
+        @RequestParam String externalId,
+        @RequestParam(name = "cursor", defaultValue = "") String encodedCursor,
+        @RequestParam(name = "orderByEnum", defaultValue = ("" + ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC)) int orderByEnum,
+        @RequestParam(name = "scoreFilter", defaultValue = "-1") String scoreFilter,
+        Model model,
+        HttpServletRequest req
+    )  throws Exception {
+        Map<String, Object> vm = reviewPageService.buildPartialReviewListingPage(
+            externalId,
+            encodedCursor,
+            orderByEnum,
+            scoreFilter
+        );
+
+        model.addAllAttributes(vm);
+
+        return "index";
+    }
+
 
 
 

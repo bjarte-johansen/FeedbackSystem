@@ -41,6 +41,7 @@ public class AppContext {
         //  set to true to use test tenant schema, otherwise tentants schema which needs to be supplied in
         //  routes to controller via id or name that we encode to schema name
         ds = new CustomDataSource(AppConfig.TEST);
+        ds.warm(10);
 
         if (AppConfig.USE_TEST_TENANT) {
             initSingleTenantConnectionProvider(ds);
