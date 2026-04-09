@@ -130,6 +130,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
             if(name.equals("findById")) return wrap((method_args) -> handleFindById(m, method_args));
             if(name.startsWith("findBy")) return wrap((method_args) -> handleFindBy(m, method_args));
             if(name.equals("findAll")) return wrap((method_args) -> handleFindAll(m, method_args));
+            if(name.startsWith("findFirstBy")) return wrap((method_args) -> handleFindFirstById(m, method_args));
 
             // delete
             if(name.equals("deleteById")) return wrap((method_args) -> handleDeleteById(m, method_args));
@@ -346,6 +347,24 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         if(returnType == Optional.class) return result;
         if(returnType == __MODEL_CLASS) return result.orElse(null);
         if(returnType == void.class || returnType == Void.class) return null;
+
+        throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
+    }
+
+    public Object handleFindFirstById(Method method, Object[] args) throws Exception {
+        String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr + " LIMIT 1";
+
+        // create query & return result(s) based on return type
+        FSQLQuery q = FSQLQuery.create(sql)
+            .debug(DEBUG_SQL)
+            .bindArray(args);
+
+        // return result
+        Class<?> returnType = method.getReturnType();
+        // TODO: support more return types (e.g. Stream, Iterable, array, etc.)
+        if (Collection.class.isAssignableFrom(returnType)) return q.fetchAll(__MODEL_CLASS);
+        if (returnType == Optional.class) return q.fetchOne(__MODEL_CLASS);
+        if (returnType.isAssignableFrom(__MODEL_CLASS)) return q.fetchOne(__MODEL_CLASS).orElse(null);
 
         throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
     }

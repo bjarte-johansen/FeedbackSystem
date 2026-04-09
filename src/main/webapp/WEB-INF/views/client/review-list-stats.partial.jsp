@@ -33,5 +33,5 @@
         </div>
     </div>
 
-    <a href="#" onclick="toggleReviewForm();">Legg til ny omtale</a>
+    <a href="javascript:void(0)" onclick="toggleReviewForm();">Legg til ny omtale</a>
 </div>

@@ -66,18 +66,15 @@ CREATE TABLE IF NOT EXISTS review_vote (
         // return lambda executer that runs the patchers
 
         for (var tenant : tenantRepo.findAll()) {
-            //String schema = tenant.getSchemaName(); // TODO: use tenant.getSchemaName();
-            //try(var _1 = Logger.scope("Patching schema " + schema)) {
-                // TODO: bug here, its implemented twice that we do the test schema for some reason, need to investigate and fix this
-                try (var _2 = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
-                    try (var conn = DataSourceManager.getConnection()) {
-                        try (var st = conn.createStatement()) {
-                            for (var patcher : patchers)
-                                patcher.run(conn, st);
-                        }
+            // TODO: bug here, its implemented twice that we do the test schema for some reason, need to investigate and fix this
+            try (var _2 = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
+                try (var conn = DataSourceManager.getConnection()) {
+                    try (var st = conn.createStatement()) {
+                        for (var patcher : patchers)
+                            patcher.run(conn, st);
                     }
                 }
-            //}
+            }
         }
     }
 }

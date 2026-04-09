@@ -51,7 +51,7 @@ class SqlQueryMethodNameScanner {
     );
 
     private final static String[] methodStarts = {
-        "findAll", "findBy", "findCount", "find",
+        "findFirstBy", "findAll", "findBy", "findCount", "find",
         "deleteAll", "deleteBy", "delete",
         "existsBy", "exists",
         "updateBy", "update",

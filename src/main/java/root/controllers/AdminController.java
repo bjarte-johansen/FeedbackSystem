@@ -136,7 +136,7 @@ public class AdminController {
         model.addAttribute("reviewStatusFilterOptions", reviewStatusFilterOptions);
         model.addAttribute("currentReviewStatusFilter", statusFilter);
 
-        return "admin-dashboard";
+        return "admin/admin-dashboard";
     }
 
     /**

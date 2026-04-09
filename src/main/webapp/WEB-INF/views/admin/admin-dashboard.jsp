@@ -9,13 +9,13 @@
 
     <h1>Administrator interface</h1>
     <div class="box review--admin-interface">
-        <%@ include file="show-external-ids.jsp" %>
+        <%@ include file="external-id-pills.jsp" %>
 
         <div class="box">
             ${reviewStatusFilterOptions}
 
             <!-- order by dropdown -->
-            <select name="reviewStatusFilter" onchange="AdminReview.triggerClientReviewStatusFilterChange(this)">
+            <select name="reviewStatusFilter" onchange="Review.reloadReviewList()">
                 <c:forEach var="option" items="${reviewStatusFilterOptions}">
                     <option value="${option.value}" <c:if test="${option.value == currentReviewStatusFilter}">selected</c:if>>${option.key}</option>
                 </c:forEach>
@@ -30,6 +30,7 @@
             data-status-filter="${currentReviewStatusFilter}"
             data-score-filter="${scoreFilter}"
             data-review-count="${reviewStats.totalCount}"
+            data-detailed-review-count="${scoreCountsJson}"
             >
 
                 <!-- show review dump for debugging -->

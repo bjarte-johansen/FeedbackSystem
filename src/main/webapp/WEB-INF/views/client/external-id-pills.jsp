@@ -5,7 +5,7 @@
 
     <div class="box-virtual clearfix testpage--external-id-list">
         <c:forEach var="externalId" items="${uniqueExternalIds}">
-            <a class="${externalId == param.externalId ? 'btn btn-primary' : ''}" href="${pageContext.request.contextPath}/show-reviews?externalId=${externalId}">${externalId}</a>
+            <a class="${externalId == param.externalId ? 'btn btn-primary' : ''}" href="${pageContext.request.contextPath}/reviews/build-html?externalId=${externalId}">${externalId}</a>
         </c:forEach>
     </div>
 </div>

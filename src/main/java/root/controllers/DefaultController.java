@@ -78,7 +78,7 @@ public class DefaultController {
 
     @GetMapping("/")
     public String index(Model model, HttpServletRequest req, RedirectAttributes ra) throws Exception {
-        return "redirect:/show-reviews?externalId=/invalid-path";
+        return "redirect:/reviews/build-html?externalId=/invalid-path";
     }
 
 
@@ -121,7 +121,7 @@ public class DefaultController {
      * @throws Exception
      */
 
-    @GetMapping("/show-reviews")
+    @GetMapping("/reviews/build-html")
     public String showReviews(
         @RequestParam String externalId,
         @RequestParam(name = "cursor", defaultValue = "") String encodedCursor,
@@ -134,15 +134,29 @@ public class DefaultController {
             externalId,
             encodedCursor,
             orderByEnum,
-            scoreFilter
+            scoreFilter,
+            req
             );
+
+        // find all unique externalIds for reviews to display in the dropdown for quick navigation
+        // only used in demonstration interface
+        // TODO: remove for production code, should allways take an externalId as a parameter and not display
+        //  a dropdown of all externalIds
+        ControllerUtils.addSelectExternalIdPillData(vm, reviewRepo);
+
+
+        if (AppConfig.TESTING_MODE) {
+            // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
+            // TODO: remove for production code, should have empty form
+            ControllerUtils.addDefaultNewReviewFormValues(vm);
+        }
 
         model.addAllAttributes(vm);
 
-        return "index";
+        return "client/index";
     }
 
-    @GetMapping("/api/reviews/render/html")
+    @GetMapping("/api/reviews/build-html")
     public String renderReviewsAsHtml(
         @RequestParam String externalId,
         @RequestParam(name = "cursor", defaultValue = "") String encodedCursor,
@@ -155,12 +169,13 @@ public class DefaultController {
             externalId,
             encodedCursor,
             orderByEnum,
-            scoreFilter
+            scoreFilter,
+            req
         );
 
         model.addAllAttributes(vm);
 
-        return "index";
+        return "client/pretty-review-list.partial";
     }
 
 
@@ -175,7 +190,7 @@ public class DefaultController {
      * @return
      * @throws Exception
      */
-    @GetMapping("/api/review/build-html/{reviewId}")
+    @GetMapping("/api/review/{reviewId}/build-html")
     public String makeReviewHtml(@PathVariable long reviewId, Model model) throws Exception {
         Review review = reviewRepo.findById(reviewId).orElse(null);
         if (review == null) return "error";
@@ -189,7 +204,7 @@ public class DefaultController {
         // add formatters to model for display in JSP
         model.addAttribute("daysAgoFormatter", ReviewPageService.DAYS_AGO_FORMATTER);
 
-        return "pretty-review.partial";
+        return "client/pretty-review.partial";
     }
 
 

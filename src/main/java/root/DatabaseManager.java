@@ -80,13 +80,16 @@ public class DatabaseManager {
     private void insertTenants() throws Exception {
 
         try (var p = Logger.scope("Inserting tenant", DEBUG)) {
+            String password = "tenant-1";
+            String passwordHash = passwordService.hash(password);
+
             Tenant tenant = new Tenant();
             tenant.setName("Tenant 1");
             tenant.setEmail("tenant-1@demo.only");
             tenant.setDomain("tenant1.demo.only");
             tenant.setApiKey("tenant-1-api-key");
-            tenant.setPasswordHash(passwordService.hash("tenant-1"));
-            tenant.setPasswordSalt("salt");
+            tenant.setPasswordHash(passwordHash);
+            tenant.setPasswordSalt("");
             tenant.setSchemaName("test");
 
             tenantRepo.save(tenant);
@@ -163,6 +166,11 @@ public class DatabaseManager {
             Supplier<String> comment = () -> Strings.left(IpsumLoremGenerator.generate(10 + (int) (Math.random() * 20)), 255);
 
             List<Review> reviews = List.of(
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+
                 createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
                 createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 2L, title.get(), comment.get(), 4, increasingPastInstant.get()),
                 createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 3L, title.get(), comment.get(), 3, increasingPastInstant.get()),
