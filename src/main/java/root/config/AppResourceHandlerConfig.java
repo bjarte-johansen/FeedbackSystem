@@ -9,9 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import root.includes.logger.Logger;
 import root.services.LocalService;
 
-/**
- * TODO: this file only works on localhost, it messes with paths on TomEe, must fix
- */
+// TODO, check that isLocal is working correctly, and that resources are being served correctly in local vs prod environments
 
 @Configuration
 public class AppResourceHandlerConfig implements WebMvcConfigurer {
@@ -20,7 +18,6 @@ public class AppResourceHandlerConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // only do this routine when running locally
         if(!localService.isLocal()) {
             Logger.log("not running locally, skipping resource handler config");
             return;
@@ -29,14 +26,7 @@ public class AppResourceHandlerConfig implements WebMvcConfigurer {
         String path = System.getProperty("user.dir"); // project root
 
         registry
-            .addResourceHandler("/css/**")
-            .addResourceLocations("file:" + path + "/src/main/resources/static/css/");
-
-        registry
-            .addResourceHandler("/js/**")
-            .addResourceLocations("file:" + path + "/src/main/resources/static/js/");
-
-        Logger.log("added resource handler, " + path + "/css/**");
-        Logger.log("added resource handler, " + path + "/js/**");
-    }
+            .addResourceHandler("/**")
+            .addResourceLocations("file:" + path + "/src/main/resources/static/");
+   }
 }

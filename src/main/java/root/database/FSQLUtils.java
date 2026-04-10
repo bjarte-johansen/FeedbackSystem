@@ -6,7 +6,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +19,8 @@ public class FSQLUtils {
                 Field f = cur.getDeclaredField(name);
                 f.setAccessible(true);
                 return f;
-            } catch (NoSuchFieldException ignored) {}
+            } catch (NoSuchFieldException ignored) {
+            }
         }
 
         throw new RuntimeException("Field '" + name + "' not found in " + c);
@@ -39,7 +39,17 @@ public class FSQLUtils {
         }
     }
 
-
+    /**
+     * Gets the ID value of an entity using a cached MethodHandle for the specified ID field name. The MethodHandle is
+     * cached per entity class for efficient repeated access.
+     * <p>
+     * TODO: data should be cached one and gotten directly from metadata in allmost all cases, but
+     *  this is a fallback for when it's not available (e.g. non-entity classes or missing metadata).
+     *
+     * @param entity
+     * @param idFieldName
+     * @return
+     */
 
     public static Object getEntityId(Object entity, String idFieldName) {
         Class<?> clazz = entity.getClass();
@@ -55,7 +65,7 @@ public class FSQLUtils {
 
         try {
             return mh.invoke(entity);
-        }catch(Throwable t) {
+        } catch (Throwable t) {
             throw new RuntimeException("Failed to get entity id for class " + clazz.getName(), t);
         }
     }
@@ -73,12 +83,23 @@ public class FSQLUtils {
     }
     */
 
+    /**
+     * Sets the ID value of an entity by directly setting the specified ID field using reflection.
+     * <p>
+     * TODO: this should be cached and use MethodHandle like the getter, but this is a fallback for when it's
+     *  not available (e.g. non-entity classes or missing metadata).
+     *
+     * @param entity
+     * @param id
+     * @param idFieldName
+     */
+
     public static void setEntityId(Object entity, Object id, String idFieldName) {
-        if(entity == null) {
+        if (entity == null) {
             throw new IllegalArgumentException("Entity cannot be null");
         }
 
-        if(!(id instanceof Number)) {
+        if (!(id instanceof Number)) {
             throw new IllegalArgumentException("Id value must be a number castable to long");
         }
 
@@ -87,7 +108,7 @@ public class FSQLUtils {
             Field idField = clazz.getDeclaredField(idFieldName);
             idField.setAccessible(true);
             idField.set(entity, ((Number) id).longValue());
-        } catch(NoSuchFieldException | IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("ID field '" + idFieldName + "' not found in class " + entity.getClass().getName(), e);
         }
     }
@@ -126,23 +147,38 @@ public class FSQLUtils {
         //wasNull() to return null instead for boxed types.
 
         // hottest first
-        if (t == int.class)         return ResultSet::getInt;
-        if (t == long.class)        return ResultSet::getLong;
-        if (t == double.class)      return ResultSet::getDouble;
-        if (t == boolean.class)     return ResultSet::getBoolean;
+        if (t == int.class) return ResultSet::getInt;
+        if (t == long.class) return ResultSet::getLong;
+        if (t == double.class) return ResultSet::getDouble;
+        if (t == boolean.class) return ResultSet::getBoolean;
 
         // string
-        if (t == String.class)      return ResultSet::getString;
+        if (t == String.class) return ResultSet::getString;
 
         // boxed
-        if (t == Integer.class)     return (rs, i) -> { var v = rs.getInt(i) ; return rs.wasNull() ? null : v; };
-        if (t == Long.class)        return (rs, i) -> { var v = rs.getLong(i) ; return rs.wasNull() ? null : v; };
-        if (t == Double.class)      return (rs, i) -> { var v = rs.getDouble(i) ; return rs.wasNull() ? null : v; };
-        if (t == Boolean.class)     return (rs, i) -> { var v = rs.getBoolean(i) ; return rs.wasNull() ? null : v; };
+        if (t == Integer.class) return (rs, i) -> {
+            var v = rs.getInt(i);
+            return rs.wasNull() ? null : v;
+        };
+        if (t == Long.class) return (rs, i) -> {
+            var v = rs.getLong(i);
+            return rs.wasNull() ? null : v;
+        };
+        if (t == Double.class) return (rs, i) -> {
+            var v = rs.getDouble(i);
+            return rs.wasNull() ? null : v;
+        };
+        if (t == Boolean.class) return (rs, i) -> {
+            var v = rs.getBoolean(i);
+            return rs.wasNull() ? null : v;
+        };
 
         // time
         if (t == java.time.Instant.class)
-            return (rs, i) -> { var v = rs.getObject(i, java.sql.Timestamp.class); return v != null ? v.toInstant() : null; };
+            return (rs, i) -> {
+                var v = rs.getObject(i, java.sql.Timestamp.class);
+                return v != null ? v.toInstant() : null;
+            };
 
         if (t == java.time.LocalDate.class)
             return (rs, i) -> rs.getObject(i, java.time.LocalDate.class);

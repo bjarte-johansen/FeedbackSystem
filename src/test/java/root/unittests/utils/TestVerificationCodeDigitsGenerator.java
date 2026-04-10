@@ -1,12 +1,7 @@
-package root.unittests;
+package root.unittests.utils;
 
 import org.junit.jupiter.api.Test;
-import root.includes.NorwegianTimeAgoTextFormatter;
 import root.includes.VerificationCodeDigitsGenerator;
-import root.includes.logger.Logger;
-
-import java.time.Duration;
-import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

@@ -192,7 +192,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
 
 
     @Override
-    public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> scoreFilterSet) throws Exception{
+    public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> scoreFilterSet){
         FSQLQuery.ResultSetFunction<LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
             LinkedHashMap<Integer, Integer> res = new LinkedHashMap<>();
             while (rs.next()) {
@@ -215,10 +215,14 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             + whereStr
             + " GROUP BY score";
 
-        return FSQLQuery.create(sql)
-            .bind(externalId)
-            .bind(Review.REVIEW_STATUS_APPROVED)
-            .fetchCallback(fnReadResultSet);
+        try {
+            return FSQLQuery.create(sql)
+                .bind(externalId)
+                .bind(Review.REVIEW_STATUS_APPROVED)
+                .fetchCallback(fnReadResultSet);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

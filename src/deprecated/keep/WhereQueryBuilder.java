@@ -13,6 +13,7 @@ import java.util.function.Consumer;
  * Added conditional group includes, and added better support for AND/OR-Groups.
  */
 
+@Deprecated
 public class WhereQueryBuilder {
     private final StringBuilder sql = new StringBuilder();
     private final List<Object> args = new ArrayList<>();

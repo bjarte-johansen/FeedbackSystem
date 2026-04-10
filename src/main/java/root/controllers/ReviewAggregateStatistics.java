@@ -9,7 +9,7 @@ import java.util.Map;
  * total score count, score distribution, and score counts for each score value.
  */
 
-public class ReviewAggregateScoreHelper {
+public class ReviewAggregateStatistics {
     /*
     public record Score(double percentOfTotal, long count) {
     }

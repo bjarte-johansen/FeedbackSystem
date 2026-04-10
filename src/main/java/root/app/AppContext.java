@@ -34,23 +34,23 @@ public class AppContext {
         initDatasourceAndConnectionProvider();
     }
 
+    /*
     public static AppContext getSingleton() {
         if (INSTANCE == null) {
             INSTANCE = new AppContext();
         }
         return AppContext.INSTANCE;
     }
+     */
 
     public void initDatasourceAndConnectionProvider() {
-        // FIXME:
-        //  set to true to use test tenant schema, otherwise tentants schema which needs to be supplied in
-        //  routes to controller via id or name that we encode to schema name
         ds = new CustomDataSource(AppConfig.CURRENT_CONNECTION_PARAMS);
-        //ds.warm(0);
+        ds.setMaxPoolSize(AppConfig.DB_MAX_CONNECTION_POOL_SIZE);
+        ds.warm(2);
 
         if (AppConfig.USE_TEST_TENANT) {
             initSingleTenantConnectionProvider(ds);
-        } else {
+        }else {
             initMultiTenantConnectionProvider(ds);
         }
     }
@@ -84,8 +84,12 @@ public class AppContext {
     }
 
     public Long getTenantId() {
+        return getTenantId(true);
+    }
+
+    public Long getTenantId(boolean required) {
         var tenantId = currentTenantId.get();
-        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
+        checkArgument(required && tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
         return tenantId;
     }
 

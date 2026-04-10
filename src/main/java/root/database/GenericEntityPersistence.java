@@ -10,32 +10,57 @@ import static root.common.utils.Preconditions.checkArgument;
 
 
 public class GenericEntityPersistence {
+    @FunctionalInterface
+    public interface FieldGetter {
+        Object get(Object entity) throws Exception;
+    }
+
+
     public static boolean DEBUG_SQL = false;
 
     public static String DEFAULT_ID_NAME = "id";
     private final static ConcurrentHashMap<Class<?>, LinkedHashMap<String, FieldGetter>> PROPERTY_MAP_CACHE = new ConcurrentHashMap<>();
 
-    @FunctionalInterface
-    public interface FieldGetter {
-        Object get(Object entity) throws Exception;
-    }
+
+    /**
+     * Enable or disable debug logging of generated SQL statements in the generic persistence methods. When enabled, the
+     * generated SQL statements will be printed to the console for debugging purposes. The method returns the previous
+     * debug state before the change.
+     *
+     * @param debug
+     * @return
+     */
 
     public static boolean setDebugSql(boolean debug) {
         boolean prev = DEBUG_SQL;
         DEBUG_SQL = debug;
         return prev;
     }
-    /*
-    public static boolean getDebugSql(){
-        return DEBUG_SQL;
-    }*/
+
+
+    /**
+     * Set the default ID field name to use when null is passed as the id_field_name parameter in the generic
+     * persistence methods.
+     *
+     * @param id_name
+     */
 
     public static void setDefaultIdName(String id_name) {
         DEFAULT_ID_NAME = id_name;
     }
+
+
+    /**
+     * Get the current default ID field name used when null is passed as the id_field_name parameter in the generic
+     * persistence methods.
+     *
+     * @return the current default ID field name
+     */
+
     public static String getDefaultIdName() {
         return DEFAULT_ID_NAME;
     }
+
 
     /*
     private static LinkedHashMap<String, FieldGetter> buildPropertyMapWithoutId(Object entity, String id_field_name, boolean requireNonEmpty) {
@@ -98,7 +123,6 @@ public class GenericEntityPersistence {
         actualField.setAccessible(true);
         return actualField.get(entity);
     }
-
 
 
     /**
@@ -170,7 +194,6 @@ public class GenericEntityPersistence {
     }
 
 
-
     /**
      * Generic method to update an entity in the specified table based on its ID field. The method builds an SQL UPDATE
      * statement using the non-ID fields of the entity and executes it against the database. The ID field is used in the
@@ -205,7 +228,7 @@ public class GenericEntityPersistence {
         columnValueArr = meta.getNonIdPropertyValues(entity);
 
         StringBuilder setClauseBuilder = new StringBuilder(512);
-        for(int i = 0; i < columnNameArr.length; i++) {
+        for (int i = 0; i < columnNameArr.length; i++) {
             if (i > 0) setClauseBuilder.append(", ");
             setClauseBuilder.append(columnNameArr[i]).append(" = ?");
         }

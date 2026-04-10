@@ -26,6 +26,7 @@ import java.util.function.Function;
 
 @Controller
 public class AdminController {
+    private final LinkedHashMap<String, Object> reviewStatusFilterOptions = getReviewStatusFilterOptions();
 
     // declare repos
     private final ReviewRepository reviewRepo;
@@ -36,6 +37,7 @@ public class AdminController {
 
     /**
      * Constructor with dependency injection.
+     *
      * @param reviewRepo
      * @param reviewerRepo
      * @param reviewService
@@ -52,6 +54,15 @@ public class AdminController {
     /*
     helper methods
      */
+
+    private LinkedHashMap<String, Object> getReviewStatusFilterOptions() {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put("Venter", Review.REVIEW_STATUS_PENDING);
+        map.put("Godkjent", Review.REVIEW_STATUS_APPROVED);
+        map.put("Avvist", Review.REVIEW_STATUS_REJECTED);
+        map.put("Alle", -1);
+        return map;
+    }
 
     private void requireAdministratorRole() {
         if (!appContext.isAdministrator()) {
@@ -77,7 +88,7 @@ public class AdminController {
 
 
     @GetMapping("/admin-dashboard")
-    public String adminDashboard(Model model) throws Exception{
+    public String adminDashboard(Model model) throws Exception {
         return showPendingReviews("", model);
     }
 
@@ -86,9 +97,10 @@ public class AdminController {
     public String showPendingReviews(
         @RequestParam(defaultValue = "-1") String statusFilter,
         Model model
-    ) throws Exception{
-        return showReviewList(statusFilter, model);
+    ) throws Exception {
+        return showReviewList("" + Review.REVIEW_STATUS_PENDING, model);
     }
+
 
     @GetMapping("/admin/reviews")
     public String showReviewList(
@@ -99,9 +111,10 @@ public class AdminController {
 
         // decode reviewStatusFilter from CSV string to set of integers. If the filter contains -1, we want to include
         // all statuses, so we add all possible statuses to the filter set.
-        Set<Integer> reviewStatusFilterSet = new HashSet<>(Utils.parseCsvIntList(statusFilter));
-        //Logger.log("Admin dashboard - review status filter set: " + reviewStatusFilterSet);
+        // if status = -1, we want to include all statuses, so we add all possible statuses to the filter set.
+        // If the filter is empty, we also want to include all statuses.
 
+        Set<Integer> reviewStatusFilterSet = new HashSet<>(Utils.parseCsvIntList(statusFilter));
         if(reviewStatusFilterSet.contains(-1) || reviewStatusFilterSet.isEmpty()){
             reviewStatusFilterSet.remove(-1);
 
@@ -111,8 +124,6 @@ public class AdminController {
                 Review.REVIEW_STATUS_REJECTED)
             );
         }
-
-        //Logger.log("Admin dashboard - review status filter set: " + reviewStatusFilterSet);
 
         // add data to model for select externalId pill in admin dashboard JSP. This will be used to filter reviews by externalId.
         ControllerUtils.addSelectExternalIdPillData(model.asMap(), reviewRepo);
@@ -133,30 +144,24 @@ public class AdminController {
         List<Review> reviews = reviewRepo.findByAnyExternalIdWithPagination(options);
         model.addAttribute("reviews", reviews);
 
+        // add total count of reviews for the given externalId and status filter to model for display in JSP.
         int totalStatusFilterCount = reviewRepo.countByAnyExternalId(options);
         model.addAttribute("totalStatusFilterCount", totalStatusFilterCount);
 
+        Function<String, String> toCssIdentifier = (s) -> {
+            if(s == null || s.isEmpty()) return "";
+            return Utils.toCssIdentifier(s).toLowerCase();
+        };
+        model.addAttribute("toCssIdentifier", toCssIdentifier);
 
         // add ordering options to model
-        LinkedHashMap<String, Object> reviewStatusFilterOptions = new LinkedHashMap<>();
-        reviewStatusFilterOptions.put("Venter", Review.REVIEW_STATUS_PENDING);
-        reviewStatusFilterOptions.put("Godkjent", Review.REVIEW_STATUS_APPROVED);
-        reviewStatusFilterOptions.put("Avvist", Review.REVIEW_STATUS_REJECTED);
-        reviewStatusFilterOptions.put("Alle", -1);
         model.addAttribute("reviewStatusFilterOptions", reviewStatusFilterOptions);
         model.addAttribute("currentReviewStatusFilter", statusFilter);
 
-        // add a simple function to format Instant values to "days ago" format for display in JSP
-        Function<Instant, String> DAYS_AGO_FORMATTER = v -> {
-            if (v == null) return "";
-
-            long days = ChronoUnit.DAYS.between(v, Instant.now());
-            return String.valueOf(Math.max(0, days));
-        };
-        model.addAttribute("daysAgoFormatter", DAYS_AGO_FORMATTER);
-
         return "admin/admin-dashboard";
     }
+
+
 
     /**
      * API endpoint to mark a review as approved by id.
@@ -175,8 +180,6 @@ public class AdminController {
 
 
 
-
-
     /**
      * API endpoint to mark a review as rejected by id.
      * @param reviewId
@@ -190,8 +193,6 @@ public class AdminController {
 
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_REJECTED);
     }
-
-
 
 
 
@@ -212,8 +213,6 @@ public class AdminController {
 
 
 
-
-
     /**
      * API endpoint to delete a review by id.
      *
@@ -223,7 +222,6 @@ public class AdminController {
      * @return
      * @throws Exception
      */
-
 
     // todo: fix route name (maybe /api/reviews/{reviewId} or similar), and add authorization check for tenantId
     //  (should match the tenant of the review, or be a super admin)

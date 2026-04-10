@@ -1,5 +1,6 @@
 package root.includes;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import root.app.AppConfig;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import static root.common.utils.Preconditions.checkArgument;
  */
 
 public class Utils {
+    private static final ObjectMapper M = new ObjectMapper();
 
     /**
      * Checks if a string has non-whitespace text. Returns true if the string is not null and contains at least one
@@ -96,5 +98,68 @@ public class Utils {
         checkArgument(password.length() >= AppConfig.MIN_PASSWORD_LENGTH, "Password must be at least " + AppConfig.MIN_PASSWORD_LENGTH + " characters long");
         checkArgument(password.matches(AppConfig.VALID_PASSWORD_REGEX), "Password does not meet complexity requirements");
         return true;
+    }
+
+
+    /**
+     * Converts an object to a JSON string and escapes it for safe use in HTML attributes. This method uses the provided
+     * ObjectMapper to serialize the object to JSON, and then replaces special characters with their corresponding HTML
+     * entities to prevent issues when the JSON string is used within an HTML attribute. The characters escaped include
+     * &, ", <, and >.
+     * TODO: Make unittest
+     *
+     * @param o
+     * @return
+     */
+
+    public static String toJson(Object o) {
+        try {
+            return M.writeValueAsString(o);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to convert object to JSON for HTML attribute", e);
+        }
+    }
+
+
+    /**
+     * Escapes special characters in a string for safe use in HTML. This method replaces &, ", <, and > with their
+     * corresponding HTML entities (&amp;, &quot;, &lt;, &gt;) to prevent issues when the string is included in HTML
+     * content. This is important for preventing XSS vulnerabilities and ensuring that the string is displayed correctly
+     * in the browser when it contains special characters.
+     * TODO: Make unittest
+     *
+     * @param s
+     * @return
+     */
+
+    public static String escapeHtml(String s) {
+        if (s == null) return null;
+        return s.replace("&", "&amp;")
+            .replace("\"", "&quot;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;");
+    }
+
+    /**
+     * Converts a string to a valid CSS identifier by replacing invalid characters with hyphens and ensuring that the
+     * first character is a letter, underscore, or hyphen. This method also collapses multiple consecutive hyphens or
+     * underscores into a single hyphen to create a cleaner identifier. If the input string is null or empty, it returns
+     * an underscore as a default valid identifier. This is useful for generating CSS class names or IDs from arbitrary
+     * strings while ensuring they conform to CSS naming rules.
+     *
+     * PS: Written by chatgpt, we can trust it because it is a simple string manipulation function and the logic is
+     * straightforward. Its instead of including separate library for sanitation.
+     *
+     * @param s
+     * @return
+     */
+
+    public static String toCssIdentifier(String s) {
+        if (s == null || s.isEmpty()) return "_";
+        s = s.replaceAll("[^a-zA-Z0-9_-]", "-");
+        if (!Character.isLetter(s.charAt(0)) && s.charAt(0) != '_' && s.charAt(0) != '-') {
+            s = "_" + s.substring(1);
+        }
+        return s.replaceAll("[-_]{2,}", "-");
     }
 }

@@ -42,6 +42,8 @@ public class RangeQueryFilterBuilder {
  * provides methods to construct SQL conditions for both inclusive and exclusive range filters. It also handles cases
  * where the start or end values are null, allowing for open-ended ranges.
  */
+
+@Deprecated
 public class RangeQueryFilterBuilder {
 
     /**

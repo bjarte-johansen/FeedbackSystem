@@ -6,8 +6,6 @@
 
         <div class="box review review--review-${review.id}" data-review-id="${review.id}" data-tenant-id="${tenantId}">
 
-
-
             <div class="score-outer mb-0">
                 <strong class="score-text">${review.score}/5</strong> <span class="score score-${review.score}"></span>
             </div>

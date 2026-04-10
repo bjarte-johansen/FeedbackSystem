@@ -10,7 +10,9 @@
     </form>
     -->
 
-    <button disabled>Status: ${review.statusToNorwegianString(review.status)}</button>
+    <span class="status-buttons">
+        <button class="review-status-${toCssIdentifier.apply(review.statusToString(review.status))}" disabled>Status: ${review.statusToNorwegianString(review.status)}</button>
+    </span>
 
     <c:if test="${review.status != review.getApprovedStatusConst()}">
     <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/review/mark-approved" method="post">

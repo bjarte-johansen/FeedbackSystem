@@ -20,6 +20,8 @@ import root.app.AppConfig;
 import root.app.AppContext;
 
 import root.app.AppRequestSchema;
+import root.includes.EmailVerificationCodeSender;
+import root.includes.VerificationCodeDigitsGenerator;
 import root.includes.logger.Logger;
 import root.repositories.ReviewRepository;
 import root.repositories.TenantRepository;
@@ -46,33 +48,24 @@ public class App implements CommandLineRunner {
     @Override
     @Order(0)
     public void run(String... args) throws Exception {
-        //AppContext.getSingleton();
-
         Logger.log("Application started with args: " + Arrays.toString(args));
-
-         // Initialize AppContext singleton (e.g. to initialize database connection pool and other shared resources)
-         //AppContext.getSingleton();
-
-         //Logger.log("AppContext initialized successfully");
     }
 
-    public static void initAppContext() {
-
-    }
 
     @Bean
     @Order(0)
     CommandLineRunner startup(ReviewRepository reviewRep, DatabaseService databaseService, TenantRepository tenantRepo, ReviewRepository reviewRepository) throws Exception {
-
         return (args) -> {
             Logger.log("running app startup tasks...");
+
+            // test code
+            //EmailVerificationCodeSender.send("bjartej@hotmail.com", VerificationCodeDigitsGenerator.generate(6));
 
             // override configs for testing purposes, in production these would be set by the environment or
             // application properties
             AppConfig.OVERRIDE_TENANT = true;
             AppConfig.OVERRIDE_TENANT_SCHEMA = "test";
             AppConfig.OVERRIDE_TENANT_ID = 1;
-
 
             // set default schema for setup
             AppRequestSchema.set("test");

@@ -7,13 +7,13 @@
                 <strong class="score-text">${review.score}/5</strong> <span class="score score-${review.score}"></span>
             </div>
 
-            <span class="title mb-2">${not empty review.title ? review.title : ""} (id = ${review.id}, @${daysAgoFormatter.apply(review.createdAt)} dager siden)</span>
+            <span class="title mb-2">${not empty review.title ? review.title : ""} <!--(id = ${review.id}, @${daysAgoFormatter.apply(review.createdAt)} dager siden)--></span>
 
             <span class="name mb-0">${empty review.authorName ? 'Anonym' : review.authorName}</span>
 
             <em class="time mb-2">${review.getShortDateString()}</em>
 
-            <span class="comment mb-4">${review.comment}</span>
+            <span class="comment mb-2">${review.comment}</span>
 
             <div class="votes mb-0">
                 <span class="vote up-votes">

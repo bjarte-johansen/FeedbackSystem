@@ -16,7 +16,7 @@ let Utils = {
 
 var Review = {
     utils: {
-        clamp: function(x, min, max) {
+        clamp: function (x, min, max) {
             return Math.min(max, Math.max(min, x));
         },
 
@@ -24,14 +24,39 @@ var Review = {
             const n = parseInt(a, 10);
             return Number.isNaN(n) ? def : n;
         },
-/*
-        isNil: function (value) {
-            return value === null || value === undefined;
-        },
-        notNil: function (value) {
-            return !Review.utils.isNil(value);
-        }
-*/
+
+        snakeToCamel: function (s) {
+            let out = '', up = false;
+            for (let i = 0; i < s.length; i++) {
+                const ch = s[i];
+                if (ch === '_') {
+                    up = true;
+                } else {
+                    out += up ? ch.toUpperCase() : ch;
+                    up = false;
+                }
+            }
+            return out;
+        }, dashedToCamel: function (s) {
+            let out = '', up = false;
+            for (let i = 0; i < s.length; i++) {
+                const ch = s[i];
+                if (ch === '-') {
+                    up = true;
+                } else {
+                    out += up ? ch.toUpperCase() : ch;
+                    up = false;
+                }
+            }
+            return out;
+        }, /*
+                isNil: function (value) {
+                    return value === null || value === undefined;
+                },
+                notNil: function (value) {
+                    return !Review.utils.isNil(value);
+                }
+        */
         /**
          * creates an immutable page cursor object with the given offset and limit. The returned object has methods to
          * advance the cursor by a given delta (number of pages) while ensuring it does not exceed a maximum offset, and
@@ -40,16 +65,14 @@ var Review = {
          */
 
         createPageCursor: function (offset, limit) {
-            if(offset < 0) throw new Error("Offset must be non-negative");
+            if (offset < 0) throw new Error("Offset must be non-negative");
 
             return {
-                "offset": offset,
-                "limit": limit,
+                "offset": offset, "limit": limit,
 
-                reset: function(){
+                reset: function () {
                     return Review.utils.createPageCursor(0, this.limit);
-                },
-                advance: function (pageDelta, maxOffset = Number.MAX_SAFE_INTEGER) {
+                }, advance: function (pageDelta, maxOffset = Number.MAX_SAFE_INTEGER) {
                     let newOffset = Review.utils.clamp(this.offset + pageDelta * this.limit, 0, maxOffset);
                     newOffset = Math.floor(newOffset / this.limit) * this.limit; // ensure offset is always a multiple of limit
                     return Review.utils.createPageCursor(newOffset, this.limit);
@@ -74,7 +97,7 @@ var Review = {
 
             let cursor = Review.utils.createPageCursor(cursorArr[0], cursorArr[1]);
 
-            if((pageDelta !== null && pageDelta !== undefined) && (maxOffset !== null && maxOffset !== undefined)) {
+            if ((pageDelta !== null && pageDelta !== undefined) && (maxOffset !== null && maxOffset !== undefined)) {
                 cursor = cursor.advance(pageDelta, maxOffset);
                 console.log("advancing cursor with offsetDelta:", cursor.toString());
             }
@@ -104,7 +127,7 @@ var Review = {
 
     triggerClientOrderByEnumChange(select) {
         const $reviewList = $('.review--list');
-        if($reviewList.length === 0) return console.warn("No .review--list element found");
+        if ($reviewList.length === 0) return console.warn("No .review--list element found");
 
         const $select = $(select);
         const text = $select.find(':selected').text();
@@ -131,12 +154,12 @@ var Review = {
     },
 
 
-
     /**
      * Constructs a URLSearchParams object based on the data attributes of the given $reviewList element. This is
      * used to build the query parameters for the API call when reloading the review list. It checks for attributes
      * like data-external-id, data-order-by-enum, data-score-filter, and data-cursor, and includes them in the search
      * parameters if they are present.
+     *
      * @param $reviewList
      * @returns {URLSearchParams}
      */
@@ -144,38 +167,39 @@ var Review = {
     getReviewListOptionAsMap($reviewList) {
         const params = new Map();
 
-        const externalId = $reviewList.attr("data-external-id");
-        if (externalId !== undefined) {
-            params.set("externalId", externalId);
-        }
+        // gets data-attr from element and dash-to-camel case convert the key, then sets it in the params map. If the
+        // value looks like a JSON array or object, it tries to parse it before setting it.
+        const setDataAttr = function (attrName) {
+            let value = $reviewList.attr("data-" + attrName); // jQuery attr returns string or undefined ALWAYS
+            if (value === undefined) return;
 
-        const orderByEnum = $reviewList.attr("data-order-by-enum");
-        if (orderByEnum !== undefined) {
-            params.set("orderByEnum", orderByEnum);
-        }
+            const camelName = Review.utils.dashedToCamel(attrName)
+            const ch = value.trim()?.[0];
+            if (ch === "[" || ch === "{") {
+                try { return params.set(camelName, JSON.parse(value)); } catch (e) {}
+            }
 
-        const scoreFilter = $reviewList.attr("data-score-filter");
-        if (scoreFilter !== undefined) {
-            params.set("scoreFilter", scoreFilter);
-        }
+            params.set(camelName, value);
+        };
 
-        const cursor = $reviewList.attr("data-cursor");
-        if (cursor !== undefined) {
-            params.set("cursor", cursor);
-        }
+        const keys = ["external-id", "order-by-enum", "score-filter", "cursor", "review-count", "detailed-review-count"];
+        keys.forEach(setDataAttr);
 
-        const reviewCount = $reviewList.attr("data-review-count");
-        if (reviewCount !== undefined) {
-            params.set("reviewCount", reviewCount);
-        }
-
-        const detailedReviewCount = JSON.parse($reviewList.attr("data-detailed-review-count") ? $reviewList.attr("data-detailed-review-count") : "{}");
-        if (detailedReviewCount) {
-            params.set("detailedReviewCount", detailedReviewCount);
-        }
+        //console.log("Extracted review list options from data attributes:", Object.fromEntries(params));
 
         return params;
     },
+
+
+    /**
+     * Returns the count of reviews that have the specified score. It first checks if the review list element exists,
+     * then it retrieves the review list options from the data attributes (or uses the provided map) to access the
+     * detailed review count for the given score. If the score count is not available, it defaults to 0.
+     *
+     * @param score
+     * @param reviewListOptionMap
+     * @returns {number|number|number|void}
+     */
 
     getReviewCountByScore(score, reviewListOptionMap) {
         const $reviewList = $(".review--list");
@@ -211,6 +235,14 @@ var Review = {
         }
     },
 
+
+    /**
+     * Fetches the updated review list HTML from the server based on the current options set in the data attributes of
+     * the .review--list element. It constructs the API URL with the appropriate query parameters, makes an AJAX GET
+     * request, * and upon success, replaces the existing review list items container with the new HTML. It also handles
+     * updating the previous filtered review count and resetting the cursor if necessary when filters change.
+     */
+
     reloadReviewList: function () {
         Review.updateReviewListOptionsFromUI();
 
@@ -224,8 +256,8 @@ var Review = {
         const previousFilteredReviewCount = Review.utils.parseIntOr($reviewList.attr("data-previous-filtered-review-count"), -1);
         const totalReviewCount = Review.utils.parseIntOr(reviewListOptions.get("reviewCount"), 0);
 
-        if(previousFilteredReviewCount !== currentFilteredReviewCount) {
-            if((previousFilteredReviewCount !== -1) && (currentFilteredReviewCount < totalReviewCount)) {
+        if (previousFilteredReviewCount !== currentFilteredReviewCount) {
+            if ((previousFilteredReviewCount !== -1) && (currentFilteredReviewCount < totalReviewCount)) {
                 let cursor = Review.utils.createPageCursorFromString(reviewListOptions.get("cursor"));
                 cursor = cursor.reset();
                 reviewListOptions.set("cursor", cursor.toString());
@@ -257,6 +289,17 @@ var Review = {
         });
     },
 
+
+    /**
+     * Calculates the next page cursor based on the current cursor and review count, then updates the data-cursor
+     * attribute on the .review--list element and calls reloadReviewList to fetch the next set of reviews. It ensures
+     * that the cursor does not exceed the maximum offset, which would indicate an invalid page. The pageDelta
+     * parameter allows advancing by multiple pages at once (e.g., for "Next 5 pages" functionality), and defaults to 1
+     * for normal "Next page" behavior.
+     *
+     * @param pageDelta
+     */
+
     nextReviewListPage: function (pageDelta = 1) {
         const fnGetScoreFilterAsIntArray = function () {
             const scoreFilterStr = $reviewList.attr("data-score-filter");
@@ -281,9 +324,7 @@ var Review = {
         // if there are score filters applied, we need to calculate the accumulated count of reviews that match those filters
         if (reviewListOptions.get("scoreFilter") !== "-1") {
             const scoreFilterArr = fnGetScoreFilterAsIntArray();
-            accumulatedReviewCount = scoreFilterArr.length > 0
-                ? scoreFilterArr.reduce((acc, score) => acc + Review.getReviewCountByScore(score, reviewListOptions), 0)
-                : accumulatedReviewCount;
+            accumulatedReviewCount = scoreFilterArr.length > 0 ? scoreFilterArr.reduce((acc, score) => acc + Review.getReviewCountByScore(score, reviewListOptions), 0) : accumulatedReviewCount;
             maxPageOffset = accumulatedReviewCount > 0 ? accumulatedReviewCount : maxPageOffset;
         }
 

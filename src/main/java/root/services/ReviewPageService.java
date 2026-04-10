@@ -1,6 +1,7 @@
 package root.services;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import root.app.AppConfig;
 import root.app.AppContext;
@@ -9,7 +10,7 @@ import root.app.includes.PageCursor;
 import root.app.includes.PageCursorEncoder;
 import root.controllers.ControllerUtils;
 import root.includes.Utils;
-import root.controllers.ReviewAggregateScoreHelper;
+import root.controllers.ReviewAggregateStatistics;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewerRepository;
@@ -23,12 +24,10 @@ import java.util.function.Function;
 
 import static root.common.utils.Preconditions.checkArgument;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 @Service
 public class ReviewPageService {
-    static final ObjectMapper M = new ObjectMapper();
-
 
     /*
     lambda helper methods
@@ -95,24 +94,26 @@ public class ReviewPageService {
         modelMap.put("dblFormatterCssPointFive", CSS_DOUBLE_FORMATTER_POINT_FIVE);
     }
 
-    private static String toHtmlAttrJson(ObjectMapper m, Object o) throws Exception {
-        String json = m.writeValueAsString(o);
-        return json.replace("&", "&amp;")
-            .replace("\"", "&quot;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;");
+    private void addReviewStatsToModel(Map<String, Object> modelMap, String externalId) {
+        // get score stats for the given externalId for approved reviews. This will be used for display of average score,
+        ReviewAggregateStatistics reviewStats = reviewService.getScoreStatsHelper(externalId, Review.REVIEW_STATUS_APPROVED, null);
+
+        // get score stats for the given externalId and add to model
+        modelMap.put("reviewStats", reviewStats);
+
+        //Logger.log(M.writeValueAsString(reviewStats.getScoreCounts()));
+        modelMap.put("scoreCountsJson", Utils.toJson(reviewStats.getScoreCounts()));
     }
 
-    private String extractExternalIdFromRequest(String externalId, HttpServletRequest req) throws Exception {
-        // real decoding of externalId from request URI for the /reviews/{externalId} route.
-        // This allows for more complex routing and is more flexible than using a request parameter, but requires more
-        // setup and handling in the controller. For simplicity, we are using a request parameter for the externalId
-        // in this example, but in a real application you would likely want to use the path variable approach for
-        // better routing and cleaner URLs.
-        //String externalId = extractExternalIdFromRequest(req);
-        //externalId = URLDecoder.decode(externalId, StandardCharsets.UTF_8);
-        //Logger.log("External ID extracted from request: " + externalId);
 
+
+    // real decoding of externalId from request URI for the /reviews/{externalId} route.
+    // This allows for more complex routing and is more flexible than using a request parameter, but requires more
+    // setup and handling in the controller. For simplicity, we are using a request parameter for the externalId
+    // in this example, but in a real application you would likely want to use the path variable approach for
+    // better routing and cleaner URLs.
+
+    private String extractExternalIdFromRequest(String externalId, HttpServletRequest req) throws Exception {
         // get externalId from request parameter and validate. If not set, use the first unique externalId from
         // the database for demonstration purposes.
         // TODO: remove defaulting to first unique externalId for production code, should require an externalId to be
@@ -120,9 +121,9 @@ public class ReviewPageService {
         if (externalId == null || externalId.isBlank()) {
             Review firstReviewWithExternalIds = reviewRepo.findFirstByExternalIdNotEquals("").orElse(null);
 
-            if(firstReviewWithExternalIds != null){
+            if (firstReviewWithExternalIds != null) {
                 externalId = firstReviewWithExternalIds.getExternalId();
-            }else {
+            } else {
                 externalId = "\\//unique-double-escaped-path";
             }
         }
@@ -131,79 +132,60 @@ public class ReviewPageService {
         return externalId;
     }
 
+    private static @NotNull ReviewQueryOptions getReviewQueryOptions(int orderByEnum, String scoreFilter, PageCursor decodedCursor) {
+        // build review query options based on request parameters.
+        // This includes pagination, sorting, and filtering options for fetching reviews from the database.
+        ReviewQueryOptions o = new ReviewQueryOptions();
+        o.setPageCursor(decodedCursor);
+        o.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
+        o.setOrderByEnum(orderByEnum);
 
-
-
-    /**
-     * Builds the model map for the review listing page based on the given parameters. This method fetches the reviews
-     * from the database based on the externalId and the query options built from the other parameters, and adds all the
-     * necessary data to the model map for rendering the review listing page in the JSP
-     *
-     * @param externalId
-     * @param strEncodedCursor
-     * @param orderByEnum
-     * @param scoreFilter
-     * @return
-     * @throws Exception
-     */
+        // add score filter to options if set
+        if (scoreFilter != null && !scoreFilter.isBlank() && !scoreFilter.equals("-1")) {
+            List<Integer> scoreFilterList = Utils.parseCsvIntList(scoreFilter);
+            o.getScoreFilterSet().addAll(scoreFilterList);
+        }
+        return o;
+    }
 
     public Map<String, Object> buildReviewListingPage(
         String externalId,
         String strEncodedCursor,
         int orderByEnum,
         String scoreFilter,
-        HttpServletRequest req
+        HttpServletRequest req,
+        boolean includeStats
     ) throws Exception {
         Map<String, Object> modelMap = new HashMap<>();
 
         // get tenant id or tenant name / something
-        // TODO: figure out tenant handling and how to display tenant info in the interface.
-        Long tenantId = appContext.getTenantId();
-        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
+        Long tenantId = appContext.getTenantId(true);
         modelMap.put("tenantId", tenantId);
-
 
         // extract external id
         externalId = extractExternalIdFromRequest(externalId, req);
-
-        // add externalId to model for display in JSP and for use in form submission for new reviews
         modelMap.put("externalId", externalId);
-
 
         // decode cursor
         PageCursor decodedCursor = ControllerUtils.decodeOrCreateCursor(strEncodedCursor, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
-
-
-        // build review query options based on request parameters.
-        // This includes pagination, sorting, and filtering options for fetching reviews from the database.
-        ReviewQueryOptions options = new ReviewQueryOptions();
-        options.setPageCursor(decodedCursor);
-        options.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
-        options.setOrderByEnum(orderByEnum);
-
-        // add score filter to options if set
-        if (scoreFilter != null && !scoreFilter.isBlank() && !scoreFilter.equals("-1")) {
-            List<Integer> scoreFilterList = Utils.parseCsvIntList(scoreFilter);
-            options.getScoreFilterSet().addAll(scoreFilterList);
-        }
-
+        modelMap.put("pageCursor", PageCursorEncoder.encodeCursor(decodedCursor));
 
         // add reviews to model for display in JSP
-        List<Review> reviews = reviewRepo.findByExternalIdWithPagination(externalId, options);
+        List<Review> reviews = reviewRepo.findByExternalIdWithPagination(
+            externalId,
+            getReviewQueryOptions(orderByEnum, scoreFilter, decodedCursor)
+            );
 
-        // get score stats for the given externalId for approved reviews. This will be used for display of average score,
-        ReviewAggregateScoreHelper reviewStats = reviewService.getScoreStatsHelper(externalId, Review.REVIEW_STATUS_APPROVED, null);
+        // add stats to model for display in JSP if includeStats is true.
+        if(includeStats){
+            addReviewStatsToModel(modelMap, externalId);
+        }
 
+        // add reviews to model for display in JSP
         modelMap.put("reviews", reviews);
-
-        // get score stats for the given externalId and add to model
-        modelMap.put("reviewStats", reviewStats);
 
         // add score filter to model
         modelMap.put("scoreFilter", scoreFilter);
-
-        //Logger.log(M.writeValueAsString(reviewStats.getScoreCounts()));
-        modelMap.put("scoreCountsJson", toHtmlAttrJson(M, reviewStats.getScoreCounts()));
 
         // add ordering options to model
         modelMap.put("reviewListOrderOptions", getOrderByOptionsMap());
@@ -211,88 +193,8 @@ public class ReviewPageService {
         // add current orderBy enum to model for display in JSP
         modelMap.put("currentOrderByEnum", orderByEnum);
 
-        // add cursor to model
-        modelMap.put("pageCursor", PageCursorEncoder.encodeCursor(decodedCursor));
-
         // add formatters to model
         addFormattersToModel(modelMap);
-
-        // TODO END: get scores for aggregate display of score distribution and average score
-
-        return modelMap;
-    }
-
-    public Map<String, Object> buildPartialReviewListingPage(
-        String externalId,
-        String strEncodedCursor,
-        int orderByEnum,
-        String scoreFilter,
-        HttpServletRequest req
-    ) throws Exception {
-        Map<String, Object> modelMap = new HashMap<>();
-
-        // get tenant id or tenant name / something
-        // TODO: figure out tenant handling and how to display tenant info in the interface.
-        Long tenantId = appContext.getTenantId();
-        checkArgument(tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
-        modelMap.put("tenantId", tenantId);
-
-
-        // extract external id
-        externalId = extractExternalIdFromRequest(externalId, req);
-
-        // add externalId to model for display in JSP and for use in form submission for new reviews
-        modelMap.put("externalId", externalId);
-
-
-        // decode cursor
-        PageCursor decodedCursor = ControllerUtils.decodeOrCreateCursor(strEncodedCursor, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
-
-
-        // build review query options based on request parameters.
-        // This includes pagination, sorting, and filtering options for fetching reviews from the database.
-        ReviewQueryOptions options = new ReviewQueryOptions();
-        options.setPageCursor(decodedCursor);
-        options.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
-        options.setOrderByEnum(orderByEnum);
-
-        // add score filter to options if set
-        if (scoreFilter != null && !scoreFilter.isBlank() && !scoreFilter.equals("-1")) {
-            List<Integer> scoreFilterList = Utils.parseCsvIntList(scoreFilter);
-            options.getScoreFilterSet().addAll(scoreFilterList);
-        }
-
-
-        // add reviews to model for display in JSP
-        List<Review> reviews = reviewRepo.findByExternalIdWithPagination(externalId, options);
-
-        // get score stats for the given externalId for approved reviews. This will be used for display of average score,
-        ReviewAggregateScoreHelper reviewStats = reviewService.getScoreStatsHelper(externalId, Review.REVIEW_STATUS_APPROVED, null);
-
-        modelMap.put("reviews", reviews);
-
-        // get score stats for the given externalId and add to model
-        modelMap.put("reviewStats", reviewStats);
-
-        // add score filter to model
-        modelMap.put("scoreFilter", scoreFilter);
-
-        //Logger.log(M.writeValueAsString(reviewStats.getScoreCounts()));
-        modelMap.put("scoreCountsJson", toHtmlAttrJson(M, reviewStats.getScoreCounts()));
-
-        // add ordering options to model
-        modelMap.put("reviewListOrderOptions", getOrderByOptionsMap());
-
-        // add current orderBy enum to model for display in JSP
-        modelMap.put("currentOrderByEnum", orderByEnum);
-
-        // add cursor to model
-        modelMap.put("pageCursor", PageCursorEncoder.encodeCursor(decodedCursor));
-
-        // add formatters to model
-        addFormattersToModel(modelMap);
-
-        // TODO END: get scores for aggregate display of score distribution and average score
 
         return modelMap;
     }

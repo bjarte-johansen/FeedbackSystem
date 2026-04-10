@@ -134,11 +134,9 @@ public class DefaultController {
         HttpServletRequest req
     )  throws Exception {
         Map<String, Object> vm = reviewPageService.buildReviewListingPage(
-            externalId,
-            encodedCursor,
-            orderByEnum,
-            scoreFilter,
-            req
+            externalId, encodedCursor, orderByEnum, scoreFilter, // filters
+            req,
+            true    // include stats
             );
 
         // find all unique externalIds for reviews to display in the dropdown for quick navigation
@@ -147,9 +145,8 @@ public class DefaultController {
         //  a dropdown of all externalIds
         ControllerUtils.addSelectExternalIdPillData(vm, reviewRepo);
 
-
         if (AppConfig.TESTING_MODE) {
-            // for quick insertion of reviews, we can generate random suggestions for display name, title and comment
+            // add default "new review" form values for quick testing of form submissionv
             // TODO: remove for production code, should have empty form
             ControllerUtils.addDefaultNewReviewFormValues(vm);
         }
@@ -168,12 +165,10 @@ public class DefaultController {
         Model model,
         HttpServletRequest req
     )  throws Exception {
-        Map<String, Object> vm = reviewPageService.buildPartialReviewListingPage(
-            externalId,
-            encodedCursor,
-            orderByEnum,
-            scoreFilter,
-            req
+        Map<String, Object> vm = reviewPageService.buildReviewListingPage(
+            externalId, encodedCursor, orderByEnum, scoreFilter, // filters
+            req,
+            false // do not include stats
         );
 
         model.addAllAttributes(vm);

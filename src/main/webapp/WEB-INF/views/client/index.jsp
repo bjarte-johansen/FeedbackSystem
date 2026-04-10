@@ -1,3 +1,7 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
 <!-- header -->
 <%@ include file="client-header.jsp" %>
 
@@ -12,9 +16,6 @@
 
     <!-- review section part -->
     <div class="container--reviews">
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
         <div class="box review--list"
             data-external-id="${externalId}"
@@ -23,7 +24,7 @@
             data-cursor="${pageCursor}"
             data-score-filter="${scoreFilter}"
             data-review-count="${reviewStats.totalCount}"
-            data-detailed-review-count="${scoreCountsJson}">
+            data-detailed-review-count="<c:out value="${scoreCountsJson}"/>">
 
             <div class="box-virtual mb-4">
                 <%@ include file="review-list-stats.partial.jsp" %>

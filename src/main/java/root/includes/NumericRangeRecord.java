@@ -14,19 +14,21 @@ import static root.common.utils.Preconditions.checkArgument;
 public record NumericRangeRecord<T extends Number & Comparable<? super T>>(T min, T max) {
 
     public NumericRangeRecord {
-        checkArgument(isValid(), "min and max must be non-null, and min must be less than or equal to max");
+        checkArgument(min != null, "min cannot be null");
+        checkArgument(max != null, "max cannot be null");
+        checkArgument((min.compareTo(max)) <= 0, "max must be greater or equal to min");
     }
 
 
     /**
-     * checks that the min and max values are not null and min is less than or equal to max. Otherwise, it returns
-     * false.
+     * we immutable and constructor checks that min and max are valid, so we can assume that the range is always valid.
+     * This method is provided for convenience and to allow for future validation logic if needed.
      *
      * @return true if the range is valid, false otherwise
      */
 
     public boolean isValid() {
-        return (min != null) && (max != null) && (min.compareTo(max) <= 0);
+        return true;
     }
 
 

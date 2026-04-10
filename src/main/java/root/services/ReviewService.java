@@ -3,7 +3,8 @@ package root.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.app.AppConfig;
-import root.controllers.ReviewAggregateScoreHelper;
+import root.controllers.ReviewAggregateStatistics;
+import root.includes.logger.Logger;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewVoteRepository;
@@ -174,10 +175,10 @@ public class ReviewService {
      * @return
      * @throws Exception
      */
-    public ReviewAggregateScoreHelper getScoreStatsHelper(String externalId, int defaultScore, Set<Integer> scoreFilterSet) throws Exception {
+    public ReviewAggregateStatistics getScoreStatsHelper(String externalId, int defaultScore, Set<Integer> scoreFilterSet) {
         var filteredScoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId, scoreFilterSet);
 
-        var scoreStats = new ReviewAggregateScoreHelper();
+        var scoreStats = new ReviewAggregateStatistics();
 
         long totalScoreSum = 0;
         long totalCount = 0;
@@ -199,6 +200,8 @@ public class ReviewService {
             scoreStats.getScoreDistribution().put(i, pct);
             scoreStats.getScoreCounts().put(i, hits);
         }
+
+        Logger.log("ScoreStats: " + scoreStats);
 
         return scoreStats;
     }
