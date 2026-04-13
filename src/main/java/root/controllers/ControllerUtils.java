@@ -74,11 +74,7 @@ public class ControllerUtils {
      */
 
     public static PageCursor decodeOrCreateCursor(String cursorStr, int defaultLimit) {
-        if (cursorStr != null && !cursorStr.isBlank()) {
-            return PageCursorEncoder.decodeCursor(cursorStr);
-        } else {
-            return new PageCursor(0, defaultLimit);
-        }
+        return PageCursorEncoder.decodeCursor(cursorStr, defaultLimit);
     }
 
 

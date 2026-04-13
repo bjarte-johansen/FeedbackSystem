@@ -118,11 +118,23 @@ public class PageCursor {
         return s;
     }
 
-    public static PageCursor decode(String cursorStr) {
-        return PageCursorEncoder.decodeCursor(cursorStr);
+    public String encode(){
+        return this.offset + "," + this.limit;
     }
+
+    public static PageCursor decode(String cursorStr, int defaultLimit) {
+        if (cursorStr != null) {
+            String[] parts = cursorStr.split(",");
+            if (parts.length == 2) {
+                return new PageCursor(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+            }
+        }
+
+        return new PageCursor(0, defaultLimit);
+    }
+
     public static String encode(PageCursor cursor) {
-        return PageCursorEncoder.encodeCursor(cursor);
+        return cursor.encode();
     }
 
     /**
@@ -133,8 +145,8 @@ public class PageCursor {
     @Override
     public String toString() {
         return "PageCursor{" +
-            "offset=" + offset +
-            ", limit=" + limit +
-            '}';
+                "offset=" + offset +
+                ", limit=" + limit +
+                '}';
     }
 }

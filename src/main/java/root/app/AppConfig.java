@@ -47,6 +47,7 @@ public class AppConfig {
 
     // default pagination settings for reviews listing page
     public static int CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS = 5;
+    public static int ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS = 10;
 
     // TODO: must be set to false in production, otherwise all reviews will be automatically approved without moderation.
     public static boolean AUTO_APPROVE_NEW_REVIEWS = true;

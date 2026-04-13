@@ -160,7 +160,7 @@ public class ReviewPageService {
 
         // decode cursor
         PageCursor decodedCursor = ControllerUtils.decodeOrCreateCursor(strEncodedCursor, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
-        modelMap.put("pageCursor", PageCursorEncoder.encodeCursor(decodedCursor));
+        modelMap.put("pageCursor", decodedCursor.encode());
 
         // add reviews to model for display in JSP
         var options = getReviewQueryOptions(orderByEnum, scoreFilter, decodedCursor);

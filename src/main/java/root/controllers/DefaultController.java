@@ -171,6 +171,7 @@ public class DefaultController {
      * @return
      * @throws Exception
      */
+
     @GetMapping("/api/review/{reviewId}/build-html")
     public String makeReviewHtml(@PathVariable long reviewId, Model model) throws Exception {
         Review review = reviewRepo.findById(reviewId).orElse(null);

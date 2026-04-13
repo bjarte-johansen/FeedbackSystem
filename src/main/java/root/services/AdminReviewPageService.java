@@ -4,14 +4,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestParam;
+import root.app.AppConfig;
 import root.app.ReviewQueryOptions;
 import root.app.includes.PageCursor;
+import root.app.includes.PageCursorEncoder;
 import root.controllers.ControllerUtils;
+import root.includes.ImmutableUnboundedDateRange;
 import root.includes.Utils;
 import root.includes.logger.Logger;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
 
@@ -56,8 +60,19 @@ public class AdminReviewPageService {
      * @throws Exception
      */
 
-    public Map<String, Object> buildReviewListModelData(ReviewQueryOptions options, String statusFilter) throws Exception {
+    public Map<String, Object> buildReviewListModelData
+    (
+        int orderByEnum,
+        String statusFilter,
+        LocalDate dateFilterStart,
+        LocalDate dateFilterEnd,
+        Integer dateFilterPreset,
+        String pageCursorStr
+    ) throws Exception {
         Map<String, Object> modelMap = new HashMap<>();
+
+        // add data to model for select externalId pill in admin dashboard JSP. This will be used to filter reviews by externalId.
+        ControllerUtils.addSelectExternalIdPillData(modelMap, reviewRepo);
 
         // decode reviewStatusFilter from CSV string to set of integers. If the filter contains -1, we want to include
         // all statuses, so we add all possible statuses to the filter set.
@@ -68,15 +83,33 @@ public class AdminReviewPageService {
             reviewStatusFilterSet.addAll(Review.getValidReviewStatuses());
         }
 
-        // add data to model for select externalId pill in admin dashboard JSP. This will be used to filter reviews by externalId.
-        ControllerUtils.addSelectExternalIdPillData(modelMap, reviewRepo);
 
-        // create dump options for fetching all reviews for the given externalId without pagination and with a
-        // specific sorting order.
-        //ReviewQueryOptions options = new ReviewQueryOptions();
-        options.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
+        // filter by date range or date filter preset
+        ImmutableUnboundedDateRange<LocalDate> dateRangeFilter = null;
+
+        if(dateFilterStart != null || dateFilterEnd != null) {
+            // create date range filter based on provided start and end dates.
+            // If one of them is null, it will be an unbounded range in that direction.
+            dateRangeFilter = new ImmutableUnboundedDateRange<LocalDate>(dateFilterStart, dateFilterEnd);
+        }
+
+        if (dateFilterPreset != null && dateFilterPreset.compareTo(0) > 0) {
+            // dateFilterPreset overrides dateFilterStart and dateFilterEnd if provided
+            LocalDate presetStartDate = LocalDate.now().minusDays(dateFilterPreset);
+            dateRangeFilter = new ImmutableUnboundedDateRange<LocalDate>(presetStartDate, null);
+        }
+
+        PageCursor cursor = PageCursor.decode(pageCursorStr, AppConfig.ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS);
+        modelMap.put("pageCursor", cursor.encode());
+
+        // make query options object and set filters
+        ReviewQueryOptions options = new ReviewQueryOptions();
+        options.setPageCursor(cursor);
+        options.setDateFilterRange(dateRangeFilter);
         options.getStatusFilterSet().addAll(reviewStatusFilterSet);
+        options.setStatusFilterSet(reviewStatusFilterSet);
         options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
+        //o.setOrderByEnum(reviewStatusFilterSet.size() == 1);
 
         // allways order by ID desc if there is only one status in the filter, to show the most recent reviews first.
         // If there are multiple statuses in the filter, we order by pending first to prioritize reviews that need action.

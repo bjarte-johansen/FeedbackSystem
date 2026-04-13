@@ -74,8 +74,11 @@ public class AdminController {
 
     @AdminOnly
     @GetMapping("/admin/dashboard")
-    public String showDashboard(@RequestParam(defaultValue = "-1") String statusFilter, Model model) throws Exception {
-        return showFilteredReviews(statusFilter, null, null, 0, model);
+    public String showDashboard(
+        @RequestParam(defaultValue = "-1") String statusFilter,
+        @RequestParam(name="cursor", defaultValue = "") String cursorStr,
+        Model model) throws Exception {
+        return showFilteredReviews(/*orderEnum */0, statusFilter, null, null, 0, cursorStr, model);
     }
 
 
@@ -99,45 +102,16 @@ public class AdminController {
     @AdminOnly
     @GetMapping("/admin/dashboard/reviews")
     public String showFilteredReviews(
+        @RequestParam(defaultValue = "-1") int orderByEnum,
         @RequestParam(defaultValue = "-1") String statusFilter,
         @RequestParam(required = false) LocalDate dateFilterStart,
         @RequestParam(required = false) LocalDate dateFilterEnd,
         @RequestParam(required = false) Integer dateFilterPreset,
+        @RequestParam(name = "cursor", required = false, defaultValue="") String pageCursorStr,
         Model model) throws Exception {
 
-        // filter by date range or date filter preset
-        ImmutableUnboundedDateRange<LocalDate> dateRangeFilter = null;
-        if(dateFilterStart != null || dateFilterEnd != null) {
-            // create date range filter based on provided start and end dates. If one of them is null, it will be an
-            // unbounded range in that direction.
-            dateRangeFilter = new ImmutableUnboundedDateRange<LocalDate>(dateFilterStart, dateFilterEnd);
-        }
-
-        if (dateFilterPreset != null && dateFilterPreset.compareTo(0) > 0) {
-            // dateFilterPreset overrides dateFilterStart and dateFilterEnd if provided, so we check for that
-            // and set the dateRangeFilter accordingly.
-            LocalDate presetStartDate = LocalDate.now().minusDays(dateFilterPreset);
-            dateRangeFilter = new ImmutableUnboundedDateRange<LocalDate>(presetStartDate, null);
-        }
-
-
-        // decode reviewStatusFilter from CSV string to set of integers. If the filter contains -1, we want to include
-        // all statuses, so we add all possible statuses to the filter set.
-        Set<Integer> reviewStatusFilterSet = new HashSet<>(Utils.parseCsvIntList(statusFilter));
-        if (reviewStatusFilterSet.contains(-1) || reviewStatusFilterSet.isEmpty()) {
-            // remove -1, if exists, and replace with list of all valid statuses
-            reviewStatusFilterSet.remove(-1);
-            reviewStatusFilterSet.addAll(Review.getValidReviewStatuses());
-        }
-
-        // make query options object and set filters
-        ReviewQueryOptions o = new ReviewQueryOptions();
-        o.setDateFilterRange(dateRangeFilter);
-        o.setStatusFilterSet(reviewStatusFilterSet);
-        //o.setOrderByEnum(reviewStatusFilterSet.size() == 1);
-
         // build model data for the view using the service
-        var vm = adminReviewPageService.buildReviewListModelData(o, statusFilter);
+        var vm = adminReviewPageService.buildReviewListModelData(orderByEnum, statusFilter, dateFilterStart, dateFilterEnd, dateFilterPreset, pageCursorStr);
 
         model.addAllAttributes(vm);
         return "admin/admin-dashboard";
