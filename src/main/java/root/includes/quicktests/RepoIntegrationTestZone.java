@@ -1,4 +1,4 @@
-package root.includes.quicktests.quicktests;
+package root.includes.quicktests;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -68,7 +68,6 @@ public class RepoIntegrationTestZone {
             r1.setExternalId("/proxy/create");
             r1.setTitle("Proxy review title");
             r1.setScore(4);
-            //r1.setTenantId(1L);
             reviewRepo.save(r1);
         }
 

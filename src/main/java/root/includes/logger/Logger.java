@@ -353,11 +353,12 @@ public class Logger {
     public static LoggerInterface tab(){
         return tab(1);
     }
+    public static LoggerInterface tab(int n){ nextPrintIndent += n; return LOGGER_PROXY; }
 
-    public static LoggerInterface tab(int n){
-        nextPrintIndent += n;
-        return LOGGER_PROXY;
-    }
+    /*
+    public static LoggerInterface look(){ return look(1); }
+    public static LoggerInterface look(int n){ nextLookDepthOffset += n; return LOGGER_PROXY; }
+     */
 
     public static LoggerInterface caller(int depth) {
         Logger.nextCallerDepth = depth;

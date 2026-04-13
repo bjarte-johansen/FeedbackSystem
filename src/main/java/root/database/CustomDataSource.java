@@ -169,7 +169,7 @@ public class CustomDataSource {
 
         try {
             Connection conn = DriverManager.getConnection(params.url(), params.username(), params.password());
-            conn.setSchema(params.defaultSchema());
+            //conn.setSchema(params.defaultSchema());
 
             logMessage("Connection Created, available connections: " + getAvailableCount() + "/" + getTotalCount());
 

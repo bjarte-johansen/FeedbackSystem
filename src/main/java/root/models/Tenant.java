@@ -17,7 +17,7 @@ public class Tenant implements ITenant {
     }
 
     public Tenant(String name, String domain, String apiKey, String email, String password_hash, String passwordSalt, String schemaName) {
-        this.id = null;
+        //this.id = null;
         this.name = name;
         this.domain = domain;
         this.apiKey = apiKey;

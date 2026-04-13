@@ -2,8 +2,8 @@ package root.app;
 
 import root.database.CustomDataSource;
 
-public class AppTenantConnectionProvider extends root.database.connectionproviders.CustomMultiTenantConnectionProvider {
-    public AppTenantConnectionProvider(CustomDataSource ds) {
+public class AppMultiTenantConnectionProvider extends root.database.connectionproviders.CustomMultiTenantConnectionProvider {
+    public AppMultiTenantConnectionProvider(CustomDataSource ds) {
         super(ds);
     }
 

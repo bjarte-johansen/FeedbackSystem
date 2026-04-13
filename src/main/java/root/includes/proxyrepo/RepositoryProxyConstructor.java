@@ -1,22 +1,27 @@
 package root.includes.proxyrepo;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import root.includes.quicktests.quicktests.repofun.*;
-import root.models.ReviewVote;
-import root.repositories.*;
-
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import jakarta.persistence.Table;
 
 
 public class RepositoryProxyConstructor {
     public static ArrayList<String> MODEL_PACKAGE_SEARCH_PATH = new ArrayList<>(List.of(
         "root.models",
-        "root.includes.quicktests.quicktests.repofun"
+        "root.includes.quicktests.repofun"
     ));
+    private static final Map<String, Class<?>> CACHE = new ConcurrentHashMap<>();
+
+
+    static String getTableName(Class<?> cls) {
+        Table t = cls.getAnnotation(Table.class);
+        return (t != null && !t.name().isBlank())
+            ? t.name()
+            : cls.getSimpleName(); // fallback
+    }
 
     public static String getDeveloperWarningMessages() {
         return List.of(
@@ -36,14 +41,17 @@ public class RepositoryProxyConstructor {
         }
     }
 
-    private static Class<?> resolveModelClass(String entityName) throws Exception {
-        for (String packageName : MODEL_PACKAGE_SEARCH_PATH) {
-            try {
-                return Class.forName(packageName + "." + entityName);
-            } catch (Exception _) {}
-        }
+    private static Class<?> resolveModelClass(String entityName) {
+        return CACHE.computeIfAbsent(entityName, name -> {
+            for (String pkg : MODEL_PACKAGE_SEARCH_PATH) {
+                try {
+                    return Class.forName(pkg + "." + name);
+                } catch (Exception _) {
 
-        throw new RuntimeException("model class not found for entity " + entityName + " in package searchpath");
+                }
+            }
+            throw new RuntimeException("Model not found: " + name);
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -69,11 +77,12 @@ public class RepositoryProxyConstructor {
 //            Logger.log("tableName: " + entityName);
 
             Class<?> modelClass = resolveModelClass(entityName);
+            String tableName = getTableName(modelClass);
 
 //            Logger.log("modelClass: " + modelClass.getName());
 
             Map<String, Object> options = Map.of(
-                "tableName", entityName,
+                "tableName", tableName,
                 "modelClass", modelClass
             );
 

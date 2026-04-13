@@ -1,11 +1,10 @@
-package root.includes.quicktests.quicktests;
+package root.includes.quicktests;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import root.includes.logger.Logger;
 import root.includes.proxyrepo.RepositoryProxyConstructor;
-import root.includes.quicktests.quicktests.repofun.Fantasy;
-import root.includes.quicktests.quicktests.repofun.FantasyRepository;
+import root.includes.quicktests.repofun.Fantasy;
+import root.includes.quicktests.repofun.FantasyRepository;
 
 import java.time.Instant;
 import java.util.List;

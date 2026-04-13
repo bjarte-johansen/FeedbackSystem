@@ -2,18 +2,19 @@ package root.includes.proxyrepo;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import root.includes.quicktests.quicktests.repofun.FantasyRepository;
-import root.includes.quicktests.quicktests.repofun.*;
-import root.repositories.ReviewRepository;
-import root.repositories.ReviewVoteRepository;
-import root.repositories.ReviewerRepository;
-import root.repositories.TenantRepository;
+import root.includes.quicktests.repofun.FantasyRepository;
+import root.repositories.*;
 
 @Configuration
 public class ProxyFactoryBeans {
     @Bean
     public static FantasyRepository createFantasyRepository() {
         return RepositoryProxyConstructor.create(FantasyRepository.class);
+    }
+
+    @Bean
+    public static TenantDomainRepository createTenantDomainRepository() {
+        return RepositoryProxyConstructor.create(TenantDomainRepository.class);
     }
 
     @Bean

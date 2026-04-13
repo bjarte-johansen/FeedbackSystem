@@ -7,10 +7,6 @@
 
     <h1>Client interface</h1>
 
-    <div class="box">
-        <a href="${pageContext.request.contextPath}/clear-session" class="btn btn-primary">Clear session</a>
-    </div>
-
     <!-- external ids to represent different pages/products -->
     <%@ include file="external-id-pills.jsp" %>
 
@@ -46,7 +42,7 @@
                 </span>
 
                 <!-- score filter dropdown -->
-                <select name="scoreFilter" onchange="Review.triggerClientScoreFilterChange()">
+                <select name="scoreFilter" onchange="Review.triggerClientScoreFilterChange(this)">
                     <option value="${scoreFilter}" selected}>Filtrer score</option>
 
                     <c:forEach var="i" begin="1" end="5">

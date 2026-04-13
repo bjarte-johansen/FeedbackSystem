@@ -39,6 +39,7 @@ public class FSQLUtils {
         }
     }
 
+
     /**
      * Gets the ID value of an entity using a cached MethodHandle for the specified ID field name. The MethodHandle is
      * cached per entity class for efficient repeated access.
@@ -70,18 +71,6 @@ public class FSQLUtils {
         }
     }
 
-    /*
-    public static void setEntityId(Object instance, String idField, Long id) {
-        try {
-            Class<?> clazz = instance.getClass();
-            var field = clazz.getDeclaredField(idField);
-            field.setAccessible(true);
-            field.set(instance, id);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to set ID field: " + idField, e);
-        }
-    }
-    */
 
     /**
      * Sets the ID value of an entity by directly setting the specified ID field using reflection.
@@ -112,6 +101,11 @@ public class FSQLUtils {
             throw new RuntimeException("ID field '" + idFieldName + "' not found in class " + entity.getClass().getName(), e);
         }
     }
+
+
+    /**
+     * Extracts the ID values from a collection of entities by directly accessing the specified ID field using reflection.
+     */
 
     @SuppressWarnings("unchecked")
     public static <T> Long[] extractEntityIds(Collection<? extends T> entities) {

@@ -1,3 +1,4 @@
+/*
 let Utils = {
     requireNonNull: function (value, name = "value") {
         if (value == null) { // catches null AND undefined
@@ -13,6 +14,8 @@ let Utils = {
         return true;
     }
 }
+*/
+
 
 var Review = {
     utils: {
@@ -20,9 +23,19 @@ var Review = {
             return Math.min(max, Math.max(min, x));
         },
 
-        parseIntOr: function (a, def = 0) {
-            const n = parseInt(a, 10);
-            return Number.isNaN(n) ? def : n;
+        parseIntOr: function (v, def = 0) {
+            if(v == null) return def;
+
+            if (typeof v === "number")
+                return Number.isInteger(v) ? v : def;
+
+            if(typeof v === "string"){
+                const s = v.trim();
+                if (!/^-?\d+$/.test(s)) return def; // only base-10 ints
+                return Number(s);
+            }
+
+            return def;
         },
 
         snakeToCamel: function (s) {
@@ -37,7 +50,9 @@ var Review = {
                 }
             }
             return out;
-        }, dashedToCamel: function (s) {
+        },
+
+        dashedToCamel: function (s) {
             let out = '', up = false;
             for (let i = 0; i < s.length; i++) {
                 const ch = s[i];
@@ -49,14 +64,35 @@ var Review = {
                 }
             }
             return out;
-        }, /*
-                isNil: function (value) {
-                    return value === null || value === undefined;
-                },
-                notNil: function (value) {
-                    return !Review.utils.isNil(value);
-                }
-        */
+        },
+
+        /**
+         * parse value has been written by chatGPT, it tries to parse a string value into a boolean, number, or
+         * leaves it as a string if it cannot be parsed. It handles trimming whitespace, case-insensitive boolean
+         * parsing, and strict number parsing that only accepts valid finite numbers. This is useful for converting
+         * string values from data attributes or user input into their appropriate types for easier handling in the
+         * code.
+         */
+
+        parsePrimitive: function (v) {
+            if (typeof v !== "string") return v;
+
+            const s = v.trim();
+            if (s === "") return v;
+
+            // boolean
+            if (s === "true" || s === "TRUE") return true;
+            if (s === "false" || s === "FALSE") return false;
+
+            // number (strict)
+            const n = Number(s);
+            if (!Number.isFinite(n)) return v;
+
+            // int vs float
+            return Number.isInteger(n) ? n : n;
+        },
+
+
         /**
          * creates an immutable page cursor object with the given offset and limit. The returned object has methods to
          * advance the cursor by a given delta (number of pages) while ensuring it does not exceed a maximum offset, and
@@ -64,45 +100,16 @@ var Review = {
          * lists from the API.
          */
 
-        createPageCursor: function (offset, limit) {
-            if (offset < 0) throw new Error("Offset must be non-negative");
+        createPageCursorFromString: function (cursorStr) {
+            const parts = (cursorStr || "0,9007199254740991").split(",");
 
-            return {
-                "offset": offset, "limit": limit,
+            const offset  = Review.utils.parseIntOr(parts?.[0], 0);
+            const limit   = Review.utils.parseIntOr(parts?.[1], Number.MAX_SAFE_INTEGER);
 
-                reset: function () {
-                    return Review.utils.createPageCursor(0, this.limit);
-                }, advance: function (pageDelta, maxOffset = Number.MAX_SAFE_INTEGER) {
-                    let newOffset = Review.utils.clamp(this.offset + pageDelta * this.limit, 0, maxOffset);
-                    newOffset = Math.floor(newOffset / this.limit) * this.limit; // ensure offset is always a multiple of limit
-                    return Review.utils.createPageCursor(newOffset, this.limit);
-                },
+            console.log("Creating page cursor from string:", cursorStr, "parsed values:", parts);
 
-                toCsv: function () {
-                    return this.offset + "," + this.limit;
-                },
-
-                toString: function () {
-                    return this.toCsv();
-                }
-            };
-        },
-
-        createPageCursorFromString: function (cursorStr, pageDelta, maxOffset) {
-            const cursorArr = (cursorStr || ("0," + Number.MAX_SAFE_INTEGER)).split(",");
-            cursorArr[0] = Review.utils.parseIntOr(cursorArr?.[0] ?? "0", 0);
-            cursorArr[1] = Review.utils.parseIntOr(cursorArr?.[1] ?? "" + Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
-
-            console.log("Creating page cursor from string:", cursorStr, "parsed values:", cursorArr);
-
-            let cursor = Review.utils.createPageCursor(cursorArr[0], cursorArr[1]);
-
-            if ((pageDelta !== null && pageDelta !== undefined) && (maxOffset !== null && maxOffset !== undefined)) {
-                cursor = cursor.advance(pageDelta, maxOffset);
-                console.log("advancing cursor with offsetDelta:", cursor.toString());
-            }
-            return cursor;
-        },
+            return new PageCursor(offset, limit);
+        }
     },
 
     client: {
@@ -118,39 +125,86 @@ var Review = {
             $reviewList.find("select[name='orderByEnum']").val($reviewList.attr("data-order-by-enum") || -1);
             $activeFilters.addClass('d-none');
 
-            console.log("orderByEnum", $reviewList.attr("data-order-by-enum"));
-
-            Review.reloadReviewList();
+            Review.reloadReviewList({resetCursor: true});
         }
     },
 
+    reviewListing: null,
 
-    triggerClientOrderByEnumChange(select) {
-        const $reviewList = $('.review--list');
-        if ($reviewList.length === 0) return console.warn("No .review--list element found");
-
-        const $select = $(select);
-        const text = $select.find(':selected').text();
-
-        const $activeFilters = $reviewList.find('.active-filters');
-        $activeFilters.find('.order-by-enum').remove();
-
-        const $clone = $activeFilters.find('.templates .btn').clone();
-        $clone.removeClass('d-none')
-            .addClass('order-by-enum')
-            .text("Sorter: " + text);
-
-        //$reviewList.find('.active-filters').find('.items .btn').remove();
-        $activeFilters.find('.items').append($clone);
-        $activeFilters.removeClass('d-none').show();
-
-        Review.reloadReviewList();
+    setReviewListing: function (newReviewListing) {
+        Review.reviewListing = newReviewListing;
+        console.log("ReviewListing class populated with data from element:", Review.reviewListing);
+    },
+    getReviewListing: function (require = false) {
+        if (require && !Review.reviewListing) {
+            throw new Error("ReviewListing instance not found in Review.reviewListing");
+        }
+        console.log("Reloading review list with options:", Review.reviewListing);
+        return Review.reviewListing;
     },
 
-    triggerClientScoreFilterChange() {
-        // TODO: update page cursor to reset to first page if order by enum is changed, otherwise it may cause invalid page offsets
+    activeFilterDisplay: {
+        addFilterButton: function (type, text, replace) {
+            const $reviewList = Review.getReviewListingDomElement(true);
+            const $container = $reviewList.find('.active-filters');
 
-        Review.reloadReviewList();
+            if (replace && $container.find(`.btn.${type}`).length) {
+                $container.find(`.btn.${type}`).text(text);
+            } else {
+                const $btn = $container.find('.templates .btn').clone();
+                $btn.addClass(type).text(text);
+                $container.find('.items').append($btn);
+            }
+            $container.removeClass('d-none').show();
+        },
+        clear: function () {
+            const $reviewList = Review.getReviewListingDomElement(true);
+            const $container = $reviewList.find('.active-filters');
+
+            $container.find('.items').empty();
+            $container.addClass('d-none').hide();
+        }
+    },
+
+    getReviewListingDomElement(required = false) {
+        const $reviewList = $('.review--list');
+        if (required && $reviewList.length === 0) throw new Error("No .review--list element found");
+        return $reviewList;
+    },
+
+    triggerClientOrderByEnumChange(select) {
+        const text = $(select).find(':selected').text();
+        Review.activeFilterDisplay.addFilterButton('order-by-enum', "Sorter: " + text, true);
+
+        Review.reloadReviewList({resetCursor: true});
+    },
+
+    triggerClientScoreFilterChange(select) {
+        const text = $(select).find(':selected').text();
+        Review.activeFilterDisplay.addFilterButton('score-filter-enum', text, true);
+
+        Review.reloadReviewList({resetCursor: true});
+    },
+
+
+    /**
+     * This function is triggered when a user selects a preset score filter (e.g., "5 stars", "4 stars and above")
+     * from the UI. It reads the integral score value from the data attribute of the clicked element, updates the
+     * score filter select element in the review list with this value, triggers a change event to update the UI,
+     * and then calls reloadReviewList to fetch and display the reviews that match the selected score filter preset.
+     *
+     * @param sender
+     */
+    triggerClientScoreFilterPresetChange(sender) {
+        const $reviewList = Review.getReviewListingDomElement(true);
+
+        const $select = $reviewList.find('select[name=scoreFilter]');
+
+        const integralScoreVal = Review.utils.parsePrimitive($(sender).attr('data-integral-score-attr'));
+        $select.val(integralScoreVal);
+        $select.trigger('change');
+
+        Review.reloadReviewList({resetCursor: true})
     },
 
 
@@ -161,54 +215,55 @@ var Review = {
      * parameters if they are present.
      *
      * @param $reviewList
+     * @param options
      * @returns {URLSearchParams}
      */
 
-    getReviewListOptionAsMap($reviewList) {
+    __getReviewListOptionAsMap($reviewList, options = {exclude: null}) {
+        if(!$reviewList || $reviewList.length === 0) {
+            console.log("No $reviewList element provided or found");
+            return new Map();
+        }
+
         const params = new Map();
+
+        const el = $reviewList.get(0);
+        if (!el) throw new Error("$reviewList[0] element not found");
 
         // gets data-attr from element and dash-to-camel case convert the key, then sets it in the params map. If the
         // value looks like a JSON array or object, it tries to parse it before setting it.
-        const setDataAttr = function (attrName) {
-            let value = $reviewList.attr("data-" + attrName); // jQuery attr returns string or undefined ALWAYS
-            if (value === undefined) return;
 
-            const camelName = Review.utils.dashedToCamel(attrName)
-            const ch = value.trim()?.[0];
+        const getDataAttr = (el, camelKey, dashedKey) => el.dataset[camelKey] ?? el.getAttribute(dashedKey);
+
+        const setDataAttr = function (dashedKey) {
+            const camelKey = Review.utils.dashedToCamel(dashedKey)
+            const value = getDataAttr(el, camelKey, dashedKey); //$reviewList.attr("data-" + dashed_key); // jQuery attr returns string or undefined ALWAYS
+            if (value === null || value === undefined) return;
+
+            const ch = value?.trim()?.[0];
             if (ch === "[" || ch === "{") {
-                try { return params.set(camelName, JSON.parse(value)); } catch (e) {}
+                try {
+                    return params.set(camelKey, JSON.parse(value));
+                } catch (e) {
+                }
             }
 
-            params.set(camelName, value);
+            params.set(camelKey, value);
         };
 
         const keys = ["external-id", "order-by-enum", "score-filter", "cursor", "review-count", "detailed-review-count"];
         keys.forEach(setDataAttr);
 
-        //console.log("Extracted review list options from data attributes:", Object.fromEntries(params));
+        if (options?.exclude !== null) {
+            const excludeSet = new Set(Array.isArray(options.exclude) ? options.exclude : [options.exclude]);
+            for (let key of excludeSet) {
+                params.delete(Review.utils.dashedToCamel(key));
+            }
+        }
+
+        console.log("Extracted review list options from data attributes:", Object.fromEntries(params));
 
         return params;
-    },
-
-
-    /**
-     * Returns the count of reviews that have the specified score. It first checks if the review list element exists,
-     * then it retrieves the review list options from the data attributes (or uses the provided map) to access the
-     * detailed review count for the given score. If the score count is not available, it defaults to 0.
-     *
-     * @param score
-     * @param reviewListOptionMap
-     * @returns {number|number|number|void}
-     */
-
-    getReviewCountByScore(score, reviewListOptionMap) {
-        const $reviewList = $(".review--list");
-        if (!$reviewList.length) return 0;
-
-        reviewListOptionMap = reviewListOptionMap || Review.getReviewListOptionAsMap($reviewList);
-        if (reviewListOptionMap === undefined) return console.error("Failed to get review list options from review list");
-
-        return Review.utils.parseIntOr(reviewListOptionMap.get("detailedReviewCount")?.["" + score], 0);
     },
 
 
@@ -219,20 +274,16 @@ var Review = {
      */
 
     updateReviewListOptionsFromUI: function () {
+        const rvl = Review.getReviewListing(true);
+
         const $reviewList = $(".review--list");
         if (!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
 
-        const $orderByEnumSelect = $(".review--list select[name='orderByEnum']");
-        if ($orderByEnumSelect.length !== 0) {
-            const orderByEnumValue = parseInt($orderByEnumSelect.val());
-            $reviewList.attr("data-order-by-enum", orderByEnumValue);
-        }
+        const $orderByEnumSelect = $reviewList.find("select[name='orderByEnum']");
+        if ($orderByEnumSelect.length !== 0) rvl.orderByEnum = Number($orderByEnumSelect.val());
 
-        const $scoreFilter = $(".review--list select[name='scoreFilter']");
-        if ($scoreFilter.length !== 0) {
-            const filterValue = $scoreFilter.val();
-            $reviewList.attr("data-score-filter", filterValue);
-        }
+        const $scoreFilter = $reviewList.find("select[name='scoreFilter']");
+        if ($scoreFilter.length !== 0) rvl.scoreFilter = [Number($scoreFilter.val())];
     },
 
 
@@ -241,47 +292,31 @@ var Review = {
      * the .review--list element. It constructs the API URL with the appropriate query parameters, makes an AJAX GET
      * request, * and upon success, replaces the existing review list items container with the new HTML. It also handles
      * updating the previous filtered review count and resetting the cursor if necessary when filters change.
+     *
+     * The method will automatically limit cursor to bounds
      */
 
-    reloadReviewList: function () {
+    reloadReviewList: function (options = {resetCursor: false}) {
         Review.updateReviewListOptionsFromUI();
 
-        const $reviewList = $(".review--list");
-        if (!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
+        const rvl = Review.getReviewListing(true);
 
-        const reviewListOptions = Review.getReviewListOptionAsMap($reviewList);
-
-        // limit cursor if necessary to ensure it is within the bounds of the available reviews
-        const currentFilteredReviewCount = Review.getReviewCountByScore(reviewListOptions.get("scoreFilter"), reviewListOptions);
-        const previousFilteredReviewCount = Review.utils.parseIntOr($reviewList.attr("data-previous-filtered-review-count"), -1);
-        const totalReviewCount = Review.utils.parseIntOr(reviewListOptions.get("reviewCount"), 0);
-
-        if (previousFilteredReviewCount !== currentFilteredReviewCount) {
-            if ((previousFilteredReviewCount !== -1) && (currentFilteredReviewCount < totalReviewCount)) {
-                let cursor = Review.utils.createPageCursorFromString(reviewListOptions.get("cursor"));
-                cursor = cursor.reset();
-                reviewListOptions.set("cursor", cursor.toString());
-                $reviewList.attr("data-cursor", cursor.toString());
-            }
-
-            $reviewList.attr("data-previous-filtered-review-count", currentFilteredReviewCount);
+        if (options?.resetCursor || (rvl.cursor.isOutOfBounds(rvl.getAccumulatedReviewCountByScoreFilter()))) {
+            rvl.cursor = rvl.cursor.withReset();
         }
 
         // create url with search params
-        const url = "/api/reviews/build-html?" + (new URLSearchParams(reviewListOptions)).toString();
-        console.log("loading: " + url);
+        const searchParams = rvl.buildQuerySearchParams();
+        const url = "/api/reviews/build-html?" + searchParams.toString();
 
         // fetch
         $.ajax({
             url: url, method: "GET", success: function (html) {
                 const $newReviewListItemsContainer = $(html);
                 const $oldReviewListItemsContainer = $(`.review--list .review--list-items`);
-                if ($oldReviewListItemsContainer.length) {
-                    $oldReviewListItemsContainer.replaceWith($newReviewListItemsContainer);
-                    console.log(`New review list container loaded successfully`);
-                } else {
-                    console.warn(`Old review list container not found.`);
-                }
+                if (!$oldReviewListItemsContainer.length) return console.warn(`Old review list container not found.`);
+
+                $oldReviewListItemsContainer.replaceWith($newReviewListItemsContainer);
                 console.log('-----------------------------------------------------------');
             }, error: function (xhr, status, error) {
                 console.error(`Failed to reload review list:`, status, error);
@@ -293,47 +328,21 @@ var Review = {
     /**
      * Calculates the next page cursor based on the current cursor and review count, then updates the data-cursor
      * attribute on the .review--list element and calls reloadReviewList to fetch the next set of reviews. It ensures
-     * that the cursor does not exceed the maximum offset, which would indicate an invalid page. The pageDelta
-     * parameter allows advancing by multiple pages at once (e.g., for "Next 5 pages" functionality), and defaults to 1
-     * for normal "Next page" behavior.
+     * that the cursor does not exceed the maximum offset, which would indicate an invalid page.
      *
      * @param pageDelta
      */
 
     nextReviewListPage: function (pageDelta = 1) {
-        const fnGetScoreFilterAsIntArray = function () {
-            const scoreFilterStr = $reviewList.attr("data-score-filter");
-            if (!scoreFilterStr) return [];
-
-            return scoreFilterStr.split(",").map(s => parseInt(s)).filter(n => !isNaN(n));
-        }
-
-
         pageDelta = pageDelta || 1;
 
-        const $reviewList = $(".review--list");
-        if (!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
-
-        // fetch options as map
-        const reviewListOptions = Review.getReviewListOptionAsMap($reviewList);
-
-        // get the total review count, but if score filters are applied, we need to calculate the accumulated count of reviews
-        let maxPageOffset = Review.utils.parseIntOr($reviewList.attr("data-review-count"), 0);
-        let accumulatedReviewCount = Number.MAX_SAFE_INTEGER;
-
-        // if there are score filters applied, we need to calculate the accumulated count of reviews that match those filters
-        if (reviewListOptions.get("scoreFilter") !== "-1") {
-            const scoreFilterArr = fnGetScoreFilterAsIntArray();
-            accumulatedReviewCount = scoreFilterArr.length > 0 ? scoreFilterArr.reduce((acc, score) => acc + Review.getReviewCountByScore(score, reviewListOptions), 0) : accumulatedReviewCount;
-            maxPageOffset = accumulatedReviewCount > 0 ? accumulatedReviewCount : maxPageOffset;
-        }
-
-        //console.log("maxPageOffset", maxPageOffset, accumulatedReviewCount);
+        // get review listing instance
+        const rvl = Review.getReviewListing(true);
 
         // advance the cursor by the given offset, ensuring it does not exceed the maximum offset
-        let cursor = Review.utils.createPageCursorFromString($reviewList.attr("data-cursor"));
-        cursor = cursor.advance(pageDelta, maxPageOffset - 1);
-        $reviewList.attr("data-cursor", cursor.toString());
+        rvl.cursor = rvl.cursor
+            .withAdvance(rvl.cursor.limit * pageDelta)
+            .withClamp(rvl.getAccumulatedReviewCountByScoreFilter());
 
         Review.reloadReviewList();
     },
@@ -362,13 +371,9 @@ var Review = {
         $.ajax({
             url: `/api/review/${reviewId}/build-html`, method: "GET", success: function (html) {
                 const $newReview = $(html);
-                //console.log("new html: ", html);
                 const $oldReview = $(`.review--list .review[data-review-id="${reviewId}"]`);
                 if ($oldReview.length) {
                     $oldReview.replaceWith($newReview);
-                    console.log(`Review with ID ${reviewId} reloaded successfully.`);
-                } else {
-                    console.warn(`Old review element with ID ${reviewId} not found for replacement.`);
                 }
                 console.log('-----------------------------------------------------------');
             }, error: function (xhr, status, error) {
@@ -428,13 +433,114 @@ var Review = {
     }
 };
 
+
+class ReviewListing {
+    externalId = null;
+    orderByEnum = -1;
+    scoreFilter = -1;
+    cursor = new PageCursor(0, Number.MAX_SAFE_INTEGER);
+    totalReviewCount = 0;
+    detailedReviewCount = {};
+
+    constructor() {
+    }
+
+    /*
+    loadNextPage() {
+        Review.nextReviewListPage(1);
+        return this;
+    }
+
+    loadPreviousPage() {
+        Review.prevReviewListPage();
+        return this;
+    }
+    */
+
+    #getReviewCountByScore(score) {
+        return this.detailedReviewCount?.[score] || this.totalReviewCount;
+    }
+
+    getAccumulatedReviewCountByScoreFilter() {
+        const filteredCount = this.scoreFilter?.reduce(
+            (acc, score) => acc + this.#getReviewCountByScore(score),
+            0);
+        return filteredCount || this.totalReviewCount;
+    }
+
+    populateFromOptionsMap(opts) {
+        this.externalId = opts.get("externalId");
+        this.orderByEnum = Number(opts.get("orderByEnum"));
+        this.scoreFilter = opts.get("scoreFilter")?.split(",").map(s => Number(s)).filter(n => !isNaN(n)) || [-1];
+        this.cursor = Review.utils.createPageCursorFromString(opts.get("cursor"));
+        this.totalReviewCount = Number(opts.get("reviewCount"));
+        this.detailedReviewCount = opts.get("detailedReviewCount");
+
+        return this;
+    }
+
+    buildQuerySearchParams() {
+        const map = new Map();
+        map.set("externalId", this.externalId);
+        map.set("orderByEnum", this.orderByEnum);
+        map.set("scoreFilter", this.scoreFilter.join(","));
+        map.set("cursor", this.cursor.toString());
+
+        return new URLSearchParams(Object.fromEntries(map));
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
+    const rl = new ReviewListing();
+    const $reviewList = Review.getReviewListingDomElement(false);
+
+    rl.populateFromOptionsMap(Review.__getReviewListOptionAsMap($reviewList));
+    Review.setReviewListing(rl);
+
     document.addEventListener("submit", async e => {
         const form = e.target.closest("form");
         if (!form) return;
 
         if (!form.matches(".ajax")) return;
         e.preventDefault();
+
+        if (form.matches(".custom-handler")) {
+            const debug = true;
+            e.preventDefault();
+
+            const __parsed = form.dataset.cmd?.split(":");
+            const cmd = __parsed?.[0];
+            const args = __parsed?.[1]?.split(',') || [];
+            for (var a in args) args[a] = Review.utils.parsePrimitive(args[a]);
+
+            //if(debug) console.log("cmd", cmd, "args", args);
+
+            switch (cmd) {
+                case "addStatusFilter": {
+                    const statusEnum = Review.utils.parseIntOr(args[0], -1);
+                    const params = new URLSearchParams();
+                    const rvl = Review.getReviewListing(true);
+                    params.set("statusFilter", statusEnum);
+
+                    window.location.href = window.location.pathname + "?" + params.toString();
+                    return;
+                }
+            }
+
+            console.log("custom handler called");
+        }
+    });
+
+    document.addEventListener("submit", async e => {
+        const form = e.target.closest("form");
+        if (!form) return;
+
+        if (!form.matches(".ajax")) return;
+        e.preventDefault();
+
+        if (form.matches(".custom-handler")) {
+            return false;
+        }
 
         const res = await fetch(form.action, {
             method: (form.method || "POST").toUpperCase(), body: new FormData(form)

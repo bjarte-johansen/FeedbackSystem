@@ -1,6 +1,7 @@
 package root.includes.proxyrepo;
 
 import root.database.*;
+import root.includes.logger.Logger;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
@@ -83,24 +84,27 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-
-        // invoke default method (e.g. default method in repo interface)
-        if (method.isDefault()) {
-            return MethodHandles.lookup()
-                .unreflectSpecial(method, method.getDeclaringClass())
-                .bindTo(proxy)
-                .invokeWithArguments(args);
-        }
-
-        // invoke implemented method (if exists (e.g. custom repo method implemented in a separate class))
-        if(target != null) {
-            Method impl = findMethod(target.getClass(), method);
-            if (impl != null) {
-                impl.setAccessible(true);
-                //Logger.log("Invoked implemented method: " + impl.getDeclaringClass().getName() + "." + impl.getName());
-                //Logger.log("Invoke Args: " + Arrays.toString(args));
-                return impl.invoke(target, args);
+        try {
+            // invoke default method (e.g. default method in repo interface)
+            if (method.isDefault()) {
+                return MethodHandles.lookup()
+                    .unreflectSpecial(method, method.getDeclaringClass())
+                    .bindTo(proxy)
+                    .invokeWithArguments(args);
             }
+
+            // invoke implemented method (if exists (e.g. custom repo method implemented in a separate class))
+            if (target != null) {
+                Method impl = findMethod(target.getClass(), method);
+                if (impl != null) {
+                    impl.setAccessible(true);
+                    //Logger.log("Invoked implemented method: " + impl.getDeclaringClass().getName() + "." + impl.getName());
+                    //Logger.log("Invoke Args: " + Arrays.toString(args));
+                    return impl.invoke(target, args);
+                }
+            }
+        }catch(Throwable e) {
+            throw new RuntimeException("Error invoking method " + method.getName() + ": " + e.getMessage(), e);
         }
 
 
@@ -316,7 +320,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
     }
 
-    private Object handleFindAll(Method method, Object[] args) throws Exception {
+    private Object handleFindAll(Method method, Object[] args) {
         // create query & return result(s) based on return type
         var list = FSQLQuery.create("SELECT * FROM " + __TABLE_NAME)
             .debug(DEBUG_SQL)
@@ -335,7 +339,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
     }
 
-    public Object handleFindById(Method method, Object[] args) throws Exception {
+    public Object handleFindById(Method method, Object[] args) {
         long entityId = convertToLongValueExactOrThrow(args[0]);
 
         var result = FSQLQuery.create("SELECT * FROM " + __TABLE_NAME + " WHERE id = ?")
@@ -351,7 +355,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         throw new RuntimeException("Unsupported return type " + returnType.getSimpleName());
     }
 
-    public Object handleFindFirstById(Method method, Object[] args) throws Exception {
+    public Object handleFindFirstById(Method method, Object[] args) {
         String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr + " LIMIT 1";
 
         // create query & return result(s) based on return type
@@ -375,7 +379,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
     handle count methods
      */
 
-    public Object handleCount(Method method, Object[] args) throws Exception {
+    public Object handleCount(Method method, Object[] args) {
         String sql = "SELECT COUNT(*) FROM " + __TABLE_NAME;
 
         long found = FSQLQuery.create(sql)
@@ -386,7 +390,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         return getIntReturnValue(returnType, (int) found);
     }
 
-    public Object handleCountBy(Method method, Object[] args) throws Exception {
+    public Object handleCountBy(Method method, Object[] args) {
         if(methodNameScanner.whereStr == null || methodNameScanner.whereStr.isEmpty()) {
             throw new IllegalArgumentException("Invalid countBy method name: " + method.getName());
         }
@@ -408,7 +412,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
     handle exists methods
      */
 
-    public Object handleExistsById(Method method, Object[] args) throws Exception {
+    public Object handleExistsById(Method method, Object[] args) {
         long entityId = convertToLongValueExactOrThrow(args[0]);
 
         String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE id = ?";
@@ -422,7 +426,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         return getBooleanReturnValue(returnType, exists);
     }
 
-    public Object handleExistsBy(Method method, Object[] args) throws Exception {
+    public Object handleExistsBy(Method method, Object[] args) {
         String sql = "SELECT * FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
         boolean exists = FSQLQuery.create(sql)
@@ -440,7 +444,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
     handle delete methods
      */
 
-    public Object handleDeleteById(Method method, Object[] args) throws Exception {
+    public Object handleDeleteById(Method method, Object[] args) {
         long entityId = convertToLongValueExactOrThrow(args[0]);
 
         String sql = "DELETE FROM " + __TABLE_NAME + " WHERE id = ?";
@@ -454,7 +458,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         return getAffectedRowsReturnValue(returnType, affectedRows);
     }
 
-    private Object handleDelete(Method method, Object[] args) throws Exception {
+    private Object handleDelete(Method method, Object[] args) {
         checkArgumentInstanceOf(args[0], __MODEL_CLASS);
 
         // setup
@@ -471,7 +475,7 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         return getAffectedRowsReturnValue(returnType, affectedRows);
     }
 
-    private Object handleDeleteBy(Method method, Object[] args) throws Exception {
+    private Object handleDeleteBy(Method method, Object[] args) {
         String sql = "DELETE FROM " + __TABLE_NAME + " WHERE " + methodNameScanner.whereStr;
 
         int affectedRows = FSQLQuery.create(sql)
@@ -489,11 +493,11 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
     multiple delete methods (e.g. deleteAll, deleteAllById, etc.)
      */
 
-    private Object handleDeleteAll(Method method, Object[] args) throws Exception {
+    private Object handleDeleteAll(Method method, Object[] args) {
         return handleDeleteAllInBatch(method, args);
     }
 
-    private Object handleDeleteAllInBatch(Method method, Object[] args) throws Exception {
+    private Object handleDeleteAllInBatch(Method method, Object[] args) {
         @SuppressWarnings("unchecked")
         Iterable<T> entities = (Iterable<T>) args[0];
         Long[] ids = FSQLUtils.extractEntityIds(entities);
@@ -516,11 +520,11 @@ class RepositoryProxyImpl<T> implements InvocationHandler {
         return getAffectedRowsReturnValue(returnType, affectedRows);
     }
 
-    private Object handleDeleteAllById(Method method, Object[] args) throws Exception {
+    private Object handleDeleteAllById(Method method, Object[] args) {
         return handleDeleteAllByIdInBatch(method, args);
     }
 
-    private Object handleDeleteAllByIdInBatch(Method method, Object[] args) throws Exception {
+    private Object handleDeleteAllByIdInBatch(Method method, Object[] args) {
         @SuppressWarnings("unchecked")
         Iterable<T> ids = (Iterable<T>) args[0];
 

@@ -162,6 +162,10 @@ a.btn, a.btn-primary {
 
 /***************************************************/
 
+.review--admin-interface .filter-buttons .active{
+    --bg: #b32c00;
+}
+
 .review--admin-interface button[disabled] {
     --bg: #666;
     background-color: var(--bg);

@@ -1,8 +1,6 @@
 package root.app;
 
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import root.database.CustomDataSource;
 import root.database.DataSourceManager;
 import root.database.connectionproviders.CustomConnectionProvider;
@@ -12,10 +10,7 @@ import static root.common.utils.Preconditions.checkArgument;
 
 @Component
 public class AppContext {
-    private static AppContext INSTANCE;
-    private static ThreadLocal<Long> currentTenantId = new ThreadLocal<>();
-
-    private CustomDataSource ds;
+    //private CustomDataSource ds;
 
     /**
      * Initializes the application context, including data sources and connection providers.
@@ -34,36 +29,42 @@ public class AppContext {
         initDatasourceAndConnectionProvider();
     }
 
-    /*
-    public static AppContext getSingleton() {
-        if (INSTANCE == null) {
-            INSTANCE = new AppContext();
-        }
-        return AppContext.INSTANCE;
-    }
-     */
 
-    public void initDatasourceAndConnectionProvider() {
+    /**
+     * Initializes the data source and connection provider based on the application configuration.
+     */
+    private void initDatasourceAndConnectionProvider() {
+        CustomDataSource ds;
         ds = new CustomDataSource(AppConfig.CURRENT_CONNECTION_PARAMS);
         ds.setMaxPoolSize(AppConfig.DB_MAX_CONNECTION_POOL_SIZE);
         ds.warm(2);
 
-        if (AppConfig.USE_TEST_TENANT) {
+        if (!AppConfig.USE_MULTI_TENANT) {
             initSingleTenantConnectionProvider(ds);
         }else {
             initMultiTenantConnectionProvider(ds);
         }
     }
 
+    /**
+     * Initializes a multi-tenant connection provider that allows setting the schema per thread (request).
+     * @param ds The custom data source to be used for the connection provider.
+     */
+
     public void initMultiTenantConnectionProvider(CustomDataSource ds) {
         // create and set multi-tenant connection provider, allows to set schema per thread (aka request)
-        CustomConnectionProvider connectionProvider = new AppTenantConnectionProvider(ds);
+        CustomConnectionProvider connectionProvider = new AppMultiTenantConnectionProvider(ds);
         DataSourceManager.setConnectionProvider(connectionProvider);
         DataSourceManager.setMultiTenant(true);
 
         Logger.log("Initialized " + connectionProvider.getClass().getSimpleName() + " connection provider");
     }
 
+
+    /**
+     * Initializes a single-tenant connection provider that does not allow setting the schema per thread (request).
+     * @param ds
+     */
     public void initSingleTenantConnectionProvider(CustomDataSource ds) {
         // create and set single-tenant connection provider
         CustomConnectionProvider connectionProvider = new CustomConnectionProvider(ds);
@@ -71,67 +72,5 @@ public class AppContext {
         DataSourceManager.setMultiTenant(false);
 
         Logger.log("Initialized " + connectionProvider.getClass().getSimpleName() + " connection provider");
-    }
-
-/*
-    public ThreadLocal<Long> getCurrentTenantIdStorage() {
-        return currentTenantId;
-    }
- */
-
-    public void setTenantId(Long tenantId) {
-        currentTenantId.set(tenantId);
-    }
-
-    public Long getTenantId() {
-        return getTenantId(true);
-    }
-
-    public Long getTenantId(boolean required) {
-        var tenantId = currentTenantId.get();
-        checkArgument(required && tenantId != null, "Tenant ID is not set in AppContext. This should never happen if the RequestContextFilter is working correctly.");
-        return tenantId;
-    }
-
-    public void removeTenantId() {
-        currentTenantId.remove();
-    }
-
-    /**
-     * Get the administrator ID from the current HTTP session.
-     * @return
-     */
-
-    public static long getAdministratorId() {
-        var attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attrs == null) return 0;
-
-        var session = attrs.getRequest().getSession(false);
-        if (session == null) return 0;
-
-        Object v = session.getAttribute("administrator_id");
-        return (v instanceof Long) ? (Long) v : 0;
-    }
-
-
-    /**
-     * Check if the current user is an administrator based on the session attribute.
-     * @return true if the user is an administrator, false otherwise.
-     */
-    public static boolean isAdministrator(){
-        return ((long) getAdministratorId()) != 0;
-    }
-
-
-    /**
-     * Check if the current user is an administrator and throw an exception if not.
-     * @return
-     */
-
-    public static boolean checkIsAdministrator(){
-        if(!isAdministrator()){
-            throw new RuntimeException("Handlingen krever at du er innlogget som administrator");
-        }
-        return true;
     }
 }

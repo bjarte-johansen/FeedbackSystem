@@ -118,6 +118,13 @@ public class PageCursor {
         return s;
     }
 
+    public static PageCursor decode(String cursorStr) {
+        return PageCursorEncoder.decodeCursor(cursorStr);
+    }
+    public static String encode(PageCursor cursor) {
+        return PageCursorEncoder.encodeCursor(cursor);
+    }
+
     /**
      * Returns a string representation of the PageCursor, including its offset and limit values.
      *

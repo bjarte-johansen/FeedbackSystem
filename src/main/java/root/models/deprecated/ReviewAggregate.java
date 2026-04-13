@@ -1,16 +1,6 @@
-package root.models;
+package root.models.deprecated;
 
-import root.includes.NorwegianTimeAgoTextFormatter;
 import root.interfaces.HasId;
-import root.interfaces.IReview;
-
-import root.includes.NorwegianTimeAgoTextFormatter;
-import root.interfaces.IReview;
-
-import java.time.Instant;
-
-
-import java.time.Instant;
 
 @Deprecated
 public class ReviewAggregate implements HasId {

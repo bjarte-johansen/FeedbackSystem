@@ -5,35 +5,17 @@
         <div class="grid-col-6 mobile-full">
             <div class="mb-2">
                <div class="score-outer mb-0">
-                    <strong class="score-text">${dblFormatter1.apply(reviewStats.averageScore)} / 5</strong> <span class="score score-${dblFormatterCssPointFive.apply(reviewStats.averageScore)}"></span>
+                    <span class="big-average-score">${dblFormatter1.apply(reviewStats.averageScore)} / 5</span> <span class="score score-${dblFormatterCssPointFive.apply(reviewStats.averageScore)}"></span>
                 </div>
-                Snittkarakter: ${dblFormatter1.apply(reviewStats.averageScore)} av 5<br>
-                Antall omtaler: ${reviewStats.totalCount}
+                Snittkarakter: <span class="avarege-score">${dblFormatter1.apply(reviewStats.averageScore)} av 5</span><br>
+                Antall omtaler: <span class="total-review-count">${reviewStats.totalCount}
             </div>
         </div>
 
         <div class="grid-col-6 score-bars-with-count mobile-full">
             <c:forEach var="scoreCount" items="${reviewStats.scoreCounts}">
                 <div class="mb-1">
-                    <a class="text-deco-none" href="javascript:void(0)" onclick="
-                            const $reviewList = $('.review--list');
-                            let $select = $('.review--list select[name=scoreFilter]');
-                            $select.val(${scoreCount.key});
-
-                            const $activeFilters = $reviewList.find('.active-filters');
-                            $activeFilters.find('.score-filter-enum').remove();
-
-                            const $clone = $activeFilters.find('.templates .btn').clone();
-                            $clone.removeClass('d-none')
-                                .text('Score: ${scoreCount.key}')
-                                .addClass('score-filter-enum');
-
-                            //$reviewList.find('.active-filters').find('.items .btn').remove();
-                            $activeFilters.find('.items').append($clone);
-                            $activeFilters.removeClass('d-none').show();
-
-                            Review.reloadReviewList();
-                            ">
+                    <a class="text-deco-none" href="javascript:void(0)" data-integral-score-attr="${scoreCount.key}" onclick="Review.triggerClientScoreFilterPresetChange(this)">
                         <div class="grid">
                             <div class="grid-col-3 score-description">
                                 ${scoreCount.key} Stjerner

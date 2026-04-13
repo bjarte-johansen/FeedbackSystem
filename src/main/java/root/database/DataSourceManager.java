@@ -21,8 +21,9 @@ public class DataSourceManager {
 
     /**
      * Sets a custom multi-tenant connection provider. This allows the application to use a custom implementation for
-     * resolving tenant identifiers and providing connections for multi-tenant scenarios. The provided connection provider
-     * must implement the CustomMultiTenantConnectionProvider interface.
+     * resolving tenant identifiers and providing connections for multi-tenant scenarios. The provided connection
+     * provider must implement the CustomMultiTenantConnectionProvider interface.
+     *
      * @param provider
      */
 
@@ -32,6 +33,13 @@ public class DataSourceManager {
         var manager = getSingleton();
         manager.connectionProvider = provider;
     }
+
+    /**
+     * Retrieves the currently set multi-tenant connection provider. If no provider has been set, an
+     * IllegalStateException is thrown.
+     *
+     * @return the currently set multi-tenant connection provider
+     */
     public static CustomConnectionProvider getConnectionProvider() {
         var manager = getSingleton();
         if (manager.connectionProvider == null) {
@@ -40,11 +48,31 @@ public class DataSourceManager {
         return manager.connectionProvider;
     }
 
+
+    /**
+     * Enables or disables multi-tenancy support. When enabled, the application will use the configured multi-tenant
+     * connection provider to resolve tenant identifiers and provide connections for multi-tenant scenarios. When
+     * disabled, the application will use a default connection provider that does not support multi-tenancy. This method
+     * should be called before any database operations are performed to ensure that the correct connection provider is
+     * used.
+     *
+     * @param enable
+     */
+
     public static void setMultiTenant(boolean enable) {
         var manager = getSingleton();
         manager.multiTenant = true;
+
+        // TODO: Consider adding logic to switch between different connection providers based on the multi-tenant flag,
+        //  if needed.
     }
 
+
+    /**
+     * return a database connection from the currently configured connection provider.
+     *
+     * @return a database connection
+     */
 
     public static Connection getConnection() throws Exception {
         var manager = getSingleton();
@@ -52,33 +80,38 @@ public class DataSourceManager {
     }
 
 
-
-
-
     /**
-     * Functional interface representing a consumer that accepts a database connection and returns a result. This is used
-     * as a parameter type for the with() method to allow executing database operations with a managed connection.
+     * Functional interface representing a consumer that accepts a database connection and returns a result. This is
+     * used as a parameter type for the with() method to allow executing database operations with a managed connection.
+     *
      * @param <R>
      */
 
-    public interface ReturningConnectionConsumer<R>{
+    public interface ReturningConnectionConsumer<R> {
         R run(Connection connection) throws Exception;
     }
 
-    public interface VoidConnectionConsumer{
+    /**
+     * Functional interface representing a consumer that accepts a database connection and does not return a result. This
+     * is used as a parameter type for the withVoid() method to allow executing database operations with a managed
+     * connection for operations that do not return a result.
+     *
+     */
+
+    public interface VoidConnectionConsumer {
         void run(Connection connection) throws Exception;
     }
 
 
     /**
-     * Utility method to execute a database operation with a managed connection. The provided function is executed
-     * with a connection that is automatically closed after the operation completes, ensuring proper resource management.
-     *
+     * Utility method to execute a database operation with a managed connection. The provided function is executed with
+     * a connection that is automatically closed after the operation completes, ensuring proper resource management.
+     * <p>
      * Result is returned from the provided function.
      *
      * @param fn
-     * @return
      * @param <R>
+     * @return
      */
 
     public static <R> R with(ReturningConnectionConsumer<R> fn) {
@@ -92,16 +125,15 @@ public class DataSourceManager {
 
 
     /**
-     * @see #with(ReturningConnectionConsumer) for executing database operations with a managed connection.
-     * This version is used for operations that do not return a result.
+     * @see #with(ReturningConnectionConsumer) for executing database operations with a managed connection. This version
+     * is used for operations that do not return a result.
      */
 
     public static void withVoid(VoidConnectionConsumer fn) {
         try (Connection connection = getConnection()) {
             fn.run(connection);
         } catch (Exception e) {
-            Logger.log("An exception occurred while executing a database operation: " + e.getMessage());
-            throw new RuntimeException(e);
+            throw new RuntimeException("An exception occurred while executing a database operation", e);
         }
     }
 }

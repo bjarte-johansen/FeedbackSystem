@@ -11,12 +11,19 @@ import static root.common.utils.Preconditions.checkArgument;
  * is the responsibility of the caller to ensure that the input is valid.
  */
 
-public record NumericRangeRecord<T extends Number & Comparable<? super T>>(T min, T max) {
+public record NumericRangeRecord<T extends Number & Comparable<? super T>>(T start, T end) {
+
+    /**
+     * Constructor that checks that min and max are not null and that min is less than or equal to max.
+     *
+     * @param start
+     * @param end
+     */
 
     public NumericRangeRecord {
-        checkArgument(min != null, "min cannot be null");
-        checkArgument(max != null, "max cannot be null");
-        checkArgument((min.compareTo(max)) <= 0, "max must be greater or equal to min");
+        checkArgument(start != null, "min cannot be null");
+        checkArgument(end != null, "max cannot be null");
+        checkArgument((start.compareTo(end)) <= 0, "max must be greater or equal to min");
     }
 
 
@@ -53,7 +60,7 @@ public record NumericRangeRecord<T extends Number & Comparable<? super T>>(T min
     public String toCSV(String delimiter) {
         checkArgument(delimiter != null, "delimiter cannot be null");
 
-        return min + delimiter + max;
+        return start + delimiter + end;
     }
 
 
@@ -65,6 +72,6 @@ public record NumericRangeRecord<T extends Number & Comparable<? super T>>(T min
 
     @Override
     public String toString() {
-        return min + "," + max;
+        return start + "," + end;
     }
 }

@@ -1,4 +1,4 @@
-package root.includes.quicktests.quicktests;
+package root.includes.quicktests;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,7 +45,7 @@ class OldDatabaseTest {
         String authorDisplayName,
         String authorPassword
     ) {
-        String authorPasswordHash = passwordService.hash(authorPassword);
+        String authorPasswordHash = passwordService.encode(authorPassword);
 
         Reviewer reviewer = new Reviewer();
         reviewer.setEmail(authorEmail);

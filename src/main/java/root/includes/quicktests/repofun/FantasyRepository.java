@@ -1,4 +1,4 @@
-package root.includes.quicktests.quicktests.repofun;
+package root.includes.quicktests.repofun;
 
 import root.includes.proxyrepo.ProxyRepository;
 import java.util.List;

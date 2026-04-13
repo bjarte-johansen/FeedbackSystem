@@ -12,9 +12,9 @@ public class TestNumericRangeRecord {
 
     public NumericRangeRecord<Integer> makeRange(Integer start, Integer end) {
         var tmp = new NumericRangeRecord<Integer>(start, end);
-        checkArgument(tmp.min() != null, "min cannot be null");
-        checkArgument(tmp.max() != null, "max cannot be null");
-        checkArgument((tmp.min().compareTo(tmp.max())) <= 0, "max must be greater or equal to min");
+        checkArgument(tmp.start() != null, "min cannot be null");
+        checkArgument(tmp.end() != null, "max cannot be null");
+        checkArgument((tmp.start().compareTo(tmp.end())) <= 0, "max must be greater or equal to min");
         return tmp;
     }
 

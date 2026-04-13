@@ -4,6 +4,7 @@ import root.includes.NorwegianTimeAgoTextFormatter;
 import root.interfaces.IReview;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -31,8 +32,8 @@ public class Review implements IReview {
 
 
     /**
-     * Review status constants: 1 = Approved 2 = Pending 3 = Rejected
-     * Important: remember to update validReviewStatuses set if you add new vote types     *
+     * Review status constants: 1 = Approved 2 = Pending 3 = Rejected Important: remember to update validReviewStatuses
+     * set if you add new vote types     *
      */
 
     public static final int REVIEW_STATUS_APPROVED = 1;
@@ -41,6 +42,19 @@ public class Review implements IReview {
 
     private static final Set<Integer> validReviewStatuses = Set.of(REVIEW_STATUS_APPROVED, REVIEW_STATUS_PENDING, REVIEW_STATUS_REJECTED);
 
+    private static final Map<Integer, String> reviewStatusToStringMap = Map.of(
+        REVIEW_STATUS_APPROVED, "APPROVED",
+        REVIEW_STATUS_PENDING, "PENDING",
+        REVIEW_STATUS_REJECTED, "REJECTED"
+    );
+    private static String reviewStatusToStringMapDefault = "Ukjent status";
+
+    private static final Map<Integer, String> reviewStatusToNorwegianStringMap = Map.of(
+        REVIEW_STATUS_APPROVED, "Godkjent",
+        REVIEW_STATUS_PENDING, "Til vurdering",
+        REVIEW_STATUS_REJECTED, "Avvist"
+    );
+    private static String reviewStatusToNorwegianStringMapDefault = "Ukjent status";
 
     // Instance properties
     private Long id;
@@ -200,27 +214,27 @@ public class Review implements IReview {
 
 
     /**
-    * Converts the review status integer to a human-readable string representation.
-    * @param status The integer value representing the review status.
-    * @return A string representation of the review status, such as "PENDING", "APPROVED", "REJECTED", or "UNKNOWN" for unrecognized status values.
+     * Converts the review status integer to a human-readable string representation.
+     *
+     * @param status The integer value representing the review status.
+     * @return A string representation of the review status, such as "PENDING", "APPROVED", "REJECTED", or "UNKNOWN" for
+     * unrecognized status values.
      */
 
     public static String statusToString(int status) {
-        return switch (status) {
-            case Review.REVIEW_STATUS_PENDING -> "PENDING";
-            case Review.REVIEW_STATUS_APPROVED -> "APPROVED";
-            case Review.REVIEW_STATUS_REJECTED -> "REJECTED";
-            default -> "UNKNOWN";
-        };
+        return reviewStatusToStringMap.getOrDefault(status, reviewStatusToStringMapDefault);
     }
 
+
+    /**
+     * Converts the review status integer to a human-readable string representation in Norwegian.
+     *
+     * @param status The integer value representing the review status.
+     * @return A string representation of the review status in Norwegian, such as "Til vurdering" for pending,
+     * "Godkjent" for approved, "Avvist" for rejected, or "Ukjent status" for unrecognized status values.
+     */
     public static String statusToNorwegianString(int status) {
-        return switch (status) {
-            case Review.REVIEW_STATUS_PENDING -> "Til vurdering";
-            case Review.REVIEW_STATUS_APPROVED -> "Godkjent";
-            case Review.REVIEW_STATUS_REJECTED -> "Avvist";
-            default -> "Ukjent status";
-        };
+        return reviewStatusToNorwegianStringMap.getOrDefault(status, reviewStatusToNorwegianStringMapDefault);
     }
 
 
@@ -228,17 +242,30 @@ public class Review implements IReview {
     public static int getPendingStatusConst() { return REVIEW_STATUS_PENDING; }
 
     /** Returns the constant value for the approved review status. */
-    public static int getApprovedStatusConst() { return REVIEW_STATUS_APPROVED;  }
+    public static int getApprovedStatusConst() { return REVIEW_STATUS_APPROVED; }
 
     /** Returns the constant value for the rejected review status. */
     public static int getRejectedStatusConst() { return REVIEW_STATUS_REJECTED; }
 
 
-    /** Returns the constant value for the upvote type. */
-    public static boolean isValidVoteType(int voteType) { return validVoteTypes.contains(voteType); }
+    /** Returns the set of valid vote types. */
+    public static Set<Integer> getValidReviewStatuses() { return validReviewStatuses; }
 
-    /** Returns the constant value for the pending review status. */
-    public static boolean isValidReviewStatus(int reviewStatus) { return validReviewStatuses.contains(reviewStatus); }
+
+    /*
+     check if status is valid
+     */
+
+    /** Returns the constant value for the upvote type. */
+    public static boolean isValidVoteType(int voteType) {
+        return validVoteTypes.contains(voteType);
+    }
+
+    /** Returns boolean indicating whether the given review status is valid */
+    public static boolean isValidReviewStatus(int reviewStatus) {
+        return validReviewStatuses.contains(reviewStatus);
+    }
+
 
     /**
      * Returns a human-readable string representing how long ago the review was created, formatted in Norwegian.

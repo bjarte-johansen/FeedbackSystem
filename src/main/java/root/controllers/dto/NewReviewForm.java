@@ -14,19 +14,20 @@ import static root.common.utils.Preconditions.checkArgument;
  */
 
 public record NewReviewForm(
-    long tenantId,
     String externalId,
-
     String email,
     String password,
-
     String displayName,
     int score,
     String title,
     String comment
 ) {
-    public NewReviewForm{
+    public NewReviewForm {
         email = org.jsoup.Jsoup.parse(email).text();
+        password = org.jsoup.Jsoup.parse(password).text();
+        displayName = org.jsoup.Jsoup.parse(displayName).text();
+        title = org.jsoup.Jsoup.parse(title).text();
+        comment = org.jsoup.Jsoup.parse(comment).text();
     }
 
     /**
@@ -46,7 +47,7 @@ public record NewReviewForm(
 
         try {
             // Validate input parameters (you can add more validation as needed)
-            checkArgument(dto.tenantId > 0, "Tenant ID must be a positive number.");
+            //checkArgument(dto.tenantId > 0, "Tenant ID must be a positive number.");
             checkArgument(dto.score >= 1 && dto.score <= 5, "Score must be between 1 and 5.");
 
             if (AppConfig.ENABLE_CLIENT_EMAIL_AND_PASSWORD_REQUIRED) {

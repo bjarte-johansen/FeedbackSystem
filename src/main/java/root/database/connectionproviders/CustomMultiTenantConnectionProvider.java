@@ -2,6 +2,7 @@ package root.database.connectionproviders;
 
 import root.database.connectionproviders.CustomConnectionProvider;
 import root.database.CustomDataSource;
+import root.includes.logger.Logger;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -29,6 +30,8 @@ public class CustomMultiTenantConnectionProvider extends CustomConnectionProvide
 
         String schema = resolveTenantSchemaIdentifier();
         conn.setSchema(schema);
+
+        //Logger.log("MultiTenantConnectionProver, Set connection schema to: " + schema);
 
         return conn;
     }

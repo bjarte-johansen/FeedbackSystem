@@ -7,12 +7,7 @@ import java.util.Properties;
 public class EmailVerificationCodeSender {
     public static void send(String email, String verificationCode) throws Exception {
         Properties p = new Properties();
-/*
-        p.put("mail.smtp.auth", "true");
-        p.put("mail.smtp.starttls.enable", "true");
-        p.put("mail.smtp.host", "smtp.gmail.com");
-        p.put("mail.smtp.port", "587");
-*/
+
         p.put("mail.smtp.auth", "true");
         p.put("mail.smtp.starttls.enable", "true");
         p.put("mail.smtp.host", "smtp.office365.com");

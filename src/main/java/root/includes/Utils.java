@@ -1,9 +1,11 @@
 package root.includes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.util.StringUtils;
 import root.app.AppConfig;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import static root.common.utils.Preconditions.checkArgument;
@@ -28,7 +30,7 @@ public class Utils {
      */
 
     public static boolean hasText(String s) {
-        return s != null && !s.isBlank();
+        return org.springframework.util.StringUtils.hasText(s);
     }
 
 
@@ -48,9 +50,6 @@ public class Utils {
      * @param s the comma-separated string to parse
      * @return a list of integers parsed from the input string
      * @throws NumberFormatException if any of the parts cannot be parsed as an integer
-     * <p>
-     * TODO: write unit test for it with various inputs, including edge cases (null, empty string, strings with
-     *  extra spaces, invalid numbers)
      */
 
     public static List<Integer> parseCsvIntList(String s, String delimiter) {
@@ -140,15 +139,17 @@ public class Utils {
             .replace(">", "&gt;");
     }
 
+
     /**
      * Converts a string to a valid CSS identifier by replacing invalid characters with hyphens and ensuring that the
      * first character is a letter, underscore, or hyphen. This method also collapses multiple consecutive hyphens or
      * underscores into a single hyphen to create a cleaner identifier. If the input string is null or empty, it returns
      * an underscore as a default valid identifier. This is useful for generating CSS class names or IDs from arbitrary
      * strings while ensuring they conform to CSS naming rules.
-     *
+     * <p>
      * PS: Written by chatgpt, we can trust it because it is a simple string manipulation function and the logic is
      * straightforward. Its instead of including separate library for sanitation.
+     * TODO: Make unittest and delete this text
      *
      * @param s
      * @return
@@ -161,5 +162,36 @@ public class Utils {
             s = "_" + s.substring(1);
         }
         return s.replaceAll("[-_]{2,}", "-");
+    }
+
+
+    /**
+     * Creates a LinkedHashMap from an array of key-value pairs. The input array should contain an even number of
+     * elements, where each pair of elements represents a key and its corresponding value. The method iterates through
+     * the array, adding each key-value pair to the LinkedHashMap. If the input array has an odd number of elements, an
+     * IllegalArgumentException is thrown to indicate that the key-value pairs are not properly formed. This utility
+     * method provides a convenient way to create a LinkedHashMap in a single line of code, improving readability and
+     * reducing boilerplate when initializing maps with known key-value pairs.
+     * <p>
+     * Copilot assisted in improving this method, but I have reviewed and tested it to ensure it meets our requirements
+     * and handles edge cases appropriately. The logic is straightforward, and the method includes error handling for
+     * invalid input, making it a reliable utility for creating LinkedHashMaps from key-value pairs.
+     * TODO: Make unittest and delete this text
+     *
+     * @param kv
+     * @param <K>
+     * @param <V>
+     * @return
+     */
+
+    //@SafeVarargs
+    public static <K, V> LinkedHashMap<K, V> linkedMap(Object... kv) {
+        if (kv.length % 2 != 0) throw new IllegalArgumentException();
+
+        LinkedHashMap<K, V> m = new LinkedHashMap<>(kv.length / 2);
+        for (int i = 0; i < kv.length; i += 2) {
+            m.put((K) kv[i], (V) kv[i + 1]);
+        }
+        return m;
     }
 }

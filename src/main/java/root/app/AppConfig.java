@@ -3,12 +3,14 @@ package root.app;
 import org.springframework.stereotype.Component;
 import root.database.DataSourceConnectionParams;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 
 @Component
 public class AppConfig {
+    /*
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test", "h184905", "pass", "test");
+    public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
+     */
+    public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905", "h184905", "pass", "test");
     public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
     public static final DataSourceConnectionParams CURRENT_CONNECTION_PARAMS = TEST;
 
@@ -37,19 +39,10 @@ public class AppConfig {
     // TODO: must be set to false for production
     public static boolean TESTING_MODE = true;
 
+    /*
     public static boolean OVERRIDE_TENANT = true;
     public static String OVERRIDE_TENANT_SCHEMA = "test";
     public static long OVERRIDE_TENANT_ID = 1;
-    /*
-    public static Tenant OVERRIDE_TENANT_OBJECT = new Tenant(
-        "test",
-        "test.com",
-        "test-api-key",
-        "test@test.com",
-        (new PasswordService()).hash("test"),
-        "ignore",
-        "test"
-    );
      */
 
     // default pagination settings for reviews listing page
@@ -59,7 +52,7 @@ public class AppConfig {
     public static boolean AUTO_APPROVE_NEW_REVIEWS = true;
 
     // TODO: must be set to false for production
-    public static boolean USE_TEST_TENANT = true;
+    public static boolean USE_MULTI_TENANT = true;
 
     // set database specific stuff, mostly for JDBC adapter and metadata queries
     public static final String DEFAULT_ENTITY_ID_NAME = "id";
@@ -68,8 +61,10 @@ public class AppConfig {
     // table names
     public static final String REVIEW_TABLE_NAME = "review";
     public static final String REVIEWER_TABLE_NAME = "reviewer";
-    public static final String TENANT_TABLE_NAME = "tenant";
     public static final String REVIEW_VOTE_TABLE_NAME = "review_vote";
+
+    public static final String TENANT_TABLE_NAME = "tenant";
+    public static final String TENANT_DOMAIN_TABLE_NAME = "tenant_domain";
 
     // used only for testing fsqlquery/proxy, not part of project
     // TODO: remove before delivery

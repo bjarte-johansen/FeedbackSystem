@@ -2,10 +2,12 @@ package root.includes;
 
 import java.security.SecureRandom;
 
+/**
+ * TODO: TESTS COMPLETE, any new methods MUST be tested if they are public, add unittest
+ */
 
 /**
  * Utility class for generating random numeric strings, often used as verification digits.
- * TODO: Any code inserted here must have javadoc comments. This is a requirement for all code in this project.
  */
 
 public class VerificationCodeDigitsGenerator {

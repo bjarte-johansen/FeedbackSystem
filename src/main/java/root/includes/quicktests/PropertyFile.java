@@ -1,4 +1,4 @@
-package root.includes.quicktests.quicktests;
+package root.includes.quicktests;
 
 import root.App;
 import root.includes.logger.Logger;

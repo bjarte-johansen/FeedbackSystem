@@ -1,6 +1,8 @@
 package root.database.connectionproviders;
 
 import root.database.CustomDataSource;
+import root.includes.logger.Logger;
+
 import java.sql.Connection;
 
 /**

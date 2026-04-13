@@ -11,14 +11,12 @@ import java.nio.file.AccessDeniedException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
-/*
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handle(IllegalArgumentException e) {
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handle(IllegalStateException e) {
         if(AppConfig.CONTROLLER_PRINT_STACK_TRACE_ON_ERROR) e.printStackTrace();
-        Logger.log(e.getClass().getSimpleName() + ": " + e.getMessage());
-        return ResponseEntity.status(400).body(e.getMessage());
+        Logger.log(e.getMessage());
+        return ResponseEntity.status(409).body(e.getMessage());
     }
- */
 
     @ExceptionHandler({BadRequestException.class, IllegalArgumentException.class})
     public ResponseEntity<String> handle(RuntimeException e) {

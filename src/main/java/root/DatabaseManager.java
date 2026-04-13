@@ -4,6 +4,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import root.app.AppConfig;
+import root.app.AppRequestSchema;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.database.*;
@@ -11,6 +12,8 @@ import root.includes.logger.Logger;
 import root.models.Review;
 import root.models.Reviewer;
 import root.models.Tenant;
+import root.models.TenantDomain;
+import root.no_test_extra.TryWithTimer;
 import root.services.PasswordService;
 import root.repositories.*;
 //import root.repositories.TenantRepository;
@@ -27,7 +30,7 @@ import static root.common.utils.Preconditions.checkArgument;
 
 @Component
 public class DatabaseManager {
-    public static boolean DEBUG = false;
+    public static boolean DEBUG = true;
 
     @Autowired
     ReviewerRepository reviewerRepo;
@@ -40,59 +43,64 @@ public class DatabaseManager {
 
     @Autowired
     PasswordService passwordService;
+    @Autowired
+    private TenantDomainRepository tenantDomainRepository;
 
     public static DatabaseManager create(){
         return new DatabaseManager();
     }
 
-    private void cleanTable(String tableName) throws Exception {
+    private void cleanTable(String tableName) {
         FSQLQuery.create("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE")
             .update();
     }
 
-    public void clean() throws Exception{
+    public void clean(){
         cleanTable(AppConfig.REVIEW_TABLE_NAME);
         cleanTable(AppConfig.REVIEWER_TABLE_NAME);
-        cleanTable(AppConfig.TENANT_TABLE_NAME);
         cleanTable(AppConfig.REVIEW_VOTE_TABLE_NAME);
     }
 
-    public void resetDemoData() throws Exception {
-        clean();
+    public void resetPublicSchema(){
+        try(var ignore1 = AppRequestSchema.withThreadSchema("public")){
+            cleanTable(AppConfig.TENANT_TABLE_NAME);
+            cleanTable(AppConfig.TENANT_DOMAIN_TABLE_NAME);
 
-        validateReposReferences();
-
-        try(var ignore = Logger.scope("Inserting demo data...", DEBUG)) {
             insertTenants();
-            insertAuthors();
-            insertDemoRatings();
         }
     }
 
-    private void validateReposReferences(){
-        checkArgument(tenantRepo != null, "tenantRepo is null");
-        checkArgument(reviewRepo != null, "reviewerRepo is null");
-        checkArgument(reviewerRepo != null, "reviewRepo is null");
+    public void resetTenantSchema() {
+        clean();
+
+        Logger.log("inserting demo data for schema '" + AppRequestSchema.get() + "' ...");
+        try(var ignore = Logger.scope("Inserting demo data...", DEBUG)) {
+            insertAuthors();
+            insertReviews();
+        }
+        Logger.log("Inserting demo data... OK");
     }
 
-
-
-    private void insertTenants() throws Exception {
-
+    private void insertTenants(){
         try (var p = Logger.scope("Inserting tenant", DEBUG)) {
-            String password = "tenant-1";
-            String passwordHash = passwordService.hash(password);
+            String password = "password1";
+            String passwordHash = passwordService.encode(password);
 
             Tenant tenant = new Tenant();
-            tenant.setName("Tenant 1");
-            tenant.setEmail("tenant-1@demo.only");
-            tenant.setDomain("tenant1.demo.only");
+            tenant.setName("Tenant1");
+            tenant.setEmail("tenant1@test.com");
+            tenant.setDomain("tenant1.test.com");
             tenant.setApiKey("tenant-1-api-key");
             tenant.setPasswordHash(passwordHash);
             tenant.setPasswordSalt("");
             tenant.setSchemaName("test");
 
             tenantRepo.save(tenant);
+
+            TenantDomain tenantDomain = new TenantDomain();
+            tenantDomain.setDomain("localhost");
+            tenantDomain.setTenantId(tenant.getId());
+            tenantDomainRepository.save(tenantDomain);
 
             if(DEBUG) Logger.log("Inserted tenant: " + tenant);
         }
@@ -114,13 +122,11 @@ public class DatabaseManager {
         reviewer.setCreatedAt(createdAt);
         reviewer.setVerifiedAt(verifiedAt);
 
-        //if(DEBUG) Logger.log("Created reviewer: " + r);
-
         return reviewer;
     }
-    private void insertAuthors() throws SQLException, Exception {
+    private void insertAuthors() {
         // TODO: move to
-        var passwordHashForPasswordPass = passwordService.hash("myPassword1");
+        var passwordHashForPasswordPass = passwordService.encode("myPassword1");
 
         List<Reviewer> reviewers = List.of(
             createReviewer("test@test.com", "Leif", passwordHashForPasswordPass, "", Instant.now(), Instant.now()),
@@ -132,9 +138,11 @@ public class DatabaseManager {
         );
 
         reviewers.forEach(reviewerRepo::save);
+
+        if (DEBUG) Logger.log("Inserted reviewers: " + reviewers);
     }
 
-    private Review createReview(int status, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) throws Exception {
+    private Review createReview(int status, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) {
         Review r = new Review();
         r.setStatus(status);
         r.setExternalId(external_id);
@@ -145,13 +153,13 @@ public class DatabaseManager {
         r.setScore(score);
         r.setCreatedAt(created_at);
 
-        //if(DEBUG) Logger.log("Created review: " + r);
+        if(DEBUG) Logger.log("Created review: " + r);
 
         return r;
     }
 
 
-    private void insertDemoRatings() throws SQLException, Exception {
+    private void insertReviews() {
         try(var p = Logger.scope("Inserting demo ratings", DEBUG)) {
             String path1 = "/product/1";
             String path2 = "/product/2";
@@ -206,8 +214,13 @@ public class DatabaseManager {
 
                 );
             Logger.log("Added " + reviews.size() + " reviews to demo data");
+            reviews.forEach(review -> {
+                try(var _ = new TryWithTimer("insert reviews")) {
+                    reviewRepo.save(review);
+                }
+            });
 
-            reviews.forEach(reviewRepo::save);
+            if(DEBUG) Logger.log("Inserted reviews: " + reviews);
         }
     }
 }

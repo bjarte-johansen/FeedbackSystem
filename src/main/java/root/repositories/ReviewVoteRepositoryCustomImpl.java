@@ -3,7 +3,7 @@ package root.repositories;
 import root.app.AppConfig;
 import root.database.FSQLQuery;
 
-public class ReviewVoteRepositoryCustomImpl {
+public class ReviewVoteRepositoryCustomImpl implements ReviewVoteRepositoryInterface{
 
     /**
      * Votes a review. If the user has already voted, it updates the existing vote.
@@ -15,24 +15,20 @@ public class ReviewVoteRepositoryCustomImpl {
      * @return
      */
 
+    @Override
     public int addVote(long reviewId, int voteTypeId, String sessionId, String ip) {
-        try {
-            String sql = "INSERT INTO " + AppConfig.REVIEW_VOTE_TABLE_NAME
-                + " (review_id, session_id, ip, vote)"
-                + " VALUES (?, ?, ?, ?)"
-                + " ON CONFLICT (review_id, session_id)"
-                + " DO UPDATE SET vote = EXCLUDED.vote, ip = EXCLUDED.ip";
+        String sql = "INSERT INTO " + AppConfig.REVIEW_VOTE_TABLE_NAME
+            + " (review_id, session_id, ip, vote)"
+            + " VALUES (?, ?, ?, ?)"
+            + " ON CONFLICT (review_id, session_id)"
+            + " DO UPDATE SET vote = EXCLUDED.vote, ip = EXCLUDED.ip";
 
-            return FSQLQuery.create(sql)
-                .bind(reviewId)
-                .bind(sessionId)
-                .bind(ip)
-                .bind(voteTypeId)
-                .update();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        return FSQLQuery.create(sql)
+            .bind(reviewId)
+            .bind(sessionId)
+            .bind(ip)
+            .bind(voteTypeId)
+            .update();
     }
 
 
@@ -44,18 +40,14 @@ public class ReviewVoteRepositoryCustomImpl {
      * @return number of rows affected (should be 1 if a vote was removed, 0 if no vote existed)
      */
 
+    @Override
     public int removeVote(long reviewId, String sessionId) {
-        try {
-            String sql = "DELETE FROM " + AppConfig.REVIEW_VOTE_TABLE_NAME + " WHERE review_id = ? AND session_id = ?";
+        String sql = "DELETE FROM " + AppConfig.REVIEW_VOTE_TABLE_NAME + " WHERE review_id = ? AND session_id = ?";
 
-            return FSQLQuery.create(sql)
-                .bind(reviewId)
-                .bind(sessionId)
-                .delete();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        return FSQLQuery.create(sql)
+            .bind(reviewId)
+            .bind(sessionId)
+            .delete();
     }
 
 
@@ -69,30 +61,22 @@ public class ReviewVoteRepositoryCustomImpl {
      * @return
      */
 
+    @Override
     public int getVote(long reviewId, String sessionId, String ip) {
-        try {
-            String sql = "SELECT vote FROM " + AppConfig.REVIEW_VOTE_TABLE_NAME + " WHERE review_id = ? AND session_id = ?";
+        String sql = "SELECT vote FROM " + AppConfig.REVIEW_VOTE_TABLE_NAME + " WHERE review_id = ? AND session_id = ?";
 
-            return FSQLQuery.create(sql)
-                .bind(reviewId)
-                .bind(sessionId)
-                .fetchColumn(Integer.class)
-                .orElse(0);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        return FSQLQuery.create(sql)
+            .bind(reviewId)
+            .bind(sessionId)
+            .fetchColumn(Integer.class)
+            .orElse(0);
     }
 
+    @Override
     public void removeExpiredVotes(int expirationTimeInDays) {
-        try {
-            String sql = "DELETE FROM " + AppConfig.REVIEW_VOTE_TABLE_NAME + " WHERE created_at < (NOW() - INTERVAL '" + expirationTimeInDays + " days')";
+        String sql = "DELETE FROM " + AppConfig.REVIEW_VOTE_TABLE_NAME + " WHERE created_at < (NOW() - INTERVAL '" + expirationTimeInDays + " days')";
 
-            FSQLQuery.create(sql)
-                .delete();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        FSQLQuery.create(sql)
+            .delete();
     }
 }

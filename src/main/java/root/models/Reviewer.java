@@ -16,8 +16,6 @@ import java.time.Instant;
  */
 
 public class Reviewer implements IReviewer {
-
-    //private Long tenantId = 0L;
     private Long id = 0L;
     private String email = "";
     private String displayName = "";

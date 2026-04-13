@@ -1,16 +1,40 @@
 <!-- header -->
-<%@ include file="admin-header.jsp" %>
+<%@ include file="header.jsp" %>
 
-    <h1>Admin interface</h1>
+    <div class="box-virtual review--admin-interface">
+        <div class="box-virtual review--list"
+            data-external-id="${externalId}"
+            data-cursor="${pageCursor}"
+            data-status-filter="${currentReviewStatusFilter}"
+            data-score-filter="${scoreFilter}"
+            data-review-count="${totalStatusFilterCount}">
 
-    <div class="box">
-        <a href="${pageContext.request.contextPath}/clear-session" class="btn btn-primary">Clear session</a>
-    </div>
+            <div class="box filter-buttons">
+                Filtrer status:
+                <c:forEach var="option" items="${reviewStatusFilterOptions}">
+                    <!-- fake form with .ajax and .custom-handler will trigger javascript and never be posted -->
+                    <form class="ajax d-inline-block custom-handler" data-cmd="addStatusFilter:${option.value}" method="post">
+                        <button type="submit" class="${option.value == currentReviewStatusFilter ? 'active' : ''}">${option.key}</button>
+                    </form>
+                </c:forEach>
+            </div>
 
-    <h1>Administrator interface</h1>
-    <div class="box review--admin-interface">
-        <%@ include file="external-id-pills.jsp" %>
+            <div class="box">
+                Dato fra
+                <input type="date" name="dateFilter" value="${currentDateFilterStart}" onchange="Review.reloadReviewList()">
+                til
+                <input type="date" name="dateFilter" value="${currentDateFilterEnd}" onchange="Review.reloadReviewList()">
+                , Antall dager:
+                <select name="dateFilterPreset" onchange="Review.admin.triggerDateFilterPresetChange(this)">
+                    <option value="7" ${currentDateFilterPreset == 7 ? 'selected' : ''}>Siste 7 dager</option>
+                    <option value="30" ${currentDateFilterPreset == 30 ? 'selected' : ''}>Siste 30 dager</option>
+                    <option value="90" ${currentDateFilterPreset == 90 ? 'selected' : ''}>Siste 90 dager</option>
+                    <option value="180" ${currentDateFilterPreset == 180 ? 'selected' : ''}>Siste 180 dager</option>
+                    <option value="365" ${currentDateFilterPreset == 365 ? 'selected' : ''}>Siste 365 dager</option>
+                </select>
+            </div>
 
+<%--
         <div class="box">
             <!-- order by dropdown -->
             <select name="reviewStatusFilter" onchange="Review.reloadReviewList()">
@@ -19,19 +43,13 @@
                 </c:forEach>
             </select>
         </div>
+--%>
 
-        <div class="box review--list"
-            data-external-id="${externalId}"
-            data-cursor="${pageCursor}"
-            data-status-filter="${currentReviewStatusFilter}"
-            data-score-filter="${scoreFilter}"
-            data-review-count="${totalStatusFilterCount}"
-            >
 
-                <!-- show review dump for debugging -->
+
+            <!-- show review dump for debugging -->
             <c:forEach var="review" items="${reviews}">
                 <%@ include file="admin-review.partial.jsp" %>
-
             </c:forEach>
         </div>
     </div>

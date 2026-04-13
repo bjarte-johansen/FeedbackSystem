@@ -11,18 +11,21 @@
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"
             integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
             crossorigin="anonymous"></script>
+        <script src="${pageContext.request.contextPath}/js/PageCursor.js"></script>
         <script src="${pageContext.request.contextPath}/js/client-review.js"></script>
     <title>${defaultTitle}</title>
 </head>
 <body>
 
-<div class="d-none">
-    <h1>Review system</h1>
+    <div class="d-none">
+        <h1>Review system</h1>
 
-    <p class="alert alert-info d-none">
-        Les instruksjoner for skjemaer for å unngå problemer med innsendelse.
-    </p>
-</div>
+        <p class="alert alert-info d-none">
+            Les instruksjoner for skjemaer for å unngå problemer med innsendelse.
+        </p>
+    </div>
 
-<c:if test="${not empty errorMessage}"><p class="alert alert-error">${errorMessage}</p></c:if>
-<c:if test="${not empty successMessage}"><p class="alert alert-success">${successMessage}</p></c:if>
+    <c:if test="${not empty errorMessage}"><p class="alert alert-error">${errorMessage}</p></c:if>
+    <c:if test="${not empty successMessage}"><p class="alert alert-success">${successMessage}</p></c:if>
+
+    <h1>Administrator interface</h1>

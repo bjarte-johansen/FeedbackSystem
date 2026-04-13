@@ -1,0 +1,107 @@
+package root.services;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestParam;
+import root.app.ReviewQueryOptions;
+import root.app.includes.PageCursor;
+import root.controllers.ControllerUtils;
+import root.includes.Utils;
+import root.includes.logger.Logger;
+import root.models.Review;
+import root.repositories.ReviewRepository;
+
+import java.util.*;
+import java.util.function.Function;
+
+
+/**
+ * Service for handling business logic related to the admin review list page. This service is responsible for fetching
+ * reviews from the database based on the provided status filter, and preparing the data for display in the JSP view.
+ * It also adds additional data to the model, such as the total count of reviews for the given status filter, and a function to
+ * convert strings to CSS identifiers for use in the JSP.
+ */
+
+@Service
+public class AdminReviewPageService {
+    private final static Function<String, String> fnToCssIdentifier = (s) -> {
+        if (s == null || s.isEmpty()) return "";
+        return Utils.toCssIdentifier(s).toLowerCase();
+    };
+
+    private static Map<String, Object> reviewStatusFilterOptions = Utils.linkedMap(
+        "Godkjent", Review.REVIEW_STATUS_APPROVED,
+        "Kontroll", Review.REVIEW_STATUS_PENDING,
+        "Avvist", Review.REVIEW_STATUS_REJECTED,
+        "Alle", -1
+    );
+
+
+    @Autowired
+    ReviewService reviewService;
+
+    @Autowired
+    ReviewRepository reviewRepo;
+
+
+    /**
+     * Builds the model data for the review list page in the admin dashboard. This method fetches reviews from the
+     * database based on the provided status filter, and prepares the data for display in the JSP view. It also adds
+     * additional data to the model, such as the total count of reviews for the given status filter, and a function to
+     * convert strings to CSS identifiers for use in the JSP.
+     *
+     * @param statusFilter
+     * @return
+     * @throws Exception
+     */
+
+    public Map<String, Object> buildReviewListModelData(ReviewQueryOptions options, String statusFilter) throws Exception {
+        Map<String, Object> modelMap = new HashMap<>();
+
+        // decode reviewStatusFilter from CSV string to set of integers. If the filter contains -1, we want to include
+        // all statuses, so we add all possible statuses to the filter set.
+        Set<Integer> reviewStatusFilterSet = new HashSet<>(Utils.parseCsvIntList(statusFilter));
+        if (reviewStatusFilterSet.contains(-1) || reviewStatusFilterSet.isEmpty()) {
+            // remove -1, if exists, and replace with list of all valid statuses
+            reviewStatusFilterSet.remove(-1);
+            reviewStatusFilterSet.addAll(Review.getValidReviewStatuses());
+        }
+
+        // add data to model for select externalId pill in admin dashboard JSP. This will be used to filter reviews by externalId.
+        ControllerUtils.addSelectExternalIdPillData(modelMap, reviewRepo);
+
+        // create dump options for fetching all reviews for the given externalId without pagination and with a
+        // specific sorting order.
+        //ReviewQueryOptions options = new ReviewQueryOptions();
+        options.setPageCursor(new PageCursor(0, Integer.MAX_VALUE));
+        options.getStatusFilterSet().addAll(reviewStatusFilterSet);
+        options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
+
+        // allways order by ID desc if there is only one status in the filter, to show the most recent reviews first.
+        // If there are multiple statuses in the filter, we order by pending first to prioritize reviews that need action.
+        if (reviewStatusFilterSet.size() == 1) {
+            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
+        }
+
+        // add dump to model for display in JSP. This is just for demonstration purposes to show how to fetch all
+        // reviews for a given externalId with pagination and sorting, and should be removed for production code.
+        List<Review> reviews = reviewRepo.findByAnyExternalIdWithPagination(options);
+        modelMap.put("reviews", reviews);
+
+        // add total count of reviews for the given externalId and status filter to model for display in JSP.
+        int totalStatusFilterCount = reviewRepo.countByAnyExternalId(options);
+        modelMap.put("totalStatusFilterCount", totalStatusFilterCount);
+
+        // add function to convert strings to CSS identifiers to model for use in JSP.
+        modelMap.put("toCssIdentifier", fnToCssIdentifier);
+
+        Logger.log("statusFilter: " + statusFilter);
+
+        // add ordering options to model
+        modelMap.put("reviewStatusFilterOptions", reviewStatusFilterOptions);
+        modelMap.put("currentReviewStatusFilter", statusFilter);
+
+        return modelMap;
+    }
+}

@@ -18,33 +18,18 @@ import java.util.Set;
 
 
 public interface ReviewRepository extends ProxyRepository<Review, Long>, ReviewRepositoryInterface{
-    List<Review> findByExternalId(String externalId) throws Exception;
-    long countByExternalId(String externalId) throws Exception;
+    List<Review> findByExternalId(String externalId);
+    long countByExternalId(String externalId);
 
-    //void addVoteReport(long reviewId) throws Exception;
-    //void incrementLikeVote(long reviewId, int delta) throws Exception;
-    //void incrementDislikeVote(long reviewId, int delta) throws Exception;
-
-    //void updateReviewStatus(long reviewId, int newStatus) throws Exception;
-
-
-    //void addVote(long reviewId, int voteId, int offset, String sessionId, String ipAddress) throws Exception;
-
-    Optional<Review> findFirstByExternalIdNotEquals(String externalId) throws Exception;
-
-
-    // stats
-    //LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> scoreFilterSet) throws Exception;
+    Optional<Review> findFirstByExternalIdNotEquals(String externalId);
 
     // find unique review ids
-    List<String> findUniqueExternalIds() throws Exception;
-
-    // find by external id, with query options (pagination, sorting, filtering, etc.)
-    //List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) throws Exception;
+    List<String> findDistinctExternalIdByExternalId();
 
     // find without external id, with query options (pagination, sorting, filtering, etc.)
-    List<Review> findAllExternalIdsWithPagination(ReviewQueryOptions options) throws Exception;
+    List<Review> findAllExternalIdsWithPagination(ReviewQueryOptions options);
 
-    int countByExternalId(String externalId, ReviewQueryOptions options) throws Exception;
+    int countByExternalId(String externalId, ReviewQueryOptions options);
+    int countByExternalIdAndStatus(String externalId, int status);
 
 }

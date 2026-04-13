@@ -6,7 +6,6 @@
             Benytt "test@test.com" og "Abacus556!" som epost og passord for å unngå å måtte verifisere konto.
         </p>
 
-        <input type="hidden" name="tenantId" value="1">
         <input type="hidden" name="externalId" value="${externalId}">
 
         <fieldset class="mb-3">

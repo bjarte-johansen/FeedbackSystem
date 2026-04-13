@@ -10,33 +10,15 @@
 
 package root;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.core.annotation.Order;
-import root.app.AppConfig;
-import root.app.AppContext;
-
-import root.app.AppRequestSchema;
-import root.includes.EmailVerificationCodeSender;
-import root.includes.VerificationCodeDigitsGenerator;
-import root.includes.logger.Logger;
-import root.repositories.ReviewRepository;
-import root.repositories.TenantRepository;
-import root.services.DatabaseService;
-
 import java.sql.Connection;
 import java.util.*;
 
 
 @SpringBootApplication
-public class App implements CommandLineRunner {
-    @Autowired
-    AppContext appContext;
-
-    public static void main(String[] args) throws Exception {
+public class App {
+    public static void main(String[] args) {
         SpringApplication app = new SpringApplication(App.class);
         app.setDefaultProperties(Map.of(
             "spring.profiles.active", "test"
@@ -44,45 +26,6 @@ public class App implements CommandLineRunner {
 
         app.run(args);
     }
-
-    @Override
-    @Order(0)
-    public void run(String... args) throws Exception {
-        Logger.log("Application started with args: " + Arrays.toString(args));
-    }
-
-
-    @Bean
-    @Order(0)
-    CommandLineRunner startup(ReviewRepository reviewRep, DatabaseService databaseService, TenantRepository tenantRepo, ReviewRepository reviewRepository) throws Exception {
-        return (args) -> {
-            Logger.log("running app startup tasks...");
-
-            // test code
-            //EmailVerificationCodeSender.send("bjartej@hotmail.com", VerificationCodeDigitsGenerator.generate(6));
-
-            // override configs for testing purposes, in production these would be set by the environment or
-            // application properties
-            AppConfig.OVERRIDE_TENANT = true;
-            AppConfig.OVERRIDE_TENANT_SCHEMA = "test";
-            AppConfig.OVERRIDE_TENANT_ID = 1;
-
-            // set default schema for setup
-            AppRequestSchema.set("test");
-
-            // patch database
-            databaseService.executeDatabasePatches();
-
-            // reset demo data
-            databaseService.resetDemoData();
-
-            AppRequestSchema.remove();
-
-            // old test
-            //WhereQueryBuilder.test();
-        };
-    }
-
 
 
     @FunctionalInterface

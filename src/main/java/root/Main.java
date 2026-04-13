@@ -12,7 +12,7 @@ import root.database.*;
 import root.includes.logger.Logger;
 import root.models.Review;
 import root.includes.proxyrepo.RepositoryProxyConstructor;
-import root.includes.quicktests.quicktests.FantasyRepoTest;
+import root.includes.quicktests.FantasyRepoTest;
 import root.repositories.TenantRepository;
 
 

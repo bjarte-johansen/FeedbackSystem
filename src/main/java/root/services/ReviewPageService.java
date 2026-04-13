@@ -28,26 +28,31 @@ import static root.common.utils.Preconditions.checkArgument;
 
 @Service
 public class ReviewPageService {
+    // map of ordering options for the review list page, with display name as key and corresponding
+    // orderByEnum value as value
+    private static LinkedHashMap<String, Object> orderByOptionsMap = Utils.linkedMap(
+        "Nyeste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC,
+        "Eldste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC,
+        "Score (høyeste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_DESC,
+        "Score (laveste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_ASC
+        );
 
     /*
     lambda helper methods
      */
-    private static double roundToHalf(double v) {
-        return Math.round(v * 2.0) / 2.0;
-    }
 
     // add a simple function to format double values to 2 decimals for display in JSP
-    public static Function<Double, String> CSS_DOUBLE_FORMATTER_POINT_FIVE = (v) -> {
+    public static Function<Double, String> dblFormatRoundToHalfDotToDash = (v) -> {
         v = Math.round(v * 2.0) / 2.0;
         String s = String.format(Locale.US, "%.1f", v);
         return s.replace(".", "-");
     };
 
-    public static Function<Double, String> DOUBLE_FORMATTER_1 = (v) -> String.format(Locale.US, "%.1f", v);
+    public static Function<Double, String> dblFormatWithSingleDecimal = (v) -> String.format(Locale.US, "%.1f", v);
     //private static Function<Double, String> DOUBLE_FORMATTER_2 = (v) -> String.format(Locale.US, "%.1f", v);
 
     // add a simple function to format double values to 2 decimals for display in JSP
-    public static Function<Instant, String> DD_MM_YYYY_FORMATTER = v -> {
+    public static Function<Instant, String> dateFormatter = v -> {
         if (v == null) return "";
 
         return DateTimeFormatter.ofPattern("dd/MM/yyyy")
@@ -57,7 +62,7 @@ public class ReviewPageService {
     };
 
     // add a simple function to format Instant values to "days ago" format for display in JSP
-    public static Function<Instant, String> DAYS_AGO_FORMATTER = v -> {
+    public static Function<Instant, String> daysAgoFormatter = v -> {
         if (v == null) return "";
 
         long days = ChronoUnit.DAYS.between(v, Instant.now());
@@ -67,31 +72,22 @@ public class ReviewPageService {
 
     private final AppContext appContext;
     private final ReviewRepository reviewRepo;
-    private final ReviewerRepository reviewerRepo;
     private final ReviewService reviewService;
 
-    public ReviewPageService(ReviewRepository reviewRepo, ReviewerRepository reviewerRepo, ReviewService reviewService, AppContext appContext) {
+    public ReviewPageService(ReviewRepository reviewRepo, ReviewService reviewService, AppContext appContext) {
         this.reviewRepo = reviewRepo;
-        this.reviewerRepo = reviewerRepo;
         this.reviewService = reviewService;
         this.appContext = appContext;
     }
 
-    private static LinkedHashMap<String, Object> getOrderByOptionsMap() {
-        LinkedHashMap<String, Object> reviewListOrderOptions = new LinkedHashMap<>();
-        reviewListOrderOptions.put("Nyeste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
-        reviewListOrderOptions.put("Eldste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC);
-        reviewListOrderOptions.put("Score (høyeste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_DESC);
-        reviewListOrderOptions.put("Score (laveste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_ASC);
-        return reviewListOrderOptions;
-    }
+
 
     private static void addFormattersToModel(Map<String, Object> modelMap) {
         // add formatters to model for display in JSP
-        modelMap.put("dblFormatter1", DOUBLE_FORMATTER_1);
-        modelMap.put("dateFormatter", DD_MM_YYYY_FORMATTER);
-        modelMap.put("daysAgoFormatter", DAYS_AGO_FORMATTER);
-        modelMap.put("dblFormatterCssPointFive", CSS_DOUBLE_FORMATTER_POINT_FIVE);
+        modelMap.put("dblFormatter1", dblFormatWithSingleDecimal);
+        modelMap.put("dateFormatter", dateFormatter);
+        modelMap.put("daysAgoFormatter", daysAgoFormatter);
+        modelMap.put("dblFormatterCssPointFive", dblFormatRoundToHalfDotToDash);
     }
 
     private void addReviewStatsToModel(Map<String, Object> modelMap, String externalId) {
@@ -158,10 +154,6 @@ public class ReviewPageService {
     ) throws Exception {
         Map<String, Object> modelMap = new HashMap<>();
 
-        // get tenant id or tenant name / something
-        Long tenantId = appContext.getTenantId(true);
-        modelMap.put("tenantId", tenantId);
-
         // extract external id
         externalId = extractExternalIdFromRequest(externalId, req);
         modelMap.put("externalId", externalId);
@@ -171,24 +163,18 @@ public class ReviewPageService {
         modelMap.put("pageCursor", PageCursorEncoder.encodeCursor(decodedCursor));
 
         // add reviews to model for display in JSP
-        List<Review> reviews = reviewRepo.findByExternalIdWithPagination(
-            externalId,
-            getReviewQueryOptions(orderByEnum, scoreFilter, decodedCursor)
-            );
+        var options = getReviewQueryOptions(orderByEnum, scoreFilter, decodedCursor);
+        List<Review> reviews = reviewRepo.findByExternalIdWithPagination(externalId, options);
+        modelMap.put("reviews", reviews);
 
         // add stats to model for display in JSP if includeStats is true.
-        if(includeStats){
-            addReviewStatsToModel(modelMap, externalId);
-        }
-
-        // add reviews to model for display in JSP
-        modelMap.put("reviews", reviews);
+        if(includeStats) addReviewStatsToModel(modelMap, externalId);
 
         // add score filter to model
         modelMap.put("scoreFilter", scoreFilter);
 
         // add ordering options to model
-        modelMap.put("reviewListOrderOptions", getOrderByOptionsMap());
+        modelMap.put("reviewListOrderOptions", orderByOptionsMap);
 
         // add current orderBy enum to model for display in JSP
         modelMap.put("currentOrderByEnum", orderByEnum);

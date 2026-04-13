@@ -1,9 +1,11 @@
 package root.app;
 
 import root.app.includes.PageCursor;
+import root.includes.ImmutableUnboundedDateRange;
 import root.includes.NumericRangeRecord;
 import root.models.Review;
 
+import java.time.LocalDate;
 import java.util.*;
 
 
@@ -57,6 +59,7 @@ public class ReviewQueryOptions {
     public static final int OPTION_ORDER_BY_STATUS_APPROVED_FIRST = 21;
     public static final int OPTION_ORDER_BY_STATUS_REJECTED_FIRST = 22;
 
+
     private static final Map<Integer, String> OPTION_ORDER_BY_MAP = Map.ofEntries(
         Map.entry(OPTION_ORDER_NONE, ""),
         Map.entry(OPTION_ORDER_BY_ID_ASC, "id ASC"),
@@ -79,6 +82,7 @@ public class ReviewQueryOptions {
     private final Set<Integer> scoreFilterSet = new HashSet<>();
 
     private NumericRangeRecord<Integer> scoreFilterRange = null;
+    private ImmutableUnboundedDateRange<LocalDate> dateFilterRange = null;
 
 
     /*
@@ -140,6 +144,10 @@ public class ReviewQueryOptions {
         return statusFilterSet;
     }
 
+    public void setStatusFilterSet(Set<Integer> statusFilterSet) {
+        this.statusFilterSet.clear();
+        this.statusFilterSet.addAll(statusFilterSet);
+    }
 
 
 
@@ -162,6 +170,30 @@ public class ReviewQueryOptions {
     }
 
 
+
+    /*
+    date filter range
+     */
+
+    /**
+     * Returns the date filter range for the review query options. This value allows developers to specify a range of
+     * review creation dates to be included in the query results.
+     * @return
+     */
+
+    public ImmutableUnboundedDateRange<LocalDate> getDateFilterRange() {
+        return dateFilterRange;
+    }
+
+
+    /**
+     * Set the date filter range for the review query options. This value allows developers to specify a range of review
+     * creation dates to be included in the query results.
+     * @param dateFilterRange
+     */
+    public void setDateFilterRange(ImmutableUnboundedDateRange<LocalDate> dateFilterRange) {
+        this.dateFilterRange = dateFilterRange;
+    }
 
 
 
@@ -274,6 +306,23 @@ public class ReviewQueryOptions {
     }
 
 
+//    /**
+//     * Checks if the review query options have any filters applied. This method returns true if any of the filter criteria
+//     * (status filter set, score filter set, score filter range, date filter range) are specified, indicating that the
+//     * query options include filtering criteria that will be applied when querying the database for reviews. If
+//     * no filters are applied, the method returns false, indicating that the query options will not filter the results
+//     * based on any specific criteria.
+//     */
+//
+//    public String buildDateRangeFilterSql(String dateFieldName) {
+//        if (dateFilterRange == null) return "";
+//
+//        return String.format("((%s >= '%s') AND (%s <= '%s'))",
+//            dateFieldName, dateFilterRange.getStart().toString(),
+//            dateFieldName, dateFilterRange.getEnd().toString());
+//    }
+
+
     /**
      * Returns a string representation of the ReviewQueryOptions object, including the page cursor, order by enum, and
      * status enum values. This method is useful for debugging and logging purposes, allowing developers to easily see
@@ -281,6 +330,7 @@ public class ReviewQueryOptions {
      *
      * @return
      */
+
     @Override
     public String toString() {
         return "ReviewQueryOptions{" +

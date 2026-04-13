@@ -22,10 +22,10 @@ public class TestPasswordService {
     public void testValidPasswordGenerator() {
         List<String> validPasswords = List.of("password1", "12345678", "qwertyuiop", "letmein123", "admin1234");
         validPasswords.forEach(password -> {
-            String hash = passwordService.hash(password);
-            assertTrue(passwordService.verify(password, hash));
-            assertThrows(IllegalArgumentException.class, () -> passwordService.verify(password, null));
-            assertThrows(StringIndexOutOfBoundsException.class, () -> passwordService.verify(password, ""));
+            String hash = passwordService.encode(password);
+            assertTrue(passwordService.matches(password, hash));
+            assertThrows(IllegalArgumentException.class, () -> passwordService.matches(password, null));
+            assertThrows(StringIndexOutOfBoundsException.class, () -> passwordService.matches(password, ""));
         });
 
 
@@ -35,8 +35,8 @@ public class TestPasswordService {
     public void testInvalidPassword() {
         List<String> invalidPasswords = new ArrayList<>(Arrays.asList(null, "", "short", "   ", "\t\n"));
         invalidPasswords.forEach(password -> {
-            assertThrows(IllegalArgumentException.class, () -> passwordService.hash(password));
-            assertThrows(IllegalArgumentException.class, () -> passwordService.verify(password, "doesnt matter"));
+            assertThrows(IllegalArgumentException.class, () -> passwordService.encode(password));
+            assertThrows(IllegalArgumentException.class, () -> passwordService.matches(password, "doesnt matter"));
         });
     }
 }

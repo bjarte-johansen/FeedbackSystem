@@ -1,6 +1,5 @@
 package root.app;
 
-import java.util.regex.Pattern;
 
 /**
  * AppRequestContext is a context class for holding request-specific information such as the database connection,
@@ -14,38 +13,48 @@ import java.util.regex.Pattern;
  */
 
 public class AppRequestSchema {
-    private static final Pattern VALID_SCHEMA_NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
-    private static final ThreadLocal<String> TENANT_SCHEMA = new ThreadLocal<String>();
-
-    private static void validateSchema(String schemaName) {
-        if (!VALID_SCHEMA_NAME_PATTERN.matcher(schemaName).matches())
-            throw new IllegalArgumentException("Invalid schema name: " + schemaName);
+    @FunctionalInterface
+    public interface NoThrowCloseable extends AutoCloseable {
+        @Override
+        void close(); // no throws
     }
+
+    private static final ThreadLocal<String> TENANT_SCHEMA = new ThreadLocal<String>();
 
     public static String get() {
         return TENANT_SCHEMA.get();
     }
 
-    public static void set(String schemaName){
-        validateSchema(schemaName);
-        TENANT_SCHEMA.set(schemaName);
+    public static void set(String name){
+        if(name != null && !name.isEmpty())
+            SqlSchemaNameValidator.validateSchemaName(name);
+        TENANT_SCHEMA.set(name);
     }
 
     public static void remove(){
         TENANT_SCHEMA.remove();
     }
 
-    public static AutoCloseable withThreadSchema(String tenantSchema) {
-        validateSchema(tenantSchema);
+    public static NoThrowCloseable withThreadSchema(String name) {
+        try {
+            SqlSchemaNameValidator.validateSchemaName(name);
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
 
-        String previousSchema = TENANT_SCHEMA.get();
-        TENANT_SCHEMA.set(tenantSchema);
+        String previous  = TENANT_SCHEMA.get();
+        TENANT_SCHEMA.set(name);
 
         return () -> {
-            if (previousSchema == null) {
-                TENANT_SCHEMA.remove();
-            } else {
-                TENANT_SCHEMA.set(previousSchema);
+            try {
+                if (previous == null) {
+                    TENANT_SCHEMA.remove();
+                } else {
+                    TENANT_SCHEMA.set(previous);
+                }
+            }catch(RuntimeException e){
+                // log error but don't rethrow, to avoid masking original exception
+                System.err.println("Error restoring previous tenant schema: " + e.getMessage());
             }
         };
     }

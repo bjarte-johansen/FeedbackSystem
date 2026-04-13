@@ -201,7 +201,7 @@ public class ReviewService {
             scoreStats.getScoreCounts().put(i, hits);
         }
 
-        Logger.log("ScoreStats: " + scoreStats);
+        //Logger.log("ScoreStats: " + scoreStats);
 
         return scoreStats;
     }

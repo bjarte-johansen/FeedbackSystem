@@ -90,28 +90,8 @@ public class FSQL {
 
 
     /*****************************************************/
-    /*S QL clause building logic                        */
+    /* SQL clause building logic                         */
     /*****************************************************/
-
-
-//    /**
-//     *
-//     * Utility method to embed a string within specified "before" and "after" strings.
-//     * @param s The string to be embedded.
-//     * @param before The string to be placed before the input string.
-//     * @param after The string to be placed after the input string.
-//     * @return A new string consisting of the "before" string, followed by the input string, followed by the "after" string.
-//     *
-//     */
-
-    /*
-    public static String embed(String s, String before, String after) { return before + s + after; }
-    public static String embedParens(String s) { return embed(s, "(", ")"); }
-    public static String embedBrackets(String s) { return embed(s, "[", "]"); }
-    public static String embedQuotes(String s, String quote) { return embed(s, quote, quote); }
-    public static String embedCurly(String s) { return embed(s, "{", "}"); }
-    public static String embedAngle(String s) { return embed(s, "<", ">"); }
-     */
 
 
     /**

@@ -1,6 +1,7 @@
 package root.database;
 
 import root.includes.logger.Logger;
+import root.no_test_extra.TryWithTimer;
 
 import java.sql.*;
 import java.util.*;
@@ -29,10 +30,11 @@ public class FSQLQuery {
         T run(Connection conn) throws Exception;
     }
 
-    public static class InsertResult {
-        private final Long _id;
-        private final int _count;
+    public record InsertResult(Long id, int count) {
+        //private final Long _id;
+        //private final int _count;
 
+        /*
         public InsertResult(Long id, int count) {
             this._id = id;
             this._count = count;
@@ -44,7 +46,7 @@ public class FSQLQuery {
 
         public int getCount() {
             return _count;
-        }
+        }*/
     }
 
     private static final boolean OVERRIDE_DEBUG_SQL = false;
@@ -177,7 +179,7 @@ public class FSQLQuery {
         int i = 1;
         for (var arg : args) {
 
-            if (arg instanceof Objects[] arr) {
+            if (arg instanceof Object[] arr) {
                 for (var val : arr) FSQL.bind(ps, i++, val);
             } else if (arg instanceof int[] arr) {
                 for (var val : arr) FSQL.bind(ps, i++, val);
@@ -202,25 +204,23 @@ public class FSQLQuery {
         }
     }
 
-    protected Long getGeneratedKey(PreparedStatement ps, boolean required) throws SQLException {
-        ResultSet keys = ps.getGeneratedKeys();
-
-        if (!keys.next()) {
-            if (required)
-                throw new SQLException("Insert succeeded but no ID obtained.");
-
-            return null;
+    protected Long getGeneratedKey(PreparedStatement ps)  {
+        try {
+            ResultSet keys = ps.getGeneratedKeys();
+            return !keys.next() ? null : keys.getLong(1);
+        }catch(Exception e) {
+            throw new RuntimeException("Error retrieving generated key: " + e.getMessage(), e);
         }
-
-        return keys.getLong(1);
     }
 
     public FSQLQuery debug() {
-        this.debugSql = true;
-        return this;
+        return debug(true);
     }
 
     public FSQLQuery debug(boolean activate) {
+        if(activate) {
+            Logger.caller(5).log("Debug mode activated for query: " + this.sql);
+        }
         this.debugSql = activate;
         return this;
     }
@@ -248,9 +248,11 @@ public class FSQLQuery {
         }
     }
 
-    private PreparedStatement prepareSql(String inputSql, Object... options) throws Exception {
-        // set activeSql to input if provided, otherwise use original
-        String activeSql = (inputSql != null) ? inputSql : this.sql;
+    private PreparedStatement prepareSql(String inputSql, Object... options) {
+        try {
+            // set activeSql to input if provided, otherwise use original
+            String activeSql = (inputSql != null) ? inputSql : this.sql;
+
 /*
         if(debugSql || OVERRIDE_DEBUG_SQL) {
             try (var ignore = Logger.scope("Attempt Query::prepareSql")) {
@@ -260,39 +262,44 @@ public class FSQLQuery {
         }
  */
 
-        // parse sql
-        NamedSql.Parsed parsed = NamedSql.parse(activeSql, this.namedArgs, args);
+            // parse sql
+            NamedSql.Parsed parsed = NamedSql.parse(activeSql, this.namedArgs, args);
 
-        // log
-        if (debugSql || OVERRIDE_DEBUG_SQL) {
-            try (var ignore = Logger.scope("Parsed Query::prepareSql")) {
-                //Logger.log("Raw: " + activeSql);
-                //Logger.log("Parsed: " + parsed.sql);
-                Logger.log("Interpolated: " + FSQLQueryInterpolator.interpolate(parsed.sql, parsed.args));
-                Logger.log("Args: " + Arrays.toString(parsed.args));
-            }
-        }
-
-        // prepare statement
-        PreparedStatement ps;
-        if (options != null && options.length > 0) {
-            if (!Integer.class.isAssignableFrom(options[0].getClass())) {
-                throw new IllegalArgumentException("Expected first option to be of type Integer for Statement options");
+            // log
+            if (debugSql || OVERRIDE_DEBUG_SQL) {
+                try (var ignore = Logger.scope("Parsed Query::prepareSql")) {
+                    //Logger.log("Raw: " + activeSql);
+                    Logger.log("Parsed: " + parsed.sql);
+                    Logger.log("Interpolated: " + FSQLQueryInterpolator.interpolate(parsed.sql, parsed.args));
+                    Logger.log("Args: " + Arrays.toString(parsed.args));
+                }
             }
 
-            ps = conn.prepareStatement(parsed.sql, ((Number) options[0]).intValue());
-        } else {
-            ps = conn.prepareStatement(parsed.sql);
+            // prepare statement
+            PreparedStatement ps;
+            if (options != null && options.length > 0) {
+                if (!Integer.class.isAssignableFrom(options[0].getClass())) {
+                    throw new IllegalArgumentException("Expected first option to be of type Integer for Statement options");
+                }
+
+                ps = conn.prepareStatement(parsed.sql, ((Number) options[0]).intValue());
+            } else {
+                ps = conn.prepareStatement(parsed.sql);
+            }
+
+            // bind args
+            ArgumentBinder binder = new ArgumentBinder(ps);
+            binder.bind(parsed.args);
+
+            //Logger.log("SQL: " + ps.toString());
+
+            return ps;
+        }catch(Exception e) {
+            throw new RuntimeException("Error preparing SQL statement: " + e.getMessage(), e);
         }
-
-        // bind args
-        ArgumentBinder binder = new ArgumentBinder(ps);
-        binder.bind(parsed.args);
-
-        return ps;
     }
 
-    protected InsertResult insert(boolean requireResult) throws Exception {
+    protected InsertResult insert(boolean requireResult) {
         return execute(conn -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL, Statement.RETURN_GENERATED_KEYS)) {
                 int affectedRows = ps.executeUpdate();
@@ -305,38 +312,38 @@ public class FSQLQuery {
                     }
                 }
 
-                Long insertedId = getGeneratedKey(ps, false);
+                Long insertedId = getGeneratedKey(ps);
                 return new InsertResult(insertedId, affectedRows);
             }
         });
     }
 
-    public long insertAndGetCount() throws Exception {
+    public long insertAndGetCount() {
         InsertResult result = insert(true);
-        return result.getCount();
+        return result.count();
     }
 
     /*
-    public boolean insertAndGetStatus() throws Exception {
+    public boolean insertAndGetStatus() {
         return insertAndGetCount() > 0;
     }
      */
 
-    public Long insertAndGetId() throws Exception {
+    public Long insertAndGetId() {
         InsertResult result = insert(true);
-        return result.getId();
+        return result.id();
     }
 
-    public Long insertAndGetId(Consumer<Long> after) throws Exception {
+    public Long insertAndGetId(Consumer<Long> after) {
         InsertResult result = insert(true);
 
         if (after != null)
-            after.accept(result.getId());
+            after.accept(result.id());
 
-        return result.getId();
+        return result.id();
     }
 
-    public Long insertAndSetId(Object instance, String idField) throws Exception {
+    public Long insertAndSetId(Object instance, String idField) {
         // no execute pattern as this method uses other method that already handles connection closing and error handling
 
         // perform insert and get generated id
@@ -350,7 +357,7 @@ public class FSQLQuery {
         return entityId;
     }
 
-    public int delete() throws Exception {
+    public int delete() {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 return ps.executeUpdate();
@@ -358,7 +365,7 @@ public class FSQLQuery {
         });
     }
 
-    public int update() throws Exception {
+    public int update() {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 return ps.executeUpdate();
@@ -421,21 +428,19 @@ public class FSQLQuery {
         R accept(ResultSet rs, int rowIndex) throws Exception;
     }
 
-    public <R> R fetchCallback(ResultSetFunction<R> resultSetFunction) throws Exception {
+    public <R> R fetchCallback(ResultSetFunction<R> resultSetFunction) {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ps.executeQuery();
 
                 try (ResultSet rs = ps.getResultSet()) {
                     return resultSetFunction.accept(rs);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
                 }
             }
         });
     }
 
-    public <R> List<R> fetchCallback(ResultSetRowIndexFunction<R> resultSetConsumer) throws Exception {
+    public <R> List<R> fetchCallback(ResultSetRowIndexFunction<R> resultSetConsumer) {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ps.executeQuery();
@@ -452,7 +457,7 @@ public class FSQLQuery {
         });
     }
 
-    public long selectCount() throws Exception {
+    public long selectCount() {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL)) {
                 ResultSet rs = ps.executeQuery();
@@ -464,7 +469,7 @@ public class FSQLQuery {
         });
     }
 
-    public boolean selectExists() throws Exception {
+    public boolean selectExists() {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql("SELECT EXISTS (" + this.sql + ")")) {
                 try (ResultSet rs = ps.executeQuery()) {
@@ -483,7 +488,7 @@ public class FSQLQuery {
      * single value, such as COUNT(*) or MAX(column).
      */
 
-    public <R> Optional<R> fetchColumn(Class<R> t) throws Exception {
+    public <R> Optional<R> fetchColumn(Class<R> t) {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL);
                  ResultSet rs = ps.executeQuery()) {
@@ -495,7 +500,7 @@ public class FSQLQuery {
         });
     }
 
-    public <R> Optional<R> fetchColumn(int colIndex, Class<R> t) throws Exception {
+    public <R> Optional<R> fetchColumn(int colIndex, Class<R> t) {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL);
                  ResultSet rs = ps.executeQuery()) {
@@ -507,7 +512,7 @@ public class FSQLQuery {
         });
     }
 
-    public <R> Optional<R> fetchColumn(String colIndex, Class<R> t) throws Exception {
+    public <R> Optional<R> fetchColumn(String colIndex, Class<R> t) {
         return execute(r -> {
             try (PreparedStatement ps = prepareSql(REPLACED_WITH_INTERNAL_SQL);
                  ResultSet rs = ps.executeQuery()) {
@@ -518,5 +523,4 @@ public class FSQLQuery {
             }
         });
     }
-
 }

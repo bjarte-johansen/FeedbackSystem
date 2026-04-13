@@ -10,10 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import root.app.AppConfig;
 import root.app.AppContext;
-import root.app.includes.PageCursor;
-import root.app.includes.PageCursorEncoder;
-import root.common.utils.FunnyUserNameGenerator;
-import root.common.utils.IpsumLoremGenerator;
 import root.controllers.dto.NewReviewForm;
 import root.models.Review;
 import root.models.Reviewer;
@@ -44,28 +40,7 @@ public class DefaultController {
     ReviewService reviewService;
 
     @Autowired
-    ReviewVoteRepository reviewVoteRepo;
-
-    @Autowired
     ReviewPageService reviewPageService;
-
-    @Autowired
-    AppContext appContext;
-
-
-
-    /**
-     * Simple route to display an error page. This is just for demonstration purposes and should be replaced with proper
-     * error handling in production code.
-     */
-
-    @GetMapping("/error")
-    public String error() {
-        return "error";
-    }
-
-
-
 
 
     /**
@@ -85,9 +60,6 @@ public class DefaultController {
     }
 
 
-
-
-
     /**
      * Clear session route for testing purposes. This allows us to clear the session and all associated data, such as
      * review votes, for testing the like/dislike functionality without having to wait for the session to expire.
@@ -103,12 +75,10 @@ public class DefaultController {
         session.invalidate();
 
         return ControllerHelper.create()
+            .with(ra)
             .withStatus(true, "Session cleared successfully.")
-            .redirect(ra, "/");
+            .redirect("/");
     }
-
-
-
 
 
     /**
@@ -132,21 +102,19 @@ public class DefaultController {
         @RequestParam(name = "scoreFilter", defaultValue = "-1") String scoreFilter,
         Model model,
         HttpServletRequest req
-    )  throws Exception {
+    ) throws Exception {
         Map<String, Object> vm = reviewPageService.buildReviewListingPage(
             externalId, encodedCursor, orderByEnum, scoreFilter, // filters
             req,
-            true    // include stats
-            );
+            true // include stats
+        );
 
-        // find all unique externalIds for reviews to display in the dropdown for quick navigation
-        // only used in demonstration interface
-        // TODO: remove for production code, should allways take an externalId as a parameter and not display
-        //  a dropdown of all externalIds
+        // add test data for select externalId pill, in production this should be dynamically loaded based on existing
+        // reviews in the database
         ControllerUtils.addSelectExternalIdPillData(vm, reviewRepo);
 
+        // add default "new review" form values for quick testing of form submission
         if (AppConfig.TESTING_MODE) {
-            // add default "new review" form values for quick testing of form submissionv
             // TODO: remove for production code, should have empty form
             ControllerUtils.addDefaultNewReviewFormValues(vm);
         }
@@ -156,6 +124,24 @@ public class DefaultController {
         return "client/index";
     }
 
+
+    /**
+     * API endpoint to generate HTML for a list of reviews based on the given filters. This is used for the "Load more"
+     * functionality on the frontend, where the frontend can call this endpoint with the appropriate filters and
+     * pagination cursor to get the next page of reviews as HTML to append to the existing list. This allows us to reuse
+     * the same HTML rendering logic for both the initial page load and subsequent "Load more" requests, ensuring
+     * consistency in the review display and reducing code duplication.
+     *
+     * @param externalId
+     * @param encodedCursor
+     * @param orderByEnum
+     * @param scoreFilter
+     * @param model
+     * @param req
+     * @return
+     * @throws Exception
+     */
+
     @GetMapping("/api/reviews/build-html")
     public String renderReviewsAsHtml(
         @RequestParam String externalId,
@@ -164,7 +150,7 @@ public class DefaultController {
         @RequestParam(name = "scoreFilter", defaultValue = "-1") String scoreFilter,
         Model model,
         HttpServletRequest req
-    )  throws Exception {
+    ) throws Exception {
         Map<String, Object> vm = reviewPageService.buildReviewListingPage(
             externalId, encodedCursor, orderByEnum, scoreFilter, // filters
             req,
@@ -175,9 +161,6 @@ public class DefaultController {
 
         return "client/pretty-review-list.partial";
     }
-
-
-
 
 
     /**
@@ -195,17 +178,11 @@ public class DefaultController {
 
         model.addAttribute("review", review);
 
-        // add externalId to model for display in JSP and for use in form submission for new reviews
-        model.addAttribute("tenantId", appContext.getTenantId());
-
         // add formatters to model for display in JSP
-        model.addAttribute("daysAgoFormatter", ReviewPageService.DAYS_AGO_FORMATTER);
+        model.addAttribute("daysAgoFormatter", ReviewPageService.daysAgoFormatter);
 
         return "client/pretty-review.partial";
     }
-
-
-
 
 
     /**
@@ -229,9 +206,6 @@ public class DefaultController {
     }
 
 
-
-
-
     /**
      * API endpoint to add a dislike to a review. Can be called only once for a user session.
      *
@@ -251,9 +225,6 @@ public class DefaultController {
 
         return ResponseEntity.noContent().build();
     }
-
-
-
 
 
     /**
@@ -292,30 +263,4 @@ public class DefaultController {
 
         return ResponseEntity.ok().build();
     }
-
-
-    /*
-    public void actualInsertReviewCode(){
-        // create reviewer
-        String passwordSalt = PasswordService.generateSalt();
-        String passwordHash = PasswordService.hash(password, passwordSalt);
-
-        var reviewer = new Reviewer();
-        reviewer.setTenantId(tenantId);
-        reviewer.setEmail(email);
-        reviewer.setDisplayName(displayName);
-        reviewer.setPasswordSalt(passwordSalt);
-        reviewer.setPasswordHash(passwordHash);
-        reviewer.setCreatedAt(Instant.now());
-
-        // persist to database
-        reviewerRepo.create(reviewer);
-
-        // create review
-        var review = new Review(tenantId, externalId, reviewer.getId(), reviewer.getDisplayName(), score, comment);
-
-        // persist to database
-        reviewRepository.create(review);
-    }
-    */
 }
