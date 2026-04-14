@@ -18,7 +18,9 @@ import static root.common.utils.Preconditions.checkArgument;
  */
 
 public class Utils {
-    private static final ObjectMapper M = new ObjectMapper();
+    private static final ObjectMapper M = new ObjectMapper()
+        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+        .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     /**
      * Checks if a string has non-whitespace text. Returns true if the string is not null and contains at least one

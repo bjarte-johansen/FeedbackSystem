@@ -10,6 +10,7 @@ import java.util.*;
  *
  * Todo: write unit tests for this class, especially for edge cases like empty sets, null values, and different data types.
  *  Remove comment here after you are done
+ *  TODO: WRite javadoc comments for all public methods in this class, and add more helper methods if needed (e.g. for OR conditions, NOT IN, etc.)
  */
 
 public class WhereExpressionList {

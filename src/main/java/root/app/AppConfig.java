@@ -39,12 +39,6 @@ public class AppConfig {
     // TODO: must be set to false for production
     public static boolean TESTING_MODE = true;
 
-    /*
-    public static boolean OVERRIDE_TENANT = true;
-    public static String OVERRIDE_TENANT_SCHEMA = "test";
-    public static long OVERRIDE_TENANT_ID = 1;
-     */
-
     // default pagination settings for reviews listing page
     public static int CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS = 5;
     public static int ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS = 10;
@@ -53,7 +47,7 @@ public class AppConfig {
     public static boolean AUTO_APPROVE_NEW_REVIEWS = true;
 
     // TODO: must be set to false for production
-    public static boolean USE_MULTI_TENANT = true;
+    public static final boolean USE_MULTI_TENANT = true;
 
     // set database specific stuff, mostly for JDBC adapter and metadata queries
     public static final String DEFAULT_ENTITY_ID_NAME = "id";
@@ -68,6 +62,7 @@ public class AppConfig {
     public static final String TENANT_DOMAIN_TABLE_NAME = "tenant_domain";
 
     // used only for testing fsqlquery/proxy, not part of project
+
     // TODO: remove before delivery
     public static final String FANTASY_TABLE_NAME = "fantasy";
 }

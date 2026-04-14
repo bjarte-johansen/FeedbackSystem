@@ -2,124 +2,23 @@ package root.services;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
-import root.app.AppConfig;
-import root.app.AppContext;
-import root.database.DataSourceManager;
 import root.includes.logger.Logger;
 import root.models.Tenant;
 import root.repositories.TenantRepository;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import static root.common.utils.Preconditions.checkArgument;
 
+interface EvictableCache<K, V> {
+    Tenant get(K k);
+    void put(K k, V v);
+    Optional<Tenant> computeIfAbsent(K k, Function<K, V> mappingFunction);
 
-/**
- * HostNameNormalizer is a utility class responsible for normalizing host strings extracted from HTTP requests. The
- * normalization process includes converting the host to lowercase, trimming leading and trailing whitespace, removing
- * any port numbers (e.g., ":8080"), and stripping trailing dots. This ensures that host strings are in a consistent
- * format for tenant resolution, allowing for accurate matching against tenant host configurations in the database. The
- * normalize method is static, making it easy to use throughout the TenantResolver class without needing to instantiate
- * HostNameNormalizer. By standardizing host strings, this class helps prevent issues related to case sensitivity,
- * extraneous whitespace, and port numbers that could interfere with tenant resolution logic.
- */
-
-class HostNameNormalizer {
-    // normalize host by converting to lowercase, trimming whitespace, and removing port numbers and trailing dots
-    public static String normalize(String host) {
-        if (host == null) return "";
-        host = host.toLowerCase().trim();
-
-        int colonIndex = host.indexOf(":");
-        if (colonIndex != -1) {
-            host = host.substring(0, colonIndex);
-        }
-
-        if (host.endsWith(".")) {
-            host = host.substring(0, host.length() - 1);
-        }
-
-        return host;
-    }
-}
-
-
-/**
- * TenantResolverCache is a simple in-memory cache for storing tenant resolution results based on host strings. It uses a
- * ConcurrentHashMap to allow for thread-safe access and modifications. The cache stores mappings from normalized host
- * strings to Optional<Tenant> objects, allowing it to represent both the presence and absence of a tenant for a given
- * host. The class provides methods to retrieve tenants from the cache, add new entries, compute values if absent, and
- * evict entries either for specific hosts or entirely. This caching mechanism can significantly improve performance by
- * avoiding repeated database lookups for the same host, especially in scenarios where the same hosts are frequently
- * accessed.
- */
-
-class TenantResolverCache {
-    private static final Map<String, Optional<Tenant>> CACHE = new ConcurrentHashMap<>();
-
-    private TenantResolverCache() {
-    }
-
-    /**
-     * Retrieves the tenant associated with the given host from the cache.
-     *
-     * @param host normalized host string for which the tenant should be retrieved.
-     * @return
-     */
-
-    public static Tenant get(String host) {
-        return CACHE.getOrDefault(host, Optional.empty()).orElse(null);
-    }
-
-
-    /**
-     * Caches the tenant associated with the given host.
-     *
-     * @param host normalized host string for which the tenant should be cached.
-     * @param tenant the tenant to be cached for the specified host.
-     */
-
-    public static void put(String host, Tenant tenant) {
-        CACHE.put(host, Optional.ofNullable(tenant));
-    }
-
-
-    /**
-     * Retrieves the tenant associated with the given host from the cache if it exists; otherwise, computes it using
-     * the
-     *
-     * @param host
-     * @param mappingFunction
-     * @return
-     */
-
-    public static Optional<Tenant> computeIfAbsent(String host, java.util.function.Function<String, Optional<Tenant>> mappingFunction) {
-        return CACHE.computeIfAbsent(host, mappingFunction);
-    }
-
-
-    /**
-     * Evicts the cache entry for all hosts
-     *
-     */
-
-    public static void evictAll() {
-        CACHE.clear();
-    }
-
-
-    /**
-     * Evicts the cache entry for the specified host.
-     *
-     * @param host normalized host string for which the cache entry should be removed.
-     */
-
-    public static void evict(String host) {
-        CACHE.remove(host);
-    }
+    void evictAll();
+    void evict(K k);
 }
 
 
@@ -133,6 +32,8 @@ class TenantResolverCache {
  * (*). 5. If a tenant is found at any step, it is returned; otherwise, null is returned. This class is designed to be
  * used as a Spring component and can be injected into controllers or other services that require tenant resolution
  * based on the request's host.
+ *
+ * Uses cahee of hosts if possible, TODO: it doesnt get invalidated automaticly by removal of tenants/hosts
  * <p>
  * TODO: Consider adding caching for tenant resolution results to improve performance, especially if the same hosts are
  *  frequently accessed.

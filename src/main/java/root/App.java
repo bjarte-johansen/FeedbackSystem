@@ -18,7 +18,7 @@ import java.util.*;
 
 @SpringBootApplication
 public class App {
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication app = new SpringApplication(App.class);
         app.setDefaultProperties(Map.of(
             "spring.profiles.active", "test"

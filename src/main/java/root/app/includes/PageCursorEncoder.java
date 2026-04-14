@@ -7,7 +7,6 @@ package root.app.includes;
  * our use case. If we wanted to make it more secure, we could encrypt the cursor or use a more complex encoding scheme.
  */
 
-@Deprecated
 public class PageCursorEncoder {
 
     /**
@@ -17,7 +16,7 @@ public class PageCursorEncoder {
      * @param c
      * @return
      */
-    public static String encodeCursor(PageCursor c) {
+    public static String encode(PageCursor c) {
         return c.getOffset() + "," + c.getLimit();
     }
 
@@ -32,7 +31,7 @@ public class PageCursorEncoder {
      * @return
      */
 
-    public static PageCursor decodeCursor(String cursorStr, int defaultLimit) {
+    public static PageCursor decode(String cursorStr, int defaultLimit) {
         if (cursorStr != null) {
             String[] parts = cursorStr.split(",");
             if (parts.length == 2) {

@@ -99,7 +99,7 @@ public class AdminReviewPageService {
             dateRangeFilter = new ImmutableUnboundedDateRange<LocalDate>(presetStartDate, null);
         }
 
-        PageCursor cursor = PageCursor.decode(pageCursorStr, AppConfig.ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS);
+        PageCursor cursor = PageCursorEncoder.decode(pageCursorStr, AppConfig.ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS);
         modelMap.put("pageCursor", cursor.encode());
 
         // make query options object and set filters

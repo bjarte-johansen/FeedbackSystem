@@ -17,6 +17,7 @@ import static root.common.utils.Preconditions.checkArgument;
 
 @Service
 public class PasswordService implements PasswordEncoder {
+
     /**
      * Hash a password with, generates its own salt.
      *

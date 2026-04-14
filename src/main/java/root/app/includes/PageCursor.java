@@ -122,20 +122,6 @@ public class PageCursor {
         return this.offset + "," + this.limit;
     }
 
-    public static PageCursor decode(String cursorStr, int defaultLimit) {
-        if (cursorStr != null) {
-            String[] parts = cursorStr.split(",");
-            if (parts.length == 2) {
-                return new PageCursor(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
-            }
-        }
-
-        return new PageCursor(0, defaultLimit);
-    }
-
-    public static String encode(PageCursor cursor) {
-        return cursor.encode();
-    }
 
     /**
      * Returns a string representation of the PageCursor, including its offset and limit values.

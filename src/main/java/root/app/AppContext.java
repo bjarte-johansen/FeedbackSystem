@@ -10,7 +10,6 @@ import static root.common.utils.Preconditions.checkArgument;
 
 @Component
 public class AppContext {
-    //private CustomDataSource ds;
 
     /**
      * Initializes the application context, including data sources and connection providers.
@@ -33,6 +32,7 @@ public class AppContext {
     /**
      * Initializes the data source and connection provider based on the application configuration.
      */
+
     private void initDatasourceAndConnectionProvider() {
         CustomDataSource ds;
         ds = new CustomDataSource(AppConfig.CURRENT_CONNECTION_PARAMS);
@@ -41,10 +41,11 @@ public class AppContext {
 
         if (!AppConfig.USE_MULTI_TENANT) {
             initSingleTenantConnectionProvider(ds);
-        }else {
+        } else {
             initMultiTenantConnectionProvider(ds);
         }
     }
+
 
     /**
      * Initializes a multi-tenant connection provider that allows setting the schema per thread (request).

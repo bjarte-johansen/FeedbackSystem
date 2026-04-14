@@ -24,9 +24,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static root.common.utils.Preconditions.checkArgument;
 
-//import static root.database.SPIImpl.insert_review;
 
 @Component
 public class DatabaseManager {
@@ -43,6 +41,7 @@ public class DatabaseManager {
 
     @Autowired
     PasswordService passwordService;
+
     @Autowired
     private TenantDomainRepository tenantDomainRepository;
 

@@ -11,6 +11,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import root.app.AppConfig;
 import root.app.AppContext;
 import root.controllers.dto.NewReviewForm;
+import root.includes.Utils;
 import root.models.Review;
 import root.models.Reviewer;
 import root.app.ReviewQueryOptions;
@@ -58,27 +59,27 @@ public class DefaultController {
     public String index(Model model, HttpServletRequest req, RedirectAttributes ra) throws Exception {
         return "redirect:/reviews/build-html?externalId=/invalid-path";
     }
-
-
-    /**
-     * Clear session route for testing purposes. This allows us to clear the session and all associated data, such as
-     * review votes, for testing the like/dislike functionality without having to wait for the session to expire.
-     *
-     * @param session
-     * @param ra
-     * @return
-     * @throws Exception
-     */
-
-    @GetMapping("/clear-session")
-    public String clearSession(HttpSession session, RedirectAttributes ra) throws Exception {
-        session.invalidate();
-
-        return ControllerHelper.create()
-            .with(ra)
-            .withStatus(true, "Session cleared successfully.")
-            .redirect("/");
-    }
+//
+//
+//    /**
+//     * Clear session route for testing purposes. This allows us to clear the session and all associated data, such as
+//     * review votes, for testing the like/dislike functionality without having to wait for the session to expire.
+//     *
+//     * @param session
+//     * @param ra
+//     * @return
+//     * @throws Exception
+//     */
+//
+//    @GetMapping("/clear-session")
+//    public String clearSession(HttpSession session, RedirectAttributes ra) throws Exception {
+//        session.invalidate();
+//
+//        return ControllerHelper.create()
+//            .with(ra)
+//            .withStatus(true, "Session cleared successfully.")
+//            .redirect("/");
+//    }
 
 
     /**
@@ -120,6 +121,8 @@ public class DefaultController {
         }
 
         model.addAllAttributes(vm);
+
+        model.addAttribute("json", Utils.toJson(model.asMap()));
 
         return "client/index";
     }

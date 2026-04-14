@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.app.AppConfig;
 import root.controllers.ReviewAggregateStatistics;
-import root.includes.logger.Logger;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewVoteRepository;
@@ -34,8 +33,6 @@ public class ReviewService {
 
 
 
-
-
     /*
     things that do NOT require administrator privileges:
      */
@@ -46,10 +43,9 @@ public class ReviewService {
      * @param reviewId
      * @param newVoteId Review.VOTE_UP, Review.VOTE_DOWN
      * @param delta Number of votes to add (positive) or remove (negative)
-     * @throws Exception
      */
 
-    private void incrementVote(long reviewId, int newVoteId, int delta) throws Exception {
+    private void incrementVote(long reviewId, int newVoteId, int delta) {
         // we must ignore invalid vote ids, because when a user removes their vote, we call this method with
         // newVoteId = 0, which is not a valid vote id but we should ignore it and just decrement the old vote.
 
@@ -66,9 +62,8 @@ public class ReviewService {
      *
      * @param reviewId
      * @param voteType
-     * @throws Exception
      */
-    private void incrementVote(long reviewId, int voteType) throws Exception {
+    private void incrementVote(long reviewId, int voteType) {
         incrementVote(reviewId, voteType, 1);
     }
 
@@ -78,9 +73,8 @@ public class ReviewService {
      *
      * @param reviewId
      * @param voteType
-     * @throws Exception
      */
-    private void decrementVote(long reviewId, int voteType) throws Exception {
+    private void decrementVote(long reviewId, int voteType) {
         incrementVote(reviewId, voteType, -1);
     }
 
@@ -127,8 +121,6 @@ public class ReviewService {
 
 
 
-
-
     /*
     things that require administrator privileges:
      */
@@ -137,10 +129,9 @@ public class ReviewService {
      * Deletes a review by id. Only administrators can perform this action.
      *
      * @param reviewId
-     * @throws Exception
      */
 
-    public void deleteById(long reviewId) throws Exception {
+    public void deleteById(long reviewId) {
         reviewRepo.deleteById(reviewId);
     }
 
@@ -150,14 +141,11 @@ public class ReviewService {
      *
      * @param reviewId
      * @param newStatus
-     * @throws Exception
      */
 
-    public void setReviewStatus(long reviewId, int newStatus) throws Exception {
+    public void setReviewStatus(long reviewId, int newStatus) {
         reviewRepo.updateReviewStatus(reviewId, newStatus);
     }
-
-
 
 
 
@@ -175,6 +163,7 @@ public class ReviewService {
      * @return
      * @throws Exception
      */
+
     public ReviewAggregateStatistics getScoreStatsHelper(String externalId, int defaultScore, Set<Integer> scoreFilterSet) {
         var filteredScoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId, scoreFilterSet);
 
@@ -201,13 +190,10 @@ public class ReviewService {
             scoreStats.getScoreCounts().put(i, hits);
         }
 
-        //Logger.log("ScoreStats: " + scoreStats);
-
         return scoreStats;
     }
 
     private double avg(double sum, double count, double defaultScore) {
         return (count > 0) ? sum / count : defaultScore;
     }
-
 }

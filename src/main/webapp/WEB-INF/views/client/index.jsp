@@ -20,7 +20,8 @@
             data-cursor="${pageCursor}"
             data-score-filter="${scoreFilter}"
             data-review-count="${reviewStats.totalCount}"
-            data-detailed-review-count="<c:out value="${scoreCountsJson}"/>">
+            data-detailed-review-count="<c:out value="${scoreCountsJson}"/>"
+            data-json="${fn:escapeXml(json)}">
 
             <div class="box-virtual mb-4">
                 <%@ include file="review-list-stats.partial.jsp" %>

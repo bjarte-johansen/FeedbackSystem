@@ -4,6 +4,7 @@ import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import java.util.Properties;
 
+@Deprecated
 public class EmailVerificationCodeSender {
     public static void send(String email, String verificationCode) throws Exception {
         Properties p = new Properties();

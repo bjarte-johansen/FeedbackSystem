@@ -27,13 +27,13 @@
 
             <div class="form-group">
                 <label for="displayName">Navn:</label>
-                <input type="text" id="displayName" name="displayName" class="form-control" placeholder="Ditt navn" value="${displayNameSuggestion}">
+                <input type="text" id="displayName" name="displayName" class="form-control" placeholder="Ditt navn" value="${defaultNewReviewFormValues.displayNameSuggestion}">
             </div>
 
             <div class="form-group">
                 <label for="score">Score:</label>
                 <select id="score" name="score" class="form-control">
-                    <option value="${scoreSuggestion}"selected>${scoreSuggestion}</option>
+                    <option value="${defaultNewReviewFormValues.scoreSuggestion}"selected>${defaultNewReviewFormValues.scoreSuggestion}</option>
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -44,12 +44,12 @@
 
             <div class="form-group">
                 <label for="title">Tittel:</label>
-                <input type="text" id="title" name="title" class="form-control" placeholder="Tittel på din review" value="${titleSuggestion}">
+                <input type="text" id="title" name="title" class="form-control" placeholder="Tittel på din review" value="${defaultNewReviewFormValues.titleSuggestion}">
             </div>
 
             <div class="form-group">
                 <label for="comment">Kommentar:</label>
-                <textarea id="comment" name="comment" class="form-control" placeholder="Skriv din kommentar her...">${commentSuggestion}</textarea>
+                <textarea id="comment" name="comment" class="form-control" placeholder="Skriv din kommentar her...">${defaultNewReviewFormValues.commentSuggestion}</textarea>
             </div>
 
             <div class="form-group">

@@ -5,6 +5,8 @@ import root.app.includes.PageCursorEncoder;
 import root.common.utils.FunnyUserNameGenerator;
 import root.common.utils.IpsumLoremGenerator;
 import root.repositories.ReviewRepository;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -21,10 +23,12 @@ public class ControllerUtils {
      */
 
     public static void addDefaultNewReviewFormValues(Map<String, Object> modelMap) {
-        modelMap.put("displayNameSuggestion", FunnyUserNameGenerator.generate());
-        modelMap.put("titleSuggestion", IpsumLoremGenerator.generate(2 + (int) (Math.random() * 4)).replace(".", ""));
-        modelMap.put("commentSuggestion", IpsumLoremGenerator.generate(7 + (int) (Math.random() * 15)));
-        modelMap.put("scoreSuggestion", 1 + new Random().nextInt(5));
+        Map<String, Object> a = new HashMap<>();
+        a.put("displayNameSuggestion", FunnyUserNameGenerator.generate());
+        a.put("titleSuggestion", IpsumLoremGenerator.generate(2 + (int) (Math.random() * 4)).replace(".", ""));
+        a.put("commentSuggestion", IpsumLoremGenerator.generate(7 + (int) (Math.random() * 15)));
+        a.put("scoreSuggestion", 1 + new Random().nextInt(5));
+        modelMap.put("defaultNewReviewFormValues", a);
     }
 
 
@@ -63,19 +67,6 @@ public class ControllerUtils {
 //        modelMap.put("pageCursor", PageCursorEncoder.encodeCursor(originalCursor));
 //    }
 
-
-    /**
-     * Decodes a pagination cursor from a string. If the string is null or blank, it creates a new cursor with an offset
-     * of 0 and the specified default limit.
-     *
-     * @param cursorStr
-     * @param defaultLimit
-     * @return
-     */
-
-    public static PageCursor decodeOrCreateCursor(String cursorStr, int defaultLimit) {
-        return PageCursorEncoder.decodeCursor(cursorStr, defaultLimit);
-    }
 
 
 //    /*

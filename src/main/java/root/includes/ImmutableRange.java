@@ -1,5 +1,6 @@
 package root.includes;
 
+@Deprecated
 public class ImmutableRange <T extends Comparable<T>> {
     private final T start;
     private final T end;

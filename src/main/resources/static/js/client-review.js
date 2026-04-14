@@ -24,12 +24,12 @@ var Review = {
         },
 
         parseIntOr: function (v, def = 0) {
-            if(v == null) return def;
+            if (v == null) return def;
 
             if (typeof v === "number")
                 return Number.isInteger(v) ? v : def;
 
-            if(typeof v === "string"){
+            if (typeof v === "string") {
                 const s = v.trim();
                 if (!/^-?\d+$/.test(s)) return def; // only base-10 ints
                 return Number(s);
@@ -103,8 +103,8 @@ var Review = {
         createPageCursorFromString: function (cursorStr) {
             const parts = (cursorStr || "0,9007199254740991").split(",");
 
-            const offset  = Review.utils.parseIntOr(parts?.[0], 0);
-            const limit   = Review.utils.parseIntOr(parts?.[1], Number.MAX_SAFE_INTEGER);
+            const offset = Review.utils.parseIntOr(parts?.[0], 0);
+            const limit = Review.utils.parseIntOr(parts?.[1], Number.MAX_SAFE_INTEGER);
 
             console.log("Creating page cursor from string:", cursorStr, "parsed values:", parts);
 
@@ -139,7 +139,7 @@ var Review = {
         if (require && !Review.reviewListing) {
             throw new Error("ReviewListing instance not found in Review.reviewListing");
         }
-        console.log("Reloading review list with options:", Review.reviewListing);
+        // console.log("Reloading review list with options:", Review.reviewListing);
         return Review.reviewListing;
     },
 
@@ -196,13 +196,11 @@ var Review = {
      * @param sender
      */
     triggerClientScoreFilterPresetChange(sender) {
+        const newValue = Number($(sender).attr('data-integral-score-attr'));
+
         const $reviewList = Review.getReviewListingDomElement(true);
-
         const $select = $reviewList.find('select[name=scoreFilter]');
-
-        const integralScoreVal = Review.utils.parsePrimitive($(sender).attr('data-integral-score-attr'));
-        $select.val(integralScoreVal);
-        $select.trigger('change');
+        $select.val(newValue);
 
         Review.reloadReviewList({resetCursor: true})
     },
@@ -220,7 +218,7 @@ var Review = {
      */
 
     __getReviewListOptionAsMap($reviewList, options = {exclude: null}) {
-        if(!$reviewList || $reviewList.length === 0) {
+        if (!$reviewList || $reviewList.length === 0) {
             console.log("No $reviewList element provided or found");
             return new Map();
         }
@@ -251,7 +249,7 @@ var Review = {
             params.set(camelKey, value);
         };
 
-        const keys = ["external-id", "order-by-enum", "score-filter", "cursor", "review-count", "detailed-review-count"];
+        const keys = ["external-id", "order-by-enum", "score-filter", "cursor", "review-count", "detailed-review-count", "json"];
         keys.forEach(setDataAttr);
 
         if (options?.exclude !== null) {
@@ -308,6 +306,8 @@ var Review = {
         // create url with search params
         const searchParams = rvl.buildQuerySearchParams();
         const url = "/api/reviews/build-html?" + searchParams.toString();
+
+        console.log("Reloading review list with URL:", url);
 
         // fetch
         $.ajax({
@@ -382,6 +382,12 @@ var Review = {
         });
     },
 
+    /**
+     * handler are called with form,res IF form is tagged with class "ajax" and have a data-handler attribute matching
+     * the handler name. This allows for custom handling of form submissions without needing to write separate event
+     * listeners for each form. The handlers can perform actions like reloading a specific review or updating the
+     * review list based on the response from the server after a form submission.
+     */
     handlers: {
 
         // like/dislike events
@@ -457,6 +463,22 @@ class ReviewListing {
     }
     */
 
+    getExternalId(){
+        return this.externalId;
+    }
+    getOrderByEnum(){
+        return this.orderByEnum;
+    }
+    getScoreFilter(){
+        return this.scoreFilter;
+    }
+    getCursor(){
+        return this.cursor;
+    }
+    getTotalReviewCount(){
+        return this.totalReviewCount;
+    }
+
     #getReviewCountByScore(score) {
         return this.detailedReviewCount?.[score] || this.totalReviewCount;
     }
@@ -475,16 +497,17 @@ class ReviewListing {
         this.cursor = Review.utils.createPageCursorFromString(opts.get("cursor"));
         this.totalReviewCount = Number(opts.get("reviewCount"));
         this.detailedReviewCount = opts.get("detailedReviewCount");
+        this.import = opts.get("json");
 
         return this;
     }
 
     buildQuerySearchParams() {
         const map = new Map();
-        map.set("externalId", this.externalId);
-        map.set("orderByEnum", this.orderByEnum);
-        map.set("scoreFilter", this.scoreFilter.join(","));
-        map.set("cursor", this.cursor.toString());
+        map.set("externalId", this.getExternalId());
+        map.set("orderByEnum", this.getOrderByEnum());
+        map.set("scoreFilter", this.getScoreFilter().join(","));
+        map.set("cursor", this.cursor.toCsv());
 
         return new URLSearchParams(Object.fromEntries(map));
     }
@@ -501,17 +524,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const form = e.target.closest("form");
         if (!form) return;
 
-        if (!form.matches(".ajax")) return;
-        e.preventDefault();
-
-        if (form.matches(".custom-handler")) {
-            const debug = true;
+        if (form.matches(".ajax") && form.matches(".custom-handler")) {
             e.preventDefault();
 
             const __parsed = form.dataset.cmd?.split(":");
             const cmd = __parsed?.[0];
-            const args = __parsed?.[1]?.split(',') || [];
-            for (var a in args) args[a] = Review.utils.parsePrimitive(args[a]);
+            const args = (__parsed?.[1]?.split(',') || []).map(Review.utils.parsePrimitive);
+            //for (var a in args) args[a] = Review.utils.parsePrimitive(args[a]);
 
             //if(debug) console.log("cmd", cmd, "args", args);
 
