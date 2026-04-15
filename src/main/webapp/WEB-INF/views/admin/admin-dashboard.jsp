@@ -7,7 +7,8 @@
             data-cursor="${pageCursor}"
             data-status-filter="${currentReviewStatusFilter}"
             data-score-filter="${scoreFilter}"
-            data-review-count="${totalStatusFilterCount}">
+            data-review-count="${totalStatusFilterCount}"
+            data-json="${fn:escapeXml(json)}">
 
             <div class="box filter-buttons">
                 Filtrer status:

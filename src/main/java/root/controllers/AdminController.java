@@ -77,7 +77,8 @@ public class AdminController {
     public String showDashboard(
         @RequestParam(defaultValue = "-1") String statusFilter,
         @RequestParam(name="cursor", defaultValue = "") String cursorStr,
-        Model model) throws Exception {
+        Model model
+    ) throws Exception {
         return showFilteredReviews(/*orderEnum */0, statusFilter, null, null, 0, cursorStr, model);
     }
 
@@ -112,6 +113,8 @@ public class AdminController {
 
         // build model data for the view using the service
         var vm = adminReviewPageService.buildReviewListModelData(orderByEnum, statusFilter, dateFilterStart, dateFilterEnd, dateFilterPreset, pageCursorStr);
+
+        vm.put("json", Utils.toJson(vm.get("reviews")));
 
         model.addAllAttributes(vm);
         return "admin/admin-dashboard";

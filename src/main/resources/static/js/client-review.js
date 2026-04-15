@@ -206,63 +206,6 @@ var Review = {
     },
 
 
-    /**
-     * Constructs a URLSearchParams object based on the data attributes of the given $reviewList element. This is
-     * used to build the query parameters for the API call when reloading the review list. It checks for attributes
-     * like data-external-id, data-order-by-enum, data-score-filter, and data-cursor, and includes them in the search
-     * parameters if they are present.
-     *
-     * @param $reviewList
-     * @param options
-     * @returns {URLSearchParams}
-     */
-    //
-    // __getReviewListOptionAsMap($reviewList, options = {exclude: null}) {
-    //     if (!$reviewList || $reviewList.length === 0) {
-    //         console.log("No $reviewList element provided or found");
-    //         return new Map();
-    //     }
-    //
-    //     const params = new Map();
-    //
-    //     const el = $reviewList.get(0);
-    //     if (!el) throw new Error("$reviewList[0] element not found");
-    //
-    //     // gets data-attr from element and dash-to-camel case convert the key, then sets it in the params map. If the
-    //     // value looks like a JSON array or object, it tries to parse it before setting it.
-    //
-    //     const getDataAttr = (el, camelKey, dashedKey) => el.dataset[camelKey] ?? el.getAttribute(dashedKey);
-    //
-    //     const setDataAttr = function (dashedKey) {
-    //         const camelKey = Review.utils.dashedToCamel(dashedKey)
-    //         const value = getDataAttr(el, camelKey, dashedKey); //$reviewList.attr("data-" + dashed_key); // jQuery attr returns string or undefined ALWAYS
-    //         if (value === null || value === undefined) return;
-    //
-    //         const ch = value?.trim()?.[0];
-    //         if (ch === "[" || ch === "{") {
-    //             try {
-    //                 return params.set(camelKey, JSON.parse(value));
-    //             } catch (e) {
-    //             }
-    //         }
-    //
-    //         params.set(camelKey, value);
-    //     };
-    //
-    //     const keys = ["external-id", "order-by-enum", "score-filter", "cursor", "review-count", "detailed-review-count", "json"];
-    //     keys.forEach(setDataAttr);
-    //
-    //     if (options?.exclude !== null) {
-    //         const excludeSet = new Set(Array.isArray(options.exclude) ? options.exclude : [options.exclude]);
-    //         for (let key of excludeSet) {
-    //             params.delete(Review.utils.dashedToCamel(key));
-    //         }
-    //     }
-    //
-    //     console.log("Extracted review list options from data attributes:", Object.fromEntries(params));
-    //
-    //     return params;
-    // },
 
     __getReviewListOptionAsJson($reviewList, options = {exclude: null}) {
         if($reviewList.length === 0) return new Map();
@@ -381,7 +324,7 @@ var Review = {
 
         $.ajax({
             url: `/api/review/${reviewId}/json`, dataType: "json", method: "GET", success: function (json) {
-                if(json === null) return;
+                if(json === null) return;   // should catch errors here
 
                 const $newReview = Review.getReviewListing(true).renderItem(json);
                 const $oldReview = $(`.review--list .review[data-review-id="${reviewId}"]`);

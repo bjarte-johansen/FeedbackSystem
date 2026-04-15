@@ -143,6 +143,15 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
 
     @Override
     public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId){
+
+        WhereExpressionList whereExprList = new WhereExpressionList(20);
+        whereExprList.where("(external_id = ?)", externalId);
+        whereExprList.where("(status = ?)", Review.REVIEW_STATUS_APPROVED);
+
+        // build sql
+        String whereStr = whereExprList.toSql(true);
+        String sql = "SELECT score, COUNT(*) AS count FROM review" + whereStr + " GROUP BY score";
+
         // lambda to read result set and convert to LinkedHashMap<Integer, Integer>
         FSQLQuery.ResultSetFunction<LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
             LinkedHashMap<Integer, Integer> res = new LinkedHashMap<>();
@@ -154,23 +163,9 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             return res;
         };
 
-        WhereExpressionList whereExprList = new WhereExpressionList(20);
-        whereExprList.where("(external_id = ?)", externalId);
-        whereExprList.where("(status = ?)", Review.REVIEW_STATUS_APPROVED);
-
-        //buildScoreFilterSetConditions(whereExprList, scoreFilterSet);
-
-        // build sql
-        String whereStr = whereExprList.toSql(true);
-        String sql = "SELECT score, COUNT(*) AS count FROM review" + whereStr + " GROUP BY score";
-
-        try {
-            return FSQLQuery.create(sql)
-                .bind(whereExprList.getArguments())
-                .fetchCallback(fnReadResultSet);
-        } catch(Exception e) {
-            throw new RuntimeException(e);
-        }
+        return FSQLQuery.create(sql)
+            .bind(whereExprList.getArguments())
+            .fetchCallback(fnReadResultSet);
     }
 
     @Override
