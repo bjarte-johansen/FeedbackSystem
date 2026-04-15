@@ -6,7 +6,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import root.app.AppConfig;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;;
 
 
 /**

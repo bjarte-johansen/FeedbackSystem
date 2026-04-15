@@ -164,8 +164,8 @@ public class ReviewService {
      * @throws Exception
      */
 
-    public ReviewAggregateStatistics getScoreStatsHelper(String externalId, int defaultScore, Set<Integer> scoreFilterSet) {
-        var filteredScoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId, scoreFilterSet);
+    public ReviewAggregateStatistics getScoreStatsHelper(String externalId, int defaultScore) {
+        var filteredScoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId);
 
         var scoreStats = new ReviewAggregateStatistics();
 

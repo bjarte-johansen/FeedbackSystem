@@ -1,6 +1,6 @@
-package root.app;
+package root.includes.utils;
 
-import java.util.regex.Pattern;
+import root.app.AppConfig;
 
 /**
  * SqlSchemaNameValidator is a utility class that provides a method to validate SQL schema names. It uses a regular
@@ -8,14 +8,12 @@ import java.util.regex.Pattern;
  * digits, or underscores. If the schema name does not match the pattern, an IllegalArgumentException is thrown.
  */
 
-class SqlSchemaNameValidator {
-    private static final Pattern VALID_SCHEMA_NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
-
+public class SqlSchemaNameValidator {
     public static void validateSchemaName(String name) {
         if(name == null || name.isEmpty())
             throw new IllegalArgumentException("Schema name cannot be null or empty");
 
-        if (!VALID_SCHEMA_NAME_PATTERN.matcher(name).matches())
+        if (!AppConfig.VALID_SCHEMA_NAME_PATTERN.matcher(name).matches())
             throw new IllegalArgumentException("Invalid schema name: " + name);
     }
 }

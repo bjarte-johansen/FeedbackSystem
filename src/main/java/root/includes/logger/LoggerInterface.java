@@ -1,10 +1,13 @@
 package root.includes.logger;
 
 public interface LoggerInterface {
-    void log(Object... args);
-    void debug(Object... args);
-    void info(Object... args);
-    void warn(Object... args);
-    void error(Object... args);
+    LoggerInterface log(Object... args);
+    LoggerInterface debug(Object... args);
+    LoggerInterface info(Object... args);
+    LoggerInterface warn(Object... args);
+    LoggerInterface error(Object... args);
+
+    LoggerInterface enter();
+    LoggerInterface leave();
     //LogProxy tab();
 }

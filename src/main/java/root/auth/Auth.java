@@ -4,11 +4,10 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- * Implemented by chatgpt to "get it right" and modified by me to fit the project. This class provides static methods to
- * check if a user is logged in, if they are an administrator, and to get their username. It uses Spring Security's
+ * Implemented with chatgpt to "get it right" and modified by me to fit the project. This class provides static methods
+ * to check if a user is logged in, if they are an administrator, and to get their username. It uses Spring Security's
  * SecurityContextHolder to access the current authentication information.
  *
- * Alternative was to take it from sources online, its important !! we check !!
  */
 
 public final class Auth {

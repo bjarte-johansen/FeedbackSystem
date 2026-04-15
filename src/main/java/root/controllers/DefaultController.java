@@ -25,7 +25,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.List;
 
-import static root.common.utils.Preconditions.checkArgument;
+//import static com.google.common.base.Preconditions.checkArgument;;
+import static com.google.common.base.Preconditions.*;
 //import root.models.repositories.JdbcReviewRepository;
 
 
@@ -59,27 +60,6 @@ public class DefaultController {
     public String index(Model model, HttpServletRequest req, RedirectAttributes ra) throws Exception {
         return "redirect:/reviews/build-html?externalId=/invalid-path";
     }
-//
-//
-//    /**
-//     * Clear session route for testing purposes. This allows us to clear the session and all associated data, such as
-//     * review votes, for testing the like/dislike functionality without having to wait for the session to expire.
-//     *
-//     * @param session
-//     * @param ra
-//     * @return
-//     * @throws Exception
-//     */
-//
-//    @GetMapping("/clear-session")
-//    public String clearSession(HttpSession session, RedirectAttributes ra) throws Exception {
-//        session.invalidate();
-//
-//        return ControllerHelper.create()
-//            .with(ra)
-//            .withStatus(true, "Session cleared successfully.")
-//            .redirect("/");
-//    }
 
 
     /**
@@ -110,13 +90,13 @@ public class DefaultController {
             true // include stats
         );
 
-        // add test data for select externalId pill, in production this should be dynamically loaded based on existing
-        // reviews in the database
-        ControllerUtils.addSelectExternalIdPillData(vm, reviewRepo);
-
-        // add default "new review" form values for quick testing of form submission
+        // testing values
         if (AppConfig.TESTING_MODE) {
-            // TODO: remove for production code, should have empty form
+            // add test data for select externalId pill, in production this should be dynamically loaded based on existing
+            // reviews in the database
+            ControllerUtils.addSelectExternalIdPillData(vm, reviewRepo);
+
+            // add default values for forms
             ControllerUtils.addDefaultNewReviewFormValues(vm);
         }
 
@@ -127,65 +107,91 @@ public class DefaultController {
         return "client/index";
     }
 
-
-    /**
-     * API endpoint to generate HTML for a list of reviews based on the given filters. This is used for the "Load more"
-     * functionality on the frontend, where the frontend can call this endpoint with the appropriate filters and
-     * pagination cursor to get the next page of reviews as HTML to append to the existing list. This allows us to reuse
-     * the same HTML rendering logic for both the initial page load and subsequent "Load more" requests, ensuring
-     * consistency in the review display and reducing code duplication.
-     *
-     * @param externalId
-     * @param encodedCursor
-     * @param orderByEnum
-     * @param scoreFilter
-     * @param model
-     * @param req
-     * @return
-     * @throws Exception
-     */
-
-    @GetMapping("/api/reviews/build-html")
-    public String renderReviewsAsHtml(
+    @GetMapping("/reviews/build-json")
+    @ResponseBody
+    public String showReviewsAsJson(
         @RequestParam String externalId,
         @RequestParam(name = "cursor", defaultValue = "") String encodedCursor,
         @RequestParam(name = "orderByEnum", defaultValue = ("" + ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC)) int orderByEnum,
         @RequestParam(name = "scoreFilter", defaultValue = "-1") String scoreFilter,
-        Model model,
+        //Model model,
         HttpServletRequest req
     ) throws Exception {
         Map<String, Object> vm = reviewPageService.buildReviewListingPage(
             externalId, encodedCursor, orderByEnum, scoreFilter, // filters
             req,
-            false // do not include stats
+            true // include stats
         );
 
-        model.addAllAttributes(vm);
-
-        return "client/pretty-review-list.partial";
+        return Utils.toJson(vm);
     }
 
 
-    /**
-     * API endpoint to generate HTML for a single review by id.
-     *
-     * @param reviewId
-     * @param model
-     * @return
-     * @throws Exception
-     */
+//    /**
+//     * API endpoint to generate HTML for a list of reviews based on the given filters. This is used for the "Load more"
+//     * functionality on the frontend, where the frontend can call this endpoint with the appropriate filters and
+//     * pagination cursor to get the next page of reviews as HTML to append to the existing list. This allows us to reuse
+//     * the same HTML rendering logic for both the initial page load and subsequent "Load more" requests, ensuring
+//     * consistency in the review display and reducing code duplication.
+//     *
+//     * @param externalId
+//     * @param encodedCursor
+//     * @param orderByEnum
+//     * @param scoreFilter
+//     * @param model
+//     * @param req
+//     * @return
+//     * @throws Exception
+//     */
+//
+//    @GetMapping("/api/reviews/build-html")
+//    public String renderReviewsAsHtml(
+//        @RequestParam String externalId,
+//        @RequestParam(name = "cursor", defaultValue = "") String encodedCursor,
+//        @RequestParam(name = "orderByEnum", defaultValue = ("" + ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC)) int orderByEnum,
+//        @RequestParam(name = "scoreFilter", defaultValue = "-1") String scoreFilter,
+//        Model model,
+//        HttpServletRequest req
+//    ) throws Exception {
+//        Map<String, Object> vm = reviewPageService.buildReviewListingPage(
+//            externalId, encodedCursor, orderByEnum, scoreFilter, // filters
+//            req,
+//            false // do not include stats
+//        );
+//
+//        model.addAllAttributes(vm);
+//
+//        return "client/pretty-review-list.partial";
+//    }
 
-    @GetMapping("/api/review/{reviewId}/build-html")
-    public String makeReviewHtml(@PathVariable long reviewId, Model model) throws Exception {
-        Review review = reviewRepo.findById(reviewId).orElse(null);
-        if (review == null) return "error";
 
-        model.addAttribute("review", review);
+//    /**
+//     * API endpoint to generate HTML for a single review by id.
+//     *
+//     * @param reviewId
+//     * @param model
+//     * @return
+//     * @throws Exception
+//     */
+//
+//    @GetMapping("/api/review/{reviewId}/build-html")
+//    @Deprecated
+//    public String makeReviewHtml(@PathVariable long reviewId, Model model) throws Exception {
+//        Review review = reviewRepo.findById(reviewId).orElse(null);
+//        if (review == null) return "error";
+//
+//        model.addAttribute("review", review);
+//
+//        // add formatters to model for display in JSP
+//        //model.addAttribute("daysAgoFormatter", ReviewPageService.daysAgoFormatter);
+//
+//        return "client/pretty-review.partial";
+//    }
 
-        // add formatters to model for display in JSP
-        model.addAttribute("daysAgoFormatter", ReviewPageService.daysAgoFormatter);
 
-        return "client/pretty-review.partial";
+    @GetMapping("/api/review/{reviewId}/json")
+    public Review renderReviewAsJson(@PathVariable long reviewId) throws Exception {
+        return reviewRepo.findById(reviewId).orElse(null);
     }
 
 
@@ -202,11 +208,9 @@ public class DefaultController {
         HttpSession session,
         HttpServletRequest req
     ) {
-        if (reviewService.submitVote(reviewId, Review.VOTE_UP, session.getId(), req.getRemoteAddr())) {
-            return ResponseEntity.ok().build();
-        }
-
-        return ResponseEntity.noContent().build();
+        return (reviewService.submitVote(reviewId, Review.VOTE_UP, session.getId(), req.getRemoteAddr()))
+            ? ResponseEntity.ok().build()
+            : ResponseEntity.noContent().build();
     }
 
 
@@ -223,12 +227,11 @@ public class DefaultController {
         HttpSession session,
         HttpServletRequest req
     ) {
-        if (reviewService.submitVote(reviewId, Review.VOTE_DOWN, session.getId(), req.getRemoteAddr())) {
-            return ResponseEntity.ok().build();
-        }
-
-        return ResponseEntity.noContent().build();
+        return (reviewService.submitVote(reviewId, Review.VOTE_DOWN, session.getId(), req.getRemoteAddr()))
+            ? ResponseEntity.ok().build()
+            : ResponseEntity.noContent().build();
     }
+
 
 
     /**

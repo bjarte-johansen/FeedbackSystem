@@ -2,7 +2,7 @@ package root.includes;
 
 import java.time.LocalDate;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;;
 
 public class ImmutableUnboundedDateRange<T extends LocalDate> {
     private final T start;

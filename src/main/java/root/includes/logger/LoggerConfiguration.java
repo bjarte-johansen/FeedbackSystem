@@ -6,7 +6,8 @@ public class LoggerConfiguration {
     public boolean LAYOUT_ADJUST_MAGIC_RIGHT        = true;
     public int FORMAT_TYPE                          = LoggerFormatType.YAML;
     public boolean SHOW_EVENT_TYPE                  = false;
-    public boolean FORMAT_EXTRA_LINE_AFTER_BLOCK    = true;
+    public boolean FORMAT_EXTRA_LINE_AFTER_BLOCK    = false;
+    public boolean OVERRIDE_COLORIZE                = false;
 
     @Override
     public String toString() {

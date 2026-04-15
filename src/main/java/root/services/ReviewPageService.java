@@ -22,7 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.*;
 
 
 
@@ -39,8 +39,10 @@ public class ReviewPageService {
 
     /*
     lambda helper methods
+    deprecated, no longer used since we do client side rendering
      */
 
+    /*
     // add a simple function to format double values to 2 decimals for display in JSP
     public static Function<Double, String> dblFormatRoundToHalfDotToDash = (v) -> {
         v = Math.round(v * 2.0) / 2.0;
@@ -68,6 +70,7 @@ public class ReviewPageService {
         long days = ChronoUnit.DAYS.between(v, Instant.now());
         return String.valueOf(Math.max(0, days));
     };
+    */
 
 
     private final AppContext appContext;
@@ -81,7 +84,7 @@ public class ReviewPageService {
     }
 
 
-
+/*
     private static void addFormattersToModel(Map<String, Object> modelMap) {
         // add formatters to model for display in JSP
         modelMap.put("dblFormatter1", dblFormatWithSingleDecimal);
@@ -89,16 +92,14 @@ public class ReviewPageService {
         modelMap.put("daysAgoFormatter", daysAgoFormatter);
         modelMap.put("dblFormatterCssPointFive", dblFormatRoundToHalfDotToDash);
     }
+ */
 
     private void addReviewStatsToModel(Map<String, Object> modelMap, String externalId) {
         // get score stats for the given externalId for approved reviews. This will be used for display of average score,
-        ReviewAggregateStatistics reviewStats = reviewService.getScoreStatsHelper(externalId, Review.REVIEW_STATUS_APPROVED, null);
+        ReviewAggregateStatistics reviewStats = reviewService.getScoreStatsHelper(externalId, Review.REVIEW_STATUS_APPROVED);
 
         // get score stats for the given externalId and add to model
         modelMap.put("reviewStats", reviewStats);
-
-        //Logger.log(M.writeValueAsString(reviewStats.getScoreCounts()));
-        modelMap.put("scoreCountsJson", Utils.toJson(reviewStats.getScoreCounts()));
     }
 
 
@@ -110,8 +111,6 @@ public class ReviewPageService {
     // better routing and cleaner URLs.
 
     private String extractExternalIdFromRequest(String externalId, HttpServletRequest req) throws Exception {
-        // get externalId from request parameter and validate. If not set, use the first unique externalId from
-        // the database for demonstration purposes.
         // TODO: remove defaulting to first unique externalId for production code, should require an externalId to be
         //  provided and show an error if not provided
         if (externalId == null || externalId.isBlank()) {
@@ -146,7 +145,7 @@ public class ReviewPageService {
 
     public Map<String, Object> buildReviewListingPage(
         String externalId,
-        String strEncodedCursor,
+        String cursorStr,
         int orderByEnum,
         String scoreFilter,
         HttpServletRequest req,
@@ -159,11 +158,13 @@ public class ReviewPageService {
         modelMap.put("externalId", externalId);
 
         // decode cursor
-        PageCursor decodedCursor = PageCursorEncoder.decode(strEncodedCursor, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
+        PageCursor decodedCursor = PageCursorEncoder.decode(cursorStr, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
         modelMap.put("pageCursor", decodedCursor.encode());
 
-        // add reviews to model for display in JSP
+        // create query options
         var options = getReviewQueryOptions(orderByEnum, scoreFilter, decodedCursor);
+
+        // get reviews and add to model
         List<Review> reviews = reviewRepo.findByExternalIdWithPagination(externalId, options);
         modelMap.put("reviews", reviews);
 
@@ -173,14 +174,14 @@ public class ReviewPageService {
         // add score filter to model
         modelMap.put("scoreFilter", scoreFilter);
 
+        // add current orderBy enum to model for display in JSP
+        modelMap.put("orderByEnum", orderByEnum);
+
         // add ordering options to model
         modelMap.put("reviewListOrderOptions", orderByOptionsMap);
 
-        // add current orderBy enum to model for display in JSP
-        modelMap.put("currentOrderByEnum", orderByEnum);
-
         // add formatters to model
-        addFormattersToModel(modelMap);
+        //addFormattersToModel(modelMap);
 
         return modelMap;
     }

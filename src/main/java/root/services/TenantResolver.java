@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.*;
 
 interface EvictableCache<K, V> {
     Tenant get(K k);
@@ -108,9 +108,6 @@ public class TenantResolver {
 
     // expects normalized host
     private Tenant findByHost(String host) {
-//  Logger.log("Resolving tenant for host: \"" + host + "\"");
-//  if(true) return tenantRepo.findByHostExact(host);
-
         Tenant t = tenantRepo.findByHostExact(host);
         if (t != null) return t;
 

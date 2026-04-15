@@ -12,7 +12,6 @@ import java.util.List;
 
 @Repository
 public class TenantRepositoryCustomImpl {
-    // todo, move this to tenant repo
     private Tenant findByHostExact(String host){
         String sql = "SELECT t.* FROM public.tenant_domain d JOIN public.tenant t ON t.id = d.tenant_id WHERE d.domain = ? LIMIT 1;";
 
@@ -20,7 +19,6 @@ public class TenantRepositoryCustomImpl {
             .bind(host)
             .fetchOne(Tenant.class)
             .orElse(null);
-
     }
 
     // todo, move this to tenant repo

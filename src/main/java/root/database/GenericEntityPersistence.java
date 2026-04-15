@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;;
 
 
 public class GenericEntityPersistence {

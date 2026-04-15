@@ -16,11 +16,9 @@ import root.includes.quicktests.FantasyRepoTest;
 import root.repositories.TenantRepository;
 
 
+
 @Configuration
 @ComponentScan("root")
-class AppConfigMain {}
-
-
 @Service
 public class Main {
     public static boolean PRINT_META_DATA_AT_STARTUP = false;
@@ -59,6 +57,15 @@ public class Main {
             Logger.tab(1).log("This is a tab message.");
             Logger.caller(4).log("This is the caller functions information.");
         }
+
+        Logger.log("try logger().log('something').enter()/leave()");
+        Logger.log("a").enter();
+        Logger.log("a.a");
+        Logger.log("a.b");
+        Logger.log("a.c").enter();
+        Logger.leave().log("a.c.a");
+        Logger.leave().log("a.c");
+        Logger.log("a");
     }
 
     CommandLineRunner run() {
@@ -71,21 +78,19 @@ public class Main {
     }
 
     public static void main(String[] args) throws Throwable{
-        var ctx = new AnnotationConfigApplicationContext(AppConfigMain.class);
+        var ctx = new AnnotationConfigApplicationContext(Main.class);
 
         //var bean = ctx.getBean(FantasyRepository.class); // @Autowired works
 
 
-
+/*
         FantasyRepoTest fantasyRepoTest = ctx.getBean(FantasyRepoTest.class);
         fantasyRepoTest.run();
+*/
 
-        if(true) return;
-
-        /*
         testLogger();
+
         if(true) return;
-         */
 
 
         /*

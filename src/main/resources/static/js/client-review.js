@@ -216,52 +216,59 @@ var Review = {
      * @param options
      * @returns {URLSearchParams}
      */
+    //
+    // __getReviewListOptionAsMap($reviewList, options = {exclude: null}) {
+    //     if (!$reviewList || $reviewList.length === 0) {
+    //         console.log("No $reviewList element provided or found");
+    //         return new Map();
+    //     }
+    //
+    //     const params = new Map();
+    //
+    //     const el = $reviewList.get(0);
+    //     if (!el) throw new Error("$reviewList[0] element not found");
+    //
+    //     // gets data-attr from element and dash-to-camel case convert the key, then sets it in the params map. If the
+    //     // value looks like a JSON array or object, it tries to parse it before setting it.
+    //
+    //     const getDataAttr = (el, camelKey, dashedKey) => el.dataset[camelKey] ?? el.getAttribute(dashedKey);
+    //
+    //     const setDataAttr = function (dashedKey) {
+    //         const camelKey = Review.utils.dashedToCamel(dashedKey)
+    //         const value = getDataAttr(el, camelKey, dashedKey); //$reviewList.attr("data-" + dashed_key); // jQuery attr returns string or undefined ALWAYS
+    //         if (value === null || value === undefined) return;
+    //
+    //         const ch = value?.trim()?.[0];
+    //         if (ch === "[" || ch === "{") {
+    //             try {
+    //                 return params.set(camelKey, JSON.parse(value));
+    //             } catch (e) {
+    //             }
+    //         }
+    //
+    //         params.set(camelKey, value);
+    //     };
+    //
+    //     const keys = ["external-id", "order-by-enum", "score-filter", "cursor", "review-count", "detailed-review-count", "json"];
+    //     keys.forEach(setDataAttr);
+    //
+    //     if (options?.exclude !== null) {
+    //         const excludeSet = new Set(Array.isArray(options.exclude) ? options.exclude : [options.exclude]);
+    //         for (let key of excludeSet) {
+    //             params.delete(Review.utils.dashedToCamel(key));
+    //         }
+    //     }
+    //
+    //     console.log("Extracted review list options from data attributes:", Object.fromEntries(params));
+    //
+    //     return params;
+    // },
 
-    __getReviewListOptionAsMap($reviewList, options = {exclude: null}) {
-        if (!$reviewList || $reviewList.length === 0) {
-            console.log("No $reviewList element provided or found");
-            return new Map();
-        }
+    __getReviewListOptionAsJson($reviewList, options = {exclude: null}) {
+        if($reviewList.length === 0) return new Map();
 
-        const params = new Map();
-
-        const el = $reviewList.get(0);
-        if (!el) throw new Error("$reviewList[0] element not found");
-
-        // gets data-attr from element and dash-to-camel case convert the key, then sets it in the params map. If the
-        // value looks like a JSON array or object, it tries to parse it before setting it.
-
-        const getDataAttr = (el, camelKey, dashedKey) => el.dataset[camelKey] ?? el.getAttribute(dashedKey);
-
-        const setDataAttr = function (dashedKey) {
-            const camelKey = Review.utils.dashedToCamel(dashedKey)
-            const value = getDataAttr(el, camelKey, dashedKey); //$reviewList.attr("data-" + dashed_key); // jQuery attr returns string or undefined ALWAYS
-            if (value === null || value === undefined) return;
-
-            const ch = value?.trim()?.[0];
-            if (ch === "[" || ch === "{") {
-                try {
-                    return params.set(camelKey, JSON.parse(value));
-                } catch (e) {
-                }
-            }
-
-            params.set(camelKey, value);
-        };
-
-        const keys = ["external-id", "order-by-enum", "score-filter", "cursor", "review-count", "detailed-review-count", "json"];
-        keys.forEach(setDataAttr);
-
-        if (options?.exclude !== null) {
-            const excludeSet = new Set(Array.isArray(options.exclude) ? options.exclude : [options.exclude]);
-            for (let key of excludeSet) {
-                params.delete(Review.utils.dashedToCamel(key));
-            }
-        }
-
-        console.log("Extracted review list options from data attributes:", Object.fromEntries(params));
-
-        return params;
+        const raw = $reviewList.attr("data-json") ?? "{}";
+        return JSON.parse(raw);
     },
 
 
@@ -278,10 +285,10 @@ var Review = {
         if (!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
 
         const $orderByEnumSelect = $reviewList.find("select[name='orderByEnum']");
-        if ($orderByEnumSelect.length !== 0) rvl.orderByEnum = Number($orderByEnumSelect.val());
+        if ($orderByEnumSelect.length !== 0) rvl.setOrderByEnum(Number($orderByEnumSelect.val()));
 
         const $scoreFilter = $reviewList.find("select[name='scoreFilter']");
-        if ($scoreFilter.length !== 0) rvl.scoreFilter = [Number($scoreFilter.val())];
+        if ($scoreFilter.length !== 0) rvl.setScoreFilter([Number($scoreFilter.val())]);
     },
 
 
@@ -299,24 +306,24 @@ var Review = {
 
         const rvl = Review.getReviewListing(true);
 
-        if (options?.resetCursor || (rvl.cursor.isOutOfBounds(rvl.getAccumulatedReviewCountByScoreFilter()))) {
-            rvl.cursor = rvl.cursor.withReset();
+        if (options?.resetCursor || (rvl.getCursor().isOutOfBounds(rvl.getAccumulatedReviewCountByScoreFilter()))) {
+            rvl.setCursor(rvl.getCursor().withReset());
         }
 
         // create url with search params
         const searchParams = rvl.buildQuerySearchParams();
-        const url = "/api/reviews/build-html?" + searchParams.toString();
+        const url = "/reviews/build-json?" + searchParams.toString();
 
         console.log("Reloading review list with URL:", url);
 
         // fetch
         $.ajax({
-            url: url, method: "GET", success: function (html) {
-                const $newReviewListItemsContainer = $(html);
-                const $oldReviewListItemsContainer = $(`.review--list .review--list-items`);
-                if (!$oldReviewListItemsContainer.length) return console.warn(`Old review list container not found.`);
+            url: url, method: "GET", dataType: "json", success: function (json) {
+                rvl
+                    .populateFromJson(json)
+                    .renderItems();
 
-                $oldReviewListItemsContainer.replaceWith($newReviewListItemsContainer);
+                console.log("Replace old content with content from json");
                 console.log('-----------------------------------------------------------');
             }, error: function (xhr, status, error) {
                 console.error(`Failed to reload review list:`, status, error);
@@ -340,9 +347,13 @@ var Review = {
         const rvl = Review.getReviewListing(true);
 
         // advance the cursor by the given offset, ensuring it does not exceed the maximum offset
-        rvl.cursor = rvl.cursor
-            .withAdvance(rvl.cursor.limit * pageDelta)
+        const prevCursor = rvl.getCursor();
+        const newCursor = prevCursor
+            .withAdvance(prevCursor.limit * pageDelta)
             .withClamp(rvl.getAccumulatedReviewCountByScoreFilter());
+
+        rvl.setCursor(newCursor);
+
 
         Review.reloadReviewList();
     },
@@ -365,22 +376,26 @@ var Review = {
      * existing review element in the DOM.
      */
 
-    reloadReview: function (reviewId) {
+    reloadReview(reviewId) {
         console.log("Review.reloadReview called with reviewId:", reviewId);
 
         $.ajax({
-            url: `/api/review/${reviewId}/build-html`, method: "GET", success: function (html) {
-                const $newReview = $(html);
+            url: `/api/review/${reviewId}/json`, dataType: "json", method: "GET", success: function (json) {
+                if(json === null) return;
+
+                const $newReview = Review.getReviewListing(true).renderItem(json);
                 const $oldReview = $(`.review--list .review[data-review-id="${reviewId}"]`);
                 if ($oldReview.length) {
                     $oldReview.replaceWith($newReview);
                 }
+
                 console.log('-----------------------------------------------------------');
             }, error: function (xhr, status, error) {
                 console.error(`Failed to reload review with ID ${reviewId}:`, status, error);
             }
         });
     },
+
 
     /**
      * handler are called with form,res IF form is tagged with class "ajax" and have a data-handler attribute matching
@@ -445,61 +460,143 @@ class ReviewListing {
     orderByEnum = -1;
     scoreFilter = -1;
     cursor = new PageCursor(0, Number.MAX_SAFE_INTEGER);
-    totalReviewCount = 0;
-    detailedReviewCount = {};
+    //totalReviewCount = 0;
+
+    templateHtml = null;
 
     constructor() {
     }
 
-    /*
-    loadNextPage() {
-        Review.nextReviewListPage(1);
-        return this;
-    }
-
-    loadPreviousPage() {
-        Review.prevReviewListPage();
-        return this;
-    }
-    */
-
     getExternalId(){
         return this.externalId;
     }
+
     getOrderByEnum(){
         return this.orderByEnum;
     }
+    setOrderByEnum(orderByEnum){
+        this.orderByEnum = orderByEnum;
+    }
+
     getScoreFilter(){
         return this.scoreFilter;
     }
+    setScoreFilter(scoreFilter){
+        this.scoreFilter = scoreFilter;
+    }
+
     getCursor(){
         return this.cursor;
     }
+    setCursor(cursor){
+        this.cursor = cursor;
+    }
+
     getTotalReviewCount(){
-        return this.totalReviewCount;
+        return this?.reviewStats?.totalCount ?? 0;
     }
 
     #getReviewCountByScore(score) {
-        return this.detailedReviewCount?.[score] || this.totalReviewCount;
+        return this.reviewStats.scoreCounts[score] || this.getTotalReviewCount();
     }
 
     getAccumulatedReviewCountByScoreFilter() {
         const filteredCount = this.scoreFilter?.reduce(
             (acc, score) => acc + this.#getReviewCountByScore(score),
             0);
-        return filteredCount || this.totalReviewCount;
+        return filteredCount || this.getTotalReviewCount();
     }
 
-    populateFromOptionsMap(opts) {
-        this.externalId = opts.get("externalId");
-        this.orderByEnum = Number(opts.get("orderByEnum"));
-        this.scoreFilter = opts.get("scoreFilter")?.split(",").map(s => Number(s)).filter(n => !isNaN(n)) || [-1];
-        this.cursor = Review.utils.createPageCursorFromString(opts.get("cursor"));
-        this.totalReviewCount = Number(opts.get("reviewCount"));
-        this.detailedReviewCount = opts.get("detailedReviewCount");
-        this.import = opts.get("json");
+    populateFromJson(o) {
+        o.cursor = o?.pageCursor ? Review.utils.createPageCursorFromString(o?.pageCursor) : new PageCursor(0, Number.MAX_SAFE_INTEGER);
+        o.scoreFilter = o.scoreFilter?.split(",").map(s => Number(s)).filter(n => !isNaN(n)) || [-1];
+        //o.orderByEnum = o.currentOrderByEnum;
+
+        const deleteKeys = ["currentOrderByEnum", "dateFormatter", "daysAgoFormatter", "dblFormatter1", "dblFormatterCssPointFive", "scoreCountsJson", "pageCursor", "uniqueExternalIds", "defaultNewReviewFormValues", "detailedReviewCount"];
+        for(let k in deleteKeys)
+            delete o[k];
+
+        delete o.dateFormatter;
+        delete o.daysAgoFormatter;
+        delete o.dblFormatter1;
+        delete o.dblFormatterCssPointFive;
+
+        delete o.scoreCountsJson;
+        delete o.pageCursor;
+        delete o.uniqueExternalIds;
+        delete o.defaultNewReviewFormValues;
+
+        delete o.detailedReviewCount;
+
+
+        for(let key in o){
+            if(o.hasOwnProperty(key)){
+                //console.log("setting key ", key, "to value", o[key]);
+                this[key] = o[key];
+            }
+        }
+
+        //console.log(JSON.stringify(o, null, 2));
 
         return this;
+    }
+
+    getTemplateHtml() {
+        if (this.templateHtml === null) {
+            // load template html from DOM
+            const $tpl = $('.review--list .review-item-template');
+            if (!$tpl) throw new Error("Unable to find first element child");
+            this.templateHtml = $tpl[0].outerHTML;
+        }
+
+        return this.templateHtml;
+    }
+
+    renderItems(){
+        const _this = this;
+
+        const $itemsContainer = $(".review--list-items");
+        $itemsContainer.empty().hide();
+
+        this.reviews.forEach((r) => {
+            if(r === null) return;
+            const $item = this.renderItem(r);
+            $itemsContainer.append($item);
+        });
+
+        $itemsContainer.show();
+    }
+
+    renderItem(review){
+        console.log("called renderItem", review);
+        0
+        const templateHtml = this.getTemplateHtml();
+        const cloneHtml = templateHtml.replaceAll("{reviewId}", review.id);
+
+        const roundToHalf = (x) => Math.round(x * 2.0) / 2.0;
+        const formatNumber = (num, maxPrec = 2, minPrec = 0, dot_to_dash) =>
+            num.toLocaleString("en-US", {
+                minimumFractionDigits: minPrec,
+                maximumFractionDigits: maxPrec
+            }).replace(".", dot_to_dash ? "-" : ".");
+
+        const avgScore = Math.round((this.reviewStats.averageScore * 2.0) / 2.0);
+        const avgDashedScore = (x) => Math.round((x * 2.0) / 2.0).replace(".", "-");
+
+        const $clone = $(cloneHtml);
+        $clone.removeClass("review-item-template").addClass("box review review--review-14 mb-2");
+        $clone.addClass("review-" + review.id);
+        $clone.addClass("review-item-" + review.id);
+        $clone.find('.score-text').text(`${review.score}/5`);
+        $clone.find('.score-value').addClass(`score-${formatNumber(roundToHalf(review.score),1,1, true)}`);
+        $clone.find(".title").text(`${review.title ?? "(tom)"}`);
+        $clone.find(".name").text(`${review.authorName ?? "(anonym)"}`);
+        $clone.find(".time").text(`${review.createdAt}`)
+        $clone.find(".comment").text(review.comment ?? "(empty)");
+        $clone.find(".like-count").text(review.likeCount);
+        $clone.find(".dislike-count").text(review.dislikeCount);
+
+        return $clone;
     }
 
     buildQuerySearchParams() {
@@ -513,12 +610,39 @@ class ReviewListing {
     }
 }
 
+
+
 document.addEventListener("DOMContentLoaded", function () {
+
+    const applyReviewVoteAction = function (reviewId, voteType) {
+        fetch(`/api/review/${reviewId}/${voteType}`, {method: "POST"})
+            .then(res => {
+                if (!res.ok) {
+                    return;
+                }
+                Review.reloadReview(reviewId);
+            })
+            .catch(err => {
+                console.error("Error voting ${voteType} for review", reviewId, err);
+            });
+    };
+
+    const router = new Router();
+
+    router.route("/R/review/:id/like", ({params}) => { applyReviewVoteAction(params.id, "like"); });
+    router.route("/R/review/:id/dislike", ({params}) => applyReviewVoteAction(params.id, "dislike"));
+
+    router.start();
+
+    //console.log("Router initialized");
+
+
     const rl = new ReviewListing();
     const $reviewList = Review.getReviewListingDomElement(false);
 
-    rl.populateFromOptionsMap(Review.__getReviewListOptionAsMap($reviewList));
+    rl.populateFromJson(Review.__getReviewListOptionAsJson($reviewList) ?? {});
     Review.setReviewListing(rl);
+    rl.renderItems();
 
     document.addEventListener("submit", async e => {
         const form = e.target.closest("form");
@@ -599,6 +723,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     console.log("client-review.js loaded");
 });
+
 
 
 // TODO: refactor this function, used with "Legg til ny omtale" button, to be more generic and reusable for toggling

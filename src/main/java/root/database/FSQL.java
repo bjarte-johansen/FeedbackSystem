@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;;
 
 
 public class FSQL {

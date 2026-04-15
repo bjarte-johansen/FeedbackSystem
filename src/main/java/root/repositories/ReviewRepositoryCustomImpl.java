@@ -10,7 +10,7 @@ import root.models.Review;
 import java.sql.ResultSet;
 import java.util.*;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;;
 
 @Repository
 public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
@@ -142,7 +142,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
 
 
     @Override
-    public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> scoreFilterSet){
+    public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId){
         // lambda to read result set and convert to LinkedHashMap<Integer, Integer>
         FSQLQuery.ResultSetFunction<LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
             LinkedHashMap<Integer, Integer> res = new LinkedHashMap<>();
@@ -158,7 +158,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
         whereExprList.where("(external_id = ?)", externalId);
         whereExprList.where("(status = ?)", Review.REVIEW_STATUS_APPROVED);
 
-        buildScoreFilterSetConditions(whereExprList, scoreFilterSet);
+        //buildScoreFilterSetConditions(whereExprList, scoreFilterSet);
 
         // build sql
         String whereStr = whereExprList.toSql(true);

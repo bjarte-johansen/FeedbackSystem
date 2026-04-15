@@ -14,7 +14,7 @@ public interface ReviewRepositoryInterface {
 
     void updateReviewStatus(long reviewId, int newStatus);
 
-    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> scoreFilterSet);
+    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId);
 
     List<String> findDistinctExternalIdByExternalId();
     List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options);

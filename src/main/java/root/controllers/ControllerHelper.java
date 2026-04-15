@@ -15,7 +15,7 @@ import java.util.List;
 
 @Component
 public class ControllerHelper {
-    private boolean status = true;
+    private Boolean status = true;
     private String statusMessage = null;
 
     private RedirectAttributes redirectAttributes = null;
@@ -32,45 +32,21 @@ public class ControllerHelper {
     }
 
     private void setStatusMessage(){
+        boolean hasStatus = this.status != null;
+        boolean hasStatusMessage = statusMessage != null;
+
+        if(hasStatus && hasStatusMessage && (redirectAttributes == null && model == null)){
+            throw new RuntimeException("Both model and redirectattributes should not be null");
+        }
+
         if(redirectAttributes != null){
             redirectAttributes.addFlashAttribute("status", status);
             redirectAttributes.addFlashAttribute("statusMessage", statusMessage);
-
-            if(status) {
-                redirectAttributes.addFlashAttribute("successMessage", statusMessage);
-            }else{
-                redirectAttributes.addFlashAttribute("errorMessage", statusMessage);
-            }
         }
 
         if(model != null){
             model.addAttribute("status", status);
             model.addAttribute("statusMessage", statusMessage);
-
-            if(status) {
-                model.addAttribute("successMessage", statusMessage);
-            }else{
-                model.addAttribute("errorMessage", statusMessage);
-            }
-        }
-
-        if(redirectAttributes == null && model == null){
-            throw new RuntimeException("Both model and redirectattributes should not be null");
-            /*
-            // if neither redirectAttributes nor model is set, we can still set the status message in the request attributes
-            ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-            HttpServletRequest request = attr.getRequest();
-            HttpServletResponse response = attr.getResponse();
-
-            request.setAttribute("status", status);
-            request.setAttribute("statusMessage", statusMessage);
-
-            if(status) {
-                request.setAttribute("successMessage", statusMessage);
-            }else{
-                request.setAttribute("errorMessage", statusMessage);
-            }
-             */
         }
     }
 
@@ -105,23 +81,5 @@ public class ControllerHelper {
     public String redirect(String path) {
         return "redirect:" + path;
     }
-
-    //
-    public static void setErrorMessage(RedirectAttributes ra, String message) {
-        ra.addFlashAttribute("errorMessage", message);
-    }
-
-    public static void setErrorMessage(Model model, String message) {
-        model.addAttribute("errorMessage", message);
-    }
-
-    //
-    public static void setSuccessMessage(RedirectAttributes ra, String message) {
-        ra.addFlashAttribute("successMessage", message);
-    }
-
-    public static void setSuccessMessage(Model model, String message) {
-        model.addAttribute("successMessage", message);
-    }
- */
+*/
 }

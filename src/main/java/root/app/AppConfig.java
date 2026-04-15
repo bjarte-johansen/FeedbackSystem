@@ -3,6 +3,9 @@ package root.app;
 import org.springframework.stereotype.Component;
 import root.database.DataSourceConnectionParams;
 
+import javax.xml.crypto.Data;
+import java.util.regex.Pattern;
+
 
 @Component
 public class AppConfig {
@@ -10,6 +13,7 @@ public class AppConfig {
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test", "h184905", "pass", "test");
     public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
      */
+    public static final DataSourceConnectionParams LOCALHOST = new DataSourceConnectionParams("jdbc:postgresql://localhost:5432/", "postgres", "postgres", "test");
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905", "h184905", "pass", "test");
     public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
     public static final DataSourceConnectionParams CURRENT_CONNECTION_PARAMS = TEST;
@@ -23,6 +27,9 @@ public class AppConfig {
 
     // email stuff
     public static String VALID_EMAIL_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$";
+
+    // schema validator, allows only letters, numbers and underscores, must start with a letter or underscore
+    public static final Pattern VALID_SCHEMA_NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
     // prevent double vote expiration time in days, after which a reviewer can vote again on the same review
     public static int DEFAULT_REVIEW_VOTE_EXPIRATION_IN_DAYS = 30;

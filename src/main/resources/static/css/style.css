@@ -222,7 +222,7 @@ a.btn, a.btn-primary {
 /* presets */
 .score-1, .score-1-0 { --stars: 1; }
 .score-1-5 { --stars: 1.5; }
-.score-2, .score-2-5 { --stars: 2; }
+.score-2, .score-2-0 { --stars: 2; }
 .score-2-5 { --stars: 2.5; }
 .score-3, .score-3-0 { --stars: 3; }
 .score-3-5 { --stars: 3.5; }

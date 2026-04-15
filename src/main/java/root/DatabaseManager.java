@@ -214,10 +214,12 @@ public class DatabaseManager {
                 );
             Logger.log("Added " + reviews.size() + " reviews to demo data");
             reviews.forEach(review -> {
+                reviewRepo.save(review);
+                /*
                 try(var _ = new TryWithTimer("insert reviews")) {
                     reviewRepo.save(review);
-                }
-            });
+                }*/
+               });
 
             if(DEBUG) Logger.log("Inserted reviews: " + reviews);
         }

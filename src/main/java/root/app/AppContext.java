@@ -6,7 +6,7 @@ import root.database.DataSourceManager;
 import root.database.connectionproviders.CustomConnectionProvider;
 import root.includes.logger.Logger;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.*;
 
 @Component
 public class AppContext {
@@ -22,10 +22,12 @@ public class AppContext {
 
     private void initialize() {
         // print app text banner
-        AppTextBanner.print();
+        //AppTextBanner.print();
 
-        // initialize data sources and connection providers
-        initDatasourceAndConnectionProvider();
+        try(var scope = Logger.scope("Initializing connection providers")) {
+            // initialize data sources and connection providers
+            initDatasourceAndConnectionProvider();
+        }
     }
 
 
@@ -34,15 +36,18 @@ public class AppContext {
      */
 
     private void initDatasourceAndConnectionProvider() {
-        CustomDataSource ds;
-        ds = new CustomDataSource(AppConfig.CURRENT_CONNECTION_PARAMS);
-        ds.setMaxPoolSize(AppConfig.DB_MAX_CONNECTION_POOL_SIZE);
-        ds.warm(2);
+        try(var scope = Logger.scope("Initializing connection providers")) {
+            CustomDataSource ds;
+            ds = new CustomDataSource(AppConfig.CURRENT_CONNECTION_PARAMS);
+            ds.setMaxPoolSize(AppConfig.DB_MAX_CONNECTION_POOL_SIZE);
+            ds.warm(2);
 
-        if (!AppConfig.USE_MULTI_TENANT) {
-            initSingleTenantConnectionProvider(ds);
-        } else {
-            initMultiTenantConnectionProvider(ds);
+
+            if (!AppConfig.USE_MULTI_TENANT) {
+                initSingleTenantConnectionProvider(ds);
+            } else {
+                initMultiTenantConnectionProvider(ds);
+            }
         }
     }
 

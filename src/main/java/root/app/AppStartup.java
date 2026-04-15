@@ -24,7 +24,6 @@ class AppStartup implements ApplicationRunner {
         this.databaseService = databaseService;
     }
 
-
     @Override
     public void run(ApplicationArguments args) throws Exception {
         Logger.log("running app startup tasks...");
@@ -33,7 +32,7 @@ class AppStartup implements ApplicationRunner {
         //EmailVerificationCodeSender.send("bjartej@hotmail.com", VerificationCodeDigitsGenerator.generate(6));
 
         // patch database
-        //databaseService.executeDatabasePatches();
+        databaseService.executeDatabasePatches();
 
         // reset demo data
         databaseService.resetDemoData();

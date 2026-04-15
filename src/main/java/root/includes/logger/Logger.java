@@ -64,12 +64,27 @@ public class Logger {
         EVENT_ERROR, "[error]"
     );
 
+    protected static MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+    protected static LoggerInterface LOGGER_PROXY = (LoggerInterface) Proxy.newProxyInstance(
+        LoggerInterface.class.getClassLoader(),
+        new Class[]{LoggerInterface.class},
+        (proxy, method, args) -> {
+            MethodHandle mh = LOOKUP.findStatic(
+                Logger.class,
+                method.getName(),
+                MethodType.methodType(method.getReturnType(), method.getParameterTypes())
+            );
+            return mh.invokeWithArguments(args == null ? new Object[0] : args);
+            //return method.invoke(LOGGER_INSTANCE, args);
+        }
+    );
 
     /*
         Indent-handling in setup of try-with entering scope
     */
 
     public static String colorize(String s, String ansiColorCode) {
+        if(!cfg.OVERRIDE_COLORIZE) return s;
         return ansiColorCode + s + AnsiColors.RESET;
     }
 /*
@@ -155,8 +170,8 @@ public class Logger {
         };
     }
 
-    public static void enter() { depth.set(depth.get() + 1); }
-    public static void leave() { depth.set(depth.get() - 1); }
+    public static LoggerInterface enter() { depth.set(depth.get() + 1); return LOGGER_PROXY;}
+    public static LoggerInterface leave() { depth.set(depth.get() - 1); return LOGGER_PROXY; }
 
 
 
@@ -316,34 +331,21 @@ public class Logger {
     }
 
     // actual logging methods, just call put with appropriate event type
-    public static void log(Object... args) { put(EVENT_DEFAULT, args); }
-    public static void debug(Object... args) { put(EVENT_DEBUG, args); }
-    public static void info(Object... args) { put(EVENT_INFO, args); }
-    public static void warn(Object... args) { put(EVENT_WARN, args); }
-    public static void error(Object... args) { put(EVENT_ERROR, args); }
+    public static LoggerInterface log(Object... args) { put(EVENT_DEFAULT, args); return LOGGER_PROXY; }
+    public static LoggerInterface debug(Object... args) { put(EVENT_DEBUG, args); return LOGGER_PROXY; }
+    public static LoggerInterface info(Object... args) { put(EVENT_INFO, args); return LOGGER_PROXY; }
+    public static LoggerInterface warn(Object... args) { put(EVENT_WARN, args); return LOGGER_PROXY; }
+    public static LoggerInterface error(Object... args) { put(EVENT_ERROR, args); return LOGGER_PROXY; }
 
-    public static void logf(Object... args) { put(EVENT_DEFAULT, format(args)); }
-    public static void debugf(Object... args) { put(EVENT_DEBUG, format(args)); }
-    public static void infof(Object... args) { put(EVENT_INFO, format(args)); }
-    public static void warnf(Object... args) { put(EVENT_WARN, format(args)); }
-    public static void errorf(Object... args) { put(EVENT_ERROR, format(args)); }
+    public static LoggerInterface logf(Object... args) { put(EVENT_DEFAULT, format(args)); return LOGGER_PROXY; }
+    public static LoggerInterface debugf(Object... args) { put(EVENT_DEBUG, format(args)); return LOGGER_PROXY; }
+    public static LoggerInterface infof(Object... args) { put(EVENT_INFO, format(args)); return LOGGER_PROXY; }
+    public static LoggerInterface warnf(Object... args) { put(EVENT_WARN, format(args)); return LOGGER_PROXY; }
+    public static LoggerInterface errorf(Object... args) { put(EVENT_ERROR, format(args)); return LOGGER_PROXY; }
 
     //protected static final LoggerImpl LOGGER_INSTANCE = new LoggerImpl();
 
-    protected static MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
-    protected static LoggerInterface LOGGER_PROXY = (LoggerInterface) Proxy.newProxyInstance(
-        LoggerInterface.class.getClassLoader(),
-        new Class[]{LoggerInterface.class},
-        (proxy, method, args) -> {
-            MethodHandle mh = LOOKUP.findStatic(
-                Logger.class,
-                    method.getName(),
-                    MethodType.methodType(method.getReturnType(), method.getParameterTypes())
-                );
-            return mh.invokeWithArguments(args == null ? new Object[0] : args);
-            //return method.invoke(LOGGER_INSTANCE, args);
-        }
-    );
+
 
 
     protected static LoggerInterface getLoggerImpl(){
@@ -354,11 +356,6 @@ public class Logger {
         return tab(1);
     }
     public static LoggerInterface tab(int n){ nextPrintIndent += n; return LOGGER_PROXY; }
-
-    /*
-    public static LoggerInterface look(){ return look(1); }
-    public static LoggerInterface look(int n){ nextLookDepthOffset += n; return LOGGER_PROXY; }
-     */
 
     public static LoggerInterface caller(int depth) {
         Logger.nextCallerDepth = depth;

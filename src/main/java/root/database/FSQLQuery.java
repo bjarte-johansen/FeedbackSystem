@@ -269,9 +269,9 @@ public class FSQLQuery {
             if (debugSql || OVERRIDE_DEBUG_SQL) {
                 try (var ignore = Logger.scope("Parsed Query::prepareSql")) {
                     //Logger.log("Raw: " + activeSql);
-                    Logger.log("Parsed: " + parsed.sql);
+                    //Logger.log("Parsed: " + parsed.sql);
+                    //Logger.log("Args: " + Arrays.toString(parsed.args));
                     Logger.log("Interpolated: " + FSQLQueryInterpolator.interpolate(parsed.sql, parsed.args));
-                    Logger.log("Args: " + Arrays.toString(parsed.args));
                 }
             }
 

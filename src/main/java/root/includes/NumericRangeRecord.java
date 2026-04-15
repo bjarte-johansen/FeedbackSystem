@@ -1,6 +1,6 @@
 package root.includes;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * A simple generic class representing a numeric range with minimum and maximum values. It provides methods to convert

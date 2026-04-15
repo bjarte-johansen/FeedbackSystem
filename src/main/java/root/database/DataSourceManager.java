@@ -5,7 +5,9 @@ import root.includes.logger.Logger;
 
 import java.sql.Connection;
 
-import static root.common.utils.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+//import static root.common.utils.Preconditions.checkNotNull;
 
 public class DataSourceManager {
     public static final DataSourceManager INSTANCE = new DataSourceManager();
@@ -28,15 +30,14 @@ public class DataSourceManager {
      */
 
     public static void setConnectionProvider(CustomConnectionProvider provider) {
-        checkNotNull(provider, "Multi-tenant connection provider cannot be null");
+        checkNotNull(provider, "Connection provider cannot be null");
 
         var manager = getSingleton();
         manager.connectionProvider = provider;
     }
 
     /**
-     * Retrieves the currently set multi-tenant connection provider. If no provider has been set, an
-     * IllegalStateException is thrown.
+     * Retrieves the currently set connection provider. If no provider has been set, an IllegalStateException is thrown.
      *
      * @return the currently set multi-tenant connection provider
      */
@@ -87,6 +88,7 @@ public class DataSourceManager {
      * @param <R>
      */
 
+    @FunctionalInterface
     public interface ReturningConnectionConsumer<R> {
         R run(Connection connection) throws Exception;
     }
@@ -98,6 +100,7 @@ public class DataSourceManager {
      *
      */
 
+    @FunctionalInterface
     public interface VoidConnectionConsumer {
         void run(Connection connection) throws Exception;
     }
@@ -108,6 +111,8 @@ public class DataSourceManager {
      * a connection that is automatically closed after the operation completes, ensuring proper resource management.
      * <p>
      * Result is returned from the provided function.
+     * Example usage (usage only, not valid nor recommended code):
+     *   var result = DataSourceManager.with(c -> { var st = c.createStatement(); return st.execute("..."); });
      *
      * @param fn
      * @param <R>
@@ -118,7 +123,6 @@ public class DataSourceManager {
         try (Connection connection = getConnection()) {
             return fn.run(connection);
         } catch (Exception e) {
-            Logger.log("An exception occurred while executing a database operation: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -127,6 +131,8 @@ public class DataSourceManager {
     /**
      * @see #with(ReturningConnectionConsumer) for executing database operations with a managed connection. This version
      * is used for operations that do not return a result.
+     * Example usage:
+     *   DataSourceManager.with(c -> { var st = c.createStatement(); st.execute("..."); });     *
      */
 
     public static void withVoid(VoidConnectionConsumer fn) {

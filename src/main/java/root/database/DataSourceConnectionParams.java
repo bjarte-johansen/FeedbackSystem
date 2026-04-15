@@ -1,6 +1,6 @@
 package root.database;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public record DataSourceConnectionParams(String url, String username, String password, String defaultSchema)
 {

@@ -14,7 +14,7 @@ import static root.database.TableNameSanitizer.checkSafeTableName;
 
 class RepositoryProxyImpl<T> implements InvocationHandler {
     private static final String DEFAULT_ID_FIELD_NAME = "id";
-    private static final boolean DEBUG_SQL = false;
+    private static final boolean DEBUG_SQL = true;
 
     @FunctionalInterface
     interface ThrowingFn {

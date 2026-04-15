@@ -6,59 +6,11 @@ import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.util.*;
 
-import static root.common.utils.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;
 import static root.database.TableNameSanitizer.checkSafeTableName;
 
 public class SqlFactory {
-    /*
-    @FunctionalInterface
-    public interface JoinerAppender<JOINER, T> {
-        void accept(JOINER sb, T v);
-    }
 
-    public static <T> T[] mapArray(T[] input, java.util.function.UnaryOperator<T> fn){
-        @SuppressWarnings("unchecked")
-        T[] output = (T[]) java.lang.reflect.Array.newInstance(input.getClass().getComponentType(), input.length);
-
-        for (int i = 0; i < input.length; i++) {
-            output[i] = fn.apply(input[i]);
-        }
-
-        return output;
-    }
-
-    static <T, R> R[] mapArray(T[] input, Class<R> outputType, java.util.function.Function<T, R> fn) {
-        @SuppressWarnings("unchecked")
-        R[] output = (R[]) java.lang.reflect.Array.newInstance(outputType, input.length);
-
-        for (int i = 0; i < input.length; i++) {
-            output[i] = fn.apply(input[i]);
-        }
-
-        return output;
-    }
-
-    static <T> String joinNth (String delimiter, int offset, int step, T[] arr, JoinerAppender<StringBuilder, T> fn) {
-        checkArgument(arr != null, "Input array cannot be null");
-        checkArgument(offset >= 0 && step > 0, "Offset and step must be non-negative");
-
-        int i = offset;
-        if(i >= arr.length) return "";
-
-        StringBuilder sb = new StringBuilder(arr.length << 6); // input.length * 4
-        fn.accept(sb, arr[i]);
-
-        for (i += step; i < arr.length; i += step) {
-            sb.append(delimiter);
-            fn.accept(sb, arr[i]);
-        }
-
-        return sb.toString();
-    }
-    */
-
-
-    //
 
     public static String createWhereClauseSqlArgs(Object[] cond) {
         checkArgument(cond != null && (cond.length & 1) == 0, "Condition array must be non-null and have an even number of elements (expression-value pairs)");

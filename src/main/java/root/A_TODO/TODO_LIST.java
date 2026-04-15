@@ -1,6 +1,6 @@
-package root.app;
+package root.A_TODO;
 
-public class Todo {
+public class TODO_LIST {
     /**
     // TODO: Legge til index på review tabellen for å optimalisere spørringer som filtrerer på status og sorterer på
     //  created_at feltet. Dette vil forbedre ytelsen for spørringer som henter anmeldelser basert på status og sorterer

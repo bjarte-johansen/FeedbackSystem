@@ -1,13 +1,12 @@
 package root.app;
 
 
+import root.App;
+import root.includes.logger.Logger;
+import root.includes.utils.SqlSchemaNameValidator;
+
 /**
- * AppRequestContext is a context class for holding request-specific information such as the database connection,
- * tenant ID, and tenant schema. It uses ThreadLocal to ensure that each thread has its own instance of these
- * variables, allowing for thread-safe access to request-specific data.
- *
- * In reality, used to hold schema/tenant/possibly conection info for the current request. Subject to change.
- *
+ * AppRequestContext is a context class for request contact schema that is resolver by host/domain
  * schema = database schema, which is used for multi-tenancy. Each tenant has its own schema in the database,
  * and the application sets the search_path to the appropriate schema for each request (or connection).
  */
@@ -28,6 +27,7 @@ public class AppRequestSchema {
     public static void set(String name){
         if(name != null && !name.isEmpty())
             SqlSchemaNameValidator.validateSchemaName(name);
+
         TENANT_SCHEMA.set(name);
     }
 
@@ -53,10 +53,22 @@ public class AppRequestSchema {
                     TENANT_SCHEMA.set(previous);
                 }
             }catch(RuntimeException e){
-                // log error but don't rethrow, to avoid masking original exception
+                Logger.log(e.getMessage());
                 System.err.println("Error restoring previous tenant schema: " + e.getMessage());
+                throw new RuntimeException("Error restoring previous tenant schema", e);
             }
         };
+    }
+
+    public static void withThreadSchema(String name, App.ThrowingRunnable runnable) {
+        try(var ignore = withThreadSchema(name)) {
+            try {
+                runnable.run();
+            }catch(Exception e) {
+                Logger.log(e.getMessage());
+                throw new RuntimeException("Error restoring previous tenant schema", e);
+            }
+        }
     }
 }
 

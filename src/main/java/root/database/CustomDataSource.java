@@ -11,8 +11,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static root.common.utils.Preconditions.checkArgument;
-import static root.common.utils.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+//import static root.common.utils.Preconditions.checkNotNull;
 
 
 public class CustomDataSource {
@@ -63,7 +64,7 @@ public class CustomDataSource {
     private static final boolean LOG_MESSAGES_TO_CONSOLE = false;
 
     // connection parameters for creating new connections when pool is empty or we need more.
-    private DataSourceConnectionParams currentDataSourceParams = null;
+    private final DataSourceConnectionParams currentDataSourceParams;
 
 
     public CustomDataSource(DataSourceConnectionParams currentDataSourceParams) {
@@ -137,14 +138,12 @@ public class CustomDataSource {
      */
 
     public void warm(int numberOfConnections) {
-        checkArgument(currentDataSourceParams != null, "DataSource has no default datasource parameters.");
-
         MAX_TOTAL_CONNECTION_COUNT.set((int) Math.min(MAX_TOTAL_CONNECTION_COUNT.get(), numberOfConnections));
 
         for (int i = 0; i < numberOfConnections; i++) {
-            logMessage("Initializing connection pool, creating connection " + (i + 1) + "/" + numberOfConnections);
+            if (LOG_MESSAGES_TO_CONSOLE) logMessage("Initializing connection pool, creating connection " + (i + 1) + "/" + numberOfConnections);
 
-            Connection conn = createConnection(currentDataSourceParams);
+            Connection conn = createConnection();
             releaseConnection(conn);
         }
     }
@@ -154,12 +153,11 @@ public class CustomDataSource {
      * Creates a new database connection using the provided parameters. This method is called when a new connection is
      * needed and the pool is empty.
      *
-     * @param params
      * @return
      * @throws SQLException
      */
 
-    private Connection createConnection(DataSourceConnectionParams params) {
+    private Connection createConnection() {
         int newCount = TOTAL_CONNECTION_COUNT.incrementAndGet();
 
         if (newCount > MAX_TOTAL_CONNECTION_COUNT.get()) {
@@ -168,10 +166,14 @@ public class CustomDataSource {
         }
 
         try {
-            Connection conn = DriverManager.getConnection(params.url(), params.username(), params.password());
+            Connection conn = DriverManager.getConnection(
+                currentDataSourceParams.url(),
+                currentDataSourceParams.username(),
+                currentDataSourceParams.password()
+            );
             //conn.setSchema(params.defaultSchema());
 
-            logMessage("Connection Created, available connections: " + getAvailableCount() + "/" + getTotalCount());
+            if (LOG_MESSAGES_TO_CONSOLE) logMessage("Connection Created, available connections: " + getAvailableCount() + "/" + getTotalCount());
 
             return conn;
         } catch (SQLException e) {
@@ -184,7 +186,7 @@ public class CustomDataSource {
         try {
             conn.close();
         } catch (SQLException e) {
-            logMessage("Error closing connection: " + e.getMessage());
+            if (LOG_MESSAGES_TO_CONSOLE) logMessage("Error closing connection: " + e.getMessage());
             throw new RuntimeException("An error occurred while discarding connection", e);
         } finally {
             TOTAL_CONNECTION_COUNT.decrementAndGet();
@@ -209,7 +211,7 @@ public class CustomDataSource {
             // return the connection to the pool
             connectionPool.offer(conn);
 
-            logMessage("Connection -->> Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
+            if (LOG_MESSAGES_TO_CONSOLE) logMessage("Connection -->> Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
         } catch (SQLException e) {
             throw new RuntimeException("An error occurred while releasing connection", e);
         }
@@ -227,8 +229,9 @@ public class CustomDataSource {
         }
     }
 
+    /*
     public Connection getConnection() {
-        Connection conn = getConnection(currentDataSourceParams);
+        Connection conn = getConnection();
 
         if (!isAlive(conn)) {
             throw new RuntimeException("Failed to create connection, DriverManager returned null");
@@ -236,8 +239,9 @@ public class CustomDataSource {
 
         return conn;
     }
+    */
 
-    private Connection getConnection(DataSourceConnectionParams params) {
+    public Connection getConnection() {
         checkArgument(currentDataSourceParams != null, "DataSource has no default datasource parameters.");
 
         Connection conn;
@@ -246,7 +250,7 @@ public class CustomDataSource {
             conn = connectionPool.poll();
 
             if (conn == null) {
-                conn = createConnection(params);
+                conn = createConnection();
             }
 
             try {
@@ -255,7 +259,7 @@ public class CustomDataSource {
                     continue;
                 }
 
-                logMessage("Connection <<-- Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
+                if (LOG_MESSAGES_TO_CONSOLE) logMessage("Connection <<-- Pool, available connections: " + getAvailableCount() + "/" + getTotalCount());
 
                 return PooledConnection.wrap(conn, this);
             } catch (Exception e) {

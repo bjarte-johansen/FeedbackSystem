@@ -6,11 +6,15 @@ import root.App;
 import root.app.AppRequestSchema;
 import root.database.DataSourceManager;
 import root.DatabaseManager;
+import root.database.FSQLQuery;
 import root.includes.logger.Logger;
 import root.models.Review;
 import root.models.Tenant;
+import root.no_test_extra.TryWithTimer;
 import root.repositories.TenantRepository;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.List;
 
 @Service
@@ -62,17 +66,40 @@ public class DatabaseService {
         databaseManager.resetPublicSchema();
         Logger.log("Public schema reset OK");
 
-
         Logger.log("Resetting tenant schemas...");
-        try(var _ = AppRequestSchema.withThreadSchema("public")) {
+        AppRequestSchema.withThreadSchema("public", () -> {
             for (var tenant : tenantRepo.findAll()) {
-
-                Logger.log("Resetting tenant schema for tenant: " + tenant.getName() + " (" + tenant.getSchemaName() + ")");
                 try (var _ = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
+                    var conn = DataSourceManager.getConnection();
+                    conn.setSchema("test");
+                    //System.out.println("SCHHEMA: " + rs.getString(1));
+                    //Logger.log("SCHEMA IS " + conn.getSchema());
+                    try (var p = new TryWithTimer("insert row without fsql query")) {
+
+                        var ps = conn.prepareStatement("INSERT INTO test.review (external_id, author_id, author_name, score, title, comment, created_at, status, like_count, dislike_count) VALUES  ('/prodsdfuct/2', 1, 'SneakyUnicorn459', 2, 'Laboris quis commodo.', 'Ut magna lorem consectetur ullamco. minim enim incididunt consectetur ea. incididunt commodo.', '2025-03-21 06:21:31.020787', 3, 0, 0)");
+                        ps.executeUpdate();
+                        ResultSet rset = ps.getGeneratedKeys();
+                        Long key;
+                        if(rset.next()) {
+                            key = rset.getLong(1);
+                        }
+                    }
+                    conn.close();
+
+                    try (var p2 = new TryWithTimer("insert row with fsql query")) {
+                        FSQLQuery.create("INSERT INTO test.review (external_id, author_id, author_name, score, title, comment, created_at, status, like_count, dislike_count) VALUES  ('/prodsdfuct/2', 1, 'SneakyUnicorn459', 2, 'Laboris quis commodo.', 'Ut magna lorem consectetur ullamco. minim enim incididunt consectetur ea. incididunt commodo.', '2025-03-21 06:21:31.020787', 3, 0, 0)")
+                            .insertAndGetId();
+                    }
+                    //if(true) throw new Exception("stop");
+
+                    //System.out.println("IT FUCKING INSERTED!");
+
+
+
                     databaseManager.resetTenantSchema();
                 }
             }
-        }
+        });
         Logger.log("Resetting tenant schemas OK");
     }
 
@@ -117,21 +144,22 @@ CREATE TABLE IF NOT EXISTS review_vote (
 
         // return lambda executor that runs the patchers
         // TODO: bug here, its implemented twice that we do the test schema for some reason, need to investigate and fix this
-        try (var ignore1 = AppRequestSchema.withThreadSchema("public")) {
+        AppRequestSchema.withThreadSchema("public", () -> {
             for (var tenant : tenantRepo.findAll()) {
                 patchTenant(tenant, patchers);
             }
-        }
+        });
     }
 
     private void patchTenant(Tenant tenant, List<App.ConnectionStatementRunnable> patchers) throws Exception {
-        try (var ignore = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
+        // apply patch for relevant schema
+        AppRequestSchema.withThreadSchema(tenant.getSchemaName(), () -> {
             try (var conn = DataSourceManager.getConnection()) {
                 try (var st = conn.createStatement()) {
                     for (var patcher : patchers)
                         patcher.run(conn, st);
                 }
             }
-        }
+        });
     }
 }
