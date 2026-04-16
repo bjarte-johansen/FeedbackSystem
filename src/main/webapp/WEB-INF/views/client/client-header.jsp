@@ -8,6 +8,8 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
+
+    <!-- REQUIRED PART OF SCRIPTS -->
     <script>var g_pageContext_Request_ContextPath = "${pageContext.request.contextPath}"</script>
         <script src="${pageContext.request.contextPath}/js/timeAgo.js"></script>
         <script src="${pageContext.request.contextPath}/js/router.js"></script>
@@ -17,6 +19,9 @@
         <!--<script src="${pageContext.request.contextPath}/js/utils.js"></script>-->
         <script src="${pageContext.request.contextPath}/js/PageCursor.js"></script>
         <script src="${pageContext.request.contextPath}/js/client-review.js"></script>
+
+    <!-- END OF REQUIRED PART OF SCRIPTS -->
+
     <title>${defaultTitle}</title>
 </head>
 <body>

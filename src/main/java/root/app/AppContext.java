@@ -1,15 +1,16 @@
 package root.app;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
+import root.app.connection.AppMultiTenantConnectionProvider;
 import root.database.CustomDataSource;
 import root.database.DataSourceManager;
 import root.database.connectionproviders.CustomConnectionProvider;
 import root.includes.logger.Logger;
 
-import static com.google.common.base.Preconditions.*;
-
-@Component
+@Component("appContext")
 public class AppContext {
+    //private boolean isInitialized = false;
 
     /**
      * Initializes the application context, including data sources and connection providers.
@@ -20,13 +21,27 @@ public class AppContext {
         initialize();
     }
 
-    private void initialize() {
-        // print app text banner
-        //AppTextBanner.print();
+    public void init(){
+        initialize();
+    }
 
-        try(var scope = Logger.scope("Initializing connection providers")) {
-            // initialize data sources and connection providers
-            initDatasourceAndConnectionProvider();
+    @PostConstruct
+    public void initialize() {
+        Logger.log("Initializing Application Context");
+        /*
+        if(isInitialized) return;
+        isInitialized = true;
+        */
+
+        try(var _ = Logger.scope("initializing AppContext instance")) {
+
+            // print app text banner
+            //AppTextBanner.print();
+
+            try (var scope = Logger.scope("Initializing connection providers")) {
+                // initialize data sources and connection providers
+                initDatasourceAndConnectionProvider();
+            }
         }
     }
 

@@ -12,14 +12,7 @@ import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.*;
 
-interface EvictableCache<K, V> {
-    Tenant get(K k);
-    void put(K k, V v);
-    Optional<Tenant> computeIfAbsent(K k, Function<K, V> mappingFunction);
 
-    void evictAll();
-    void evict(K k);
-}
 
 
 /**

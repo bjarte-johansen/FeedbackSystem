@@ -1,11 +1,9 @@
 package root.advice;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import root.app.AppConfig;
-import root.controllers.ControllerHelper;
+import root.controllers.helpers.ControllerHelper;
 import root.includes.logger.Logger;
 
 @ControllerAdvice
@@ -21,7 +19,7 @@ public class ViewExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public String handle(Exception e, Model model) {
+    public String handle(Exception e) {
         if(AppConfig.CONTROLLER_PRINT_STACK_TRACE_ON_ERROR) e.printStackTrace();
         Logger.log(e.getMessage());
 

@@ -1,4 +1,4 @@
-package root.app.includes;
+package root.includes;
 
 
 /**
@@ -8,8 +8,8 @@ package root.app.includes;
  */
 
 public class PageCursor {
-    private int offset;
-    private int limit;
+    private final int offset;
+    private final int limit;
 
     /**
      * Initializes a new PageCursor with default values of offset 0 and limit Integer.MAX_VALUE, allowing for pagination
@@ -27,8 +27,8 @@ public class PageCursor {
      * @param limit
      */
     public PageCursor(int offset, int limit) {
-        this.setOffset(offset);
-        this.setLimit(limit);
+        this.offset = Math.max(0, offset);
+        this.limit = Math.max(0, limit);
     }
 
     /**
@@ -41,15 +41,6 @@ public class PageCursor {
     }
 
     /**
-     * Sets the offset value, which indicates the starting point for pagination of results.
-     *
-     * @param offset The new offset value to be set.
-     */
-    public void setOffset(int offset) {
-        this.offset = offset;
-    }
-
-    /**
      * Returns the current limit value, which indicates the maximum number of results to be returned for pagination.
      *
      * @return The current limit value.
@@ -58,47 +49,55 @@ public class PageCursor {
         return limit;
     }
 
-    /**
-     * Sets the limit for the number of results to be returned.
-     *
-     * @param limit
-     */
-    public void setLimit(int limit) {
-        this.limit = limit;
-    }
+//    /**
+//     * Sets the offset value, which indicates the starting point for pagination of results.
+//     *
+//     * @param offset The new offset value to be set.
+//     */
+//    public void setOffset(int offset) {
+//        this.offset = offset;
+//    }
+//
+//    /**
+//     * Sets the limit for the number of results to be returned.
+//     *
+//     * @param limit
+//     */
+//    public void setLimit(int limit) {
+//        this.limit = limit;
+//    }
+//
+//    /**
+//     * Returns a new PageCursor representing the next page of results by increasing the offset by the limit.
+//     *
+//     * @return A new PageCursor with the offset increased by the limit.
+//     */
+//    public PageCursor next() {
+//        return new PageCursor(this.offset + this.limit, this.limit);
+//    }
 
+//    /**
+//     * Returns a new PageCursor representing the next page of results, ensuring that the offset does not exceed the
+//     * specified maximum offset.
+//     *
+//     * @param maxOffset The maximum offset to ensure that the next page does not go beyond this limit.
+//     * @return A new PageCursor with the offset increased by the limit, but not exceeding maxOffset.
+//     */
+//
+//    public PageCursor next(int maxOffset) {
+//        return new PageCursor(Math.min(maxOffset, this.offset + this.limit), this.limit);
+//    }
 
-    /**
-     * Returns a new PageCursor representing the next page of results by increasing the offset by the limit.
-     *
-     * @return A new PageCursor with the offset increased by the limit.
-     */
-    public PageCursor next() {
-        return new PageCursor(this.offset + this.limit, this.limit);
-    }
-
-    /**
-     * Returns a new PageCursor representing the next page of results, ensuring that the offset does not exceed the
-     * specified maximum offset.
-     *
-     * @param maxOffset The maximum offset to ensure that the next page does not go beyond this limit.
-     * @return A new PageCursor with the offset increased by the limit, but not exceeding maxOffset.
-     */
-
-    public PageCursor next(int maxOffset) {
-        return new PageCursor(Math.min(maxOffset, this.offset + this.limit), this.limit);
-    }
-
-    /**
-     * Returns a new PageCursor representing the previous page of results, ensuring that the offset does not go below
-     * zero.
-     *
-     * @return A new PageCursor with the offset decreased by the limit, but not less than zero.
-     */
-    public PageCursor previous() {
-        int newOffset = Math.max(0, this.offset - this.limit);
-        return new PageCursor(newOffset, this.limit);
-    }
+//    /**
+//     * Returns a new PageCursor representing the previous page of results, ensuring that the offset does not go below
+//     * zero.
+//     *
+//     * @return A new PageCursor with the offset decreased by the limit, but not less than zero.
+//     */
+//    public PageCursor previous() {
+//        int newOffset = Math.max(0, this.offset - this.limit);
+//        return new PageCursor(newOffset, this.limit);
+//    }
 
 
     /**
@@ -118,6 +117,15 @@ public class PageCursor {
         return s;
     }
 
+
+//    /** decode string into cursor, string must be in int,int format */
+//
+//    public static PageCursor decode(String s){
+//        return PageCursorEncoder.decode(s, Integer.MAX_VALUE);
+//    }
+
+
+    /** encode cursor into string, format is int,int */
     public String encode(){
         return this.offset + "," + this.limit;
     }

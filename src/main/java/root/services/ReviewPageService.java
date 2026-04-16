@@ -6,21 +6,14 @@ import org.springframework.stereotype.Service;
 import root.app.AppConfig;
 import root.app.AppContext;
 import root.app.ReviewQueryOptions;
-import root.app.includes.PageCursor;
-import root.app.includes.PageCursorEncoder;
-import root.controllers.ControllerUtils;
+import root.includes.PageCursor;
+import root.includes.PageCursorEncoder;
 import root.includes.Utils;
-import root.controllers.ReviewAggregateStatistics;
+import root.includes.ReviewAggregateStatistics;
 import root.models.Review;
 import root.repositories.ReviewRepository;
-import root.repositories.ReviewerRepository;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -31,46 +24,14 @@ public class ReviewPageService {
     // map of ordering options for the review list page, with display name as key and corresponding
     // orderByEnum value as value
     private static LinkedHashMap<String, Object> orderByOptionsMap = Utils.linkedMap(
-        "Nyeste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC,
-        "Eldste først", ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC,
-        "Score (høyeste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_DESC,
-        "Score (laveste først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_ASC
+        "Nyest først", ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC,
+        "Eldst først", ReviewQueryOptions.OPTION_ORDER_BY_ID_ASC,
+        "Nyttigst først", ReviewQueryOptions.OPTION_ORDER_BY_LIKE_COUNT_DESC,
+        "Score (høyest først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_DESC,
+        "Score (lavest først)", ReviewQueryOptions.OPTION_ORDER_BY_SCORE_ASC
         );
 
-    /*
-    lambda helper methods
-    deprecated, no longer used since we do client side rendering
-     */
 
-    /*
-    // add a simple function to format double values to 2 decimals for display in JSP
-    public static Function<Double, String> dblFormatRoundToHalfDotToDash = (v) -> {
-        v = Math.round(v * 2.0) / 2.0;
-        String s = String.format(Locale.US, "%.1f", v);
-        return s.replace(".", "-");
-    };
-
-    public static Function<Double, String> dblFormatWithSingleDecimal = (v) -> String.format(Locale.US, "%.1f", v);
-    //private static Function<Double, String> DOUBLE_FORMATTER_2 = (v) -> String.format(Locale.US, "%.1f", v);
-
-    // add a simple function to format double values to 2 decimals for display in JSP
-    public static Function<Instant, String> dateFormatter = v -> {
-        if (v == null) return "";
-
-        return DateTimeFormatter.ofPattern("dd/MM/yyyy")
-            .withLocale(Locale.US)
-            .withZone(ZoneId.systemDefault())
-            .format(v);
-    };
-
-    // add a simple function to format Instant values to "days ago" format for display in JSP
-    public static Function<Instant, String> daysAgoFormatter = v -> {
-        if (v == null) return "";
-
-        long days = ChronoUnit.DAYS.between(v, Instant.now());
-        return String.valueOf(Math.max(0, days));
-    };
-    */
 
 
     private final AppContext appContext;
@@ -158,7 +119,7 @@ public class ReviewPageService {
         modelMap.put("externalId", externalId);
 
         // decode cursor
-        PageCursor decodedCursor = PageCursorEncoder.decode(cursorStr, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
+        PageCursor decodedCursor = PageCursorEncoder.parseOrDefault(cursorStr, AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS);
         modelMap.put("pageCursor", decodedCursor.encode());
 
         // create query options

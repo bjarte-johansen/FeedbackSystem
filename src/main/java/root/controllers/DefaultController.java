@@ -9,13 +9,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import root.app.AppConfig;
-import root.app.AppContext;
 import root.controllers.dto.NewReviewForm;
-import root.includes.Utils;
 import root.models.Review;
 import root.models.Reviewer;
 import root.app.ReviewQueryOptions;
-import root.repositories.ReviewVoteRepository;
 import root.repositories.ReviewerRepository;
 import root.repositories.ReviewRepository;
 import root.services.ReviewPageService;
@@ -43,6 +40,7 @@ public class DefaultController {
 
     @Autowired
     ReviewPageService reviewPageService;
+
 
 
     /**
@@ -77,7 +75,7 @@ public class DefaultController {
 
     @GetMapping("/reviews/build-html")
     public String showReviews(
-        @RequestParam String externalId,
+        @RequestParam(defaultValue = "") String externalId,
         @RequestParam(name = "cursor", defaultValue = "") String encodedCursor,
         @RequestParam(name = "orderByEnum", defaultValue = ("" + ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC)) int orderByEnum,
         @RequestParam(name = "scoreFilter", defaultValue = "-1") String scoreFilter,
@@ -85,7 +83,10 @@ public class DefaultController {
         HttpServletRequest req
     ) throws Exception {
         Map<String, Object> vm = reviewPageService.buildReviewListingPage(
-            externalId, encodedCursor, orderByEnum, scoreFilter, // filters
+            externalId,
+            encodedCursor,
+            orderByEnum,
+            scoreFilter, // filters
             req,
             true // include stats
         );
@@ -94,15 +95,14 @@ public class DefaultController {
         if (AppConfig.TESTING_MODE) {
             // add test data for select externalId pill, in production this should be dynamically loaded based on existing
             // reviews in the database
-            ControllerUtils.addSelectExternalIdPillData(vm, reviewRepo);
+            Utils.addSelectExternalIdPillData(vm, reviewRepo);
 
             // add default values for forms
-            ControllerUtils.addDefaultNewReviewFormValues(vm);
+            Utils.addDefaultNewReviewFormValues(vm);
         }
 
         model.addAllAttributes(vm);
-
-        model.addAttribute("json", Utils.toJson(model.asMap()));
+        model.addAttribute("json", root.includes.Utils.toJson(model.asMap()));
 
         return "client/index";
     }
@@ -123,72 +123,14 @@ public class DefaultController {
             true // include stats
         );
 
-        return Utils.toJson(vm);
+        return root.includes.Utils.toJson(vm);
     }
 
 
-//    /**
-//     * API endpoint to generate HTML for a list of reviews based on the given filters. This is used for the "Load more"
-//     * functionality on the frontend, where the frontend can call this endpoint with the appropriate filters and
-//     * pagination cursor to get the next page of reviews as HTML to append to the existing list. This allows us to reuse
-//     * the same HTML rendering logic for both the initial page load and subsequent "Load more" requests, ensuring
-//     * consistency in the review display and reducing code duplication.
-//     *
-//     * @param externalId
-//     * @param encodedCursor
-//     * @param orderByEnum
-//     * @param scoreFilter
-//     * @param model
-//     * @param req
-//     * @return
-//     * @throws Exception
-//     */
-//
-//    @GetMapping("/api/reviews/build-html")
-//    public String renderReviewsAsHtml(
-//        @RequestParam String externalId,
-//        @RequestParam(name = "cursor", defaultValue = "") String encodedCursor,
-//        @RequestParam(name = "orderByEnum", defaultValue = ("" + ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC)) int orderByEnum,
-//        @RequestParam(name = "scoreFilter", defaultValue = "-1") String scoreFilter,
-//        Model model,
-//        HttpServletRequest req
-//    ) throws Exception {
-//        Map<String, Object> vm = reviewPageService.buildReviewListingPage(
-//            externalId, encodedCursor, orderByEnum, scoreFilter, // filters
-//            req,
-//            false // do not include stats
-//        );
-//
-//        model.addAllAttributes(vm);
-//
-//        return "client/pretty-review-list.partial";
-//    }
 
 
-//    /**
-//     * API endpoint to generate HTML for a single review by id.
-//     *
-//     * @param reviewId
-//     * @param model
-//     * @return
-//     * @throws Exception
-//     */
-//
-//    @GetMapping("/api/review/{reviewId}/build-html")
-//    @Deprecated
-//    public String makeReviewHtml(@PathVariable long reviewId, Model model) throws Exception {
-//        Review review = reviewRepo.findById(reviewId).orElse(null);
-//        if (review == null) return "error";
-//
-//        model.addAttribute("review", review);
-//
-//        // add formatters to model for display in JSP
-//        //model.addAttribute("daysAgoFormatter", ReviewPageService.daysAgoFormatter);
-//
-//        return "client/pretty-review.partial";
-//    }
 
-
+    @ResponseBody
     @GetMapping("/api/review/{reviewId}/json")
     public Review renderReviewAsJson(@PathVariable long reviewId) throws Exception {
         return reviewRepo.findById(reviewId).orElse(null);
@@ -270,4 +212,5 @@ public class DefaultController {
 
         return ResponseEntity.ok().build();
     }
+
 }

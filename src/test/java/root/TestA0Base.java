@@ -4,6 +4,9 @@ package root;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import root.app.AppContext;
+import root.app.AppRequestSchema;
 import root.includes.logger.Logger;
 import root.includes.logger.LoggerScope;
 import root.repositories.ReviewRepository;
@@ -11,6 +14,7 @@ import root.repositories.ReviewRepository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
+@ActiveProfiles("local")
 public class TestA0Base {
     public class LoggerScopeWrapper implements LoggerScope {
         private final String blockName;
@@ -27,16 +31,24 @@ public class TestA0Base {
     }
 
     public static int ENTER_EXIT_BLOCK_WIDTH = 80;
+    public static String TEST_SCHEMA_NAME = "test";
+    public static String PREVIOUS_SCHEMA_NAME = null;
 
+    @Autowired
+    AppContext appContext;
+
+    // private stuff
     LoggerScope __logger;
 
     @Autowired
     ReviewRepository reviewRepo;
 
-    @Autowired
-    DatabaseManager databaseManager;
+    //@Autowired
+    //DatabaseManager databaseManager;
 
 
+    public TestA0Base() {
+    }
     /**
      * Initializes the test environment by setting the "APP_ENV" system property to "test" before all tests are run.
      * This allows the application to use test-specific configurations, such as connecting to a test database instead
@@ -45,26 +57,13 @@ public class TestA0Base {
 
     @BeforeAll
     static void init() throws Exception {
-        System.setProperty("APP_ENV", "test");
-/*
-        String env = System.getenv().getOrDefault("APP_ENV", "prod");
 
-        Properties p = new Properties();
-        try (var is = Files.newInputStream(
-            Path.of("application-" + env + ".properties"))) {
-            p.load(is);
-
-            Logger.log("db.url", p.getProperty("db.url"));
-            Logger.log("db.user", p.getProperty("db.user"));
-            Logger.log("db.pass", p.getProperty("db.pass"));
-        }
- */
     }
 
     public static void loggerEnterExitBlock(String action, String blockName) {
-        System.out.println("-".repeat(ENTER_EXIT_BLOCK_WIDTH));
-        System.out.println(("-".repeat(8) + " ".repeat(4) + action + " : " + blockName + " ".repeat(4) + "-".repeat(ENTER_EXIT_BLOCK_WIDTH)).substring(0, 80));
-        System.out.println("-".repeat(ENTER_EXIT_BLOCK_WIDTH));
+        Logger.log("-".repeat(ENTER_EXIT_BLOCK_WIDTH));
+        Logger.log(("-".repeat(8) + " ".repeat(4) + action + " : " + blockName + " ".repeat(4) + "-".repeat(ENTER_EXIT_BLOCK_WIDTH)).substring(0, 80));
+        Logger.log("-".repeat(ENTER_EXIT_BLOCK_WIDTH));
     }
 
     public static void loggerEnterBlock(String blockName, int depth) {
@@ -73,6 +72,13 @@ public class TestA0Base {
     public static void loggerExitBlock(String blockName, int depth) {
         loggerEnterExitBlock("END", blockName);
     }
+
+    private void cleanDatabase(){
+//        Logger.log("cleaning database...");
+//        databaseManager.clean();
+//        Logger.log("cleaning database... OK");
+    }
+
 
     /**
      * Sets up the test environment before each test by creating a new logger scope for the test and cleaning the
@@ -85,8 +91,8 @@ public class TestA0Base {
 
     @BeforeEach
     public void beforeEach(TestInfo info) throws Exception {
-
-        //loggerEnterExitBlock("enter", info.getDisplayName());
+        appContext.init();
+        System.setProperty("APP_ENV", "test");
 
         __logger = Logger.scope(
             "myBlock",
@@ -94,8 +100,12 @@ public class TestA0Base {
             TestA0Base::loggerExitBlock
         );
 
-        databaseManager.clean();
+        PREVIOUS_SCHEMA_NAME = AppRequestSchema.get();
+        AppRequestSchema.set(TEST_SCHEMA_NAME);
+
+        cleanDatabase();
     }
+
 
     /**
      * Cleans the database after each test by calling the DBTest.clean() method, which truncates the reviews, reviewers,
@@ -106,13 +116,22 @@ public class TestA0Base {
      */
     @AfterEach
     public void afterEach(TestInfo info) throws Exception {
-        databaseManager.clean();
+        cleanDatabase();
+
+        if(PREVIOUS_SCHEMA_NAME != null) {
+            AppRequestSchema.remove();
+        }else{
+            AppRequestSchema.set(TEST_SCHEMA_NAME);
+        }
 
         __logger.close();
     }
 
     @Test
-    public void __dummy__dummy__dummy__(){
+    public void printReviews(){
+        Logger.log("testing dummy dummy");
 
+        var reviews = reviewRepo.findAll();
+        reviews.forEach(System.out::println);
     }
 }

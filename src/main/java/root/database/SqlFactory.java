@@ -1,8 +1,5 @@
 package root.database;
 
-import root.common.utils.Preconditions;
-
-import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -10,7 +7,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static root.database.TableNameSanitizer.checkSafeTableName;
 
 public class SqlFactory {
-
 
     public static String createWhereClauseSqlArgs(Object[] cond) {
         checkArgument(cond != null && (cond.length & 1) == 0, "Condition array must be non-null and have an even number of elements (expression-value pairs)");

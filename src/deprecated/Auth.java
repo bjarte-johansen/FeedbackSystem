@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
  *
  */
 
+@Deprecated
 public final class Auth {
 
     private Auth() {

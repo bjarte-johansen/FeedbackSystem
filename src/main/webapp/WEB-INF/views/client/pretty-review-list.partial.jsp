@@ -3,6 +3,7 @@
     <div class="review--list-items">
         <div class="items">
         <%--
+        NOTE: no longer used since we switched to client side rendering, do not remove
         <c:forEach var="review" items="${reviews}">
             <%@ include file="pretty-review.partial.jsp" %>
         </c:forEach>
@@ -10,8 +11,10 @@
         </div>
     </div>
 
+
+<!-- this is our template used for rendering items, it can be adapted but classes must be accurate so replacing values still work :) -->
     <div class="d-none" data-desc="Just a placeholder template">
-        <p>This is a container for finding review item template</p>
+        <p>This is a container for finding review item template. Im invisible !!!</p>
 
         <div class="box review-item review-item-{reviewId} review-item-template mb-2" data-review-id="{reviewId}">
             <div class="score-outer mb-0">

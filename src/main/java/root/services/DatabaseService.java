@@ -61,46 +61,48 @@ public class DatabaseService {
     }
 
     public void resetDemoData() {
-        // reset public schema, this will cascade and reset tenant and tenant_domain tables as well
-        Logger.log("Resetting public schema (clean + insert tenants + tenant domains)...");
-        databaseManager.resetPublicSchema();
-        Logger.log("Public schema reset OK");
+        try(var ignore1 = Logger.scope("resetDemoData")) {
+            // reset public schema, this will cascade and reset tenant and tenant_domain tables as well
+            // is logged internally
+            databaseManager.resetPublicSchema();
 
-        Logger.log("Resetting tenant schemas...");
-        AppRequestSchema.withThreadSchema("public", () -> {
-            for (var tenant : tenantRepo.findAll()) {
-                try (var _ = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
-                    var conn = DataSourceManager.getConnection();
-                    conn.setSchema("test");
-                    //System.out.println("SCHHEMA: " + rs.getString(1));
-                    //Logger.log("SCHEMA IS " + conn.getSchema());
-                    try (var p = new TryWithTimer("insert row without fsql query")) {
-
-                        var ps = conn.prepareStatement("INSERT INTO test.review (external_id, author_id, author_name, score, title, comment, created_at, status, like_count, dislike_count) VALUES  ('/prodsdfuct/2', 1, 'SneakyUnicorn459', 2, 'Laboris quis commodo.', 'Ut magna lorem consectetur ullamco. minim enim incididunt consectetur ea. incididunt commodo.', '2025-03-21 06:21:31.020787', 3, 0, 0)");
-                        ps.executeUpdate();
-                        ResultSet rset = ps.getGeneratedKeys();
-                        Long key;
-                        if(rset.next()) {
-                            key = rset.getLong(1);
+            try(var ignore2 = Logger.scope("Resetting tenant schemas...")){
+                AppRequestSchema.withThreadSchema("public", () -> {
+                    for (var tenant : tenantRepo.findAll()) {
+                        try (var _ = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
+                            databaseManager.resetTenantSchema();
                         }
                     }
-                    conn.close();
-
-                    try (var p2 = new TryWithTimer("insert row with fsql query")) {
-                        FSQLQuery.create("INSERT INTO test.review (external_id, author_id, author_name, score, title, comment, created_at, status, like_count, dislike_count) VALUES  ('/prodsdfuct/2', 1, 'SneakyUnicorn459', 2, 'Laboris quis commodo.', 'Ut magna lorem consectetur ullamco. minim enim incididunt consectetur ea. incididunt commodo.', '2025-03-21 06:21:31.020787', 3, 0, 0)")
-                            .insertAndGetId();
-                    }
-                    //if(true) throw new Exception("stop");
-
-                    //System.out.println("IT FUCKING INSERTED!");
-
-
-
-                    databaseManager.resetTenantSchema();
-                }
+                });
             }
-        });
-        Logger.log("Resetting tenant schemas OK");
+        }
+    }
+
+    public void speedTest(){
+//                    var conn = DataSourceManager.getConnection();
+//                    conn.setSchema("test");
+//                    //System.out.println("SCHHEMA: " + rs.getString(1));
+//                    //Logger.log("SCHEMA IS " + conn.getSchema());
+//                    try (var p = new TryWithTimer("insert row without fsql query")) {
+//
+//                        var ps = conn.prepareStatement("INSERT INTO test.review (external_id, author_id, author_name, score, title, comment, created_at, status, like_count, dislike_count) VALUES  ('/prodsdfuct/2', 1, 'SneakyUnicorn459', 2, 'Laboris quis commodo.', 'Ut magna lorem consectetur ullamco. minim enim incididunt consectetur ea. incididunt commodo.', '2025-03-21 06:21:31.020787', 3, 0, 0)");
+//                        ps.executeUpdate();
+//                        ResultSet rset = ps.getGeneratedKeys();
+//                        Long key;
+//                        if(rset.next()) {
+//                            key = rset.getLong(1);
+//                        }
+//
+//                    }
+//                    conn.close();
+//
+//                    try (var p2 = new TryWithTimer("insert row with fsql query")) {
+//                        FSQLQuery.create("INSERT INTO test.review (external_id, author_id, author_name, score, title, comment, created_at, status, like_count, dislike_count) VALUES  ('/prodsdfuct/2', 1, 'SneakyUnicorn459', 2, 'Laboris quis commodo.', 'Ut magna lorem consectetur ullamco. minim enim incididunt consectetur ea. incididunt commodo.', '2025-03-21 06:21:31.020787', 3, 0, 0)")
+//                            .insertAndGetId();
+//                    }
+//                    //if(true) throw new Exception("stop");
+//
+//                    //System.out.println("IT FUCKING INSERTED!");
     }
 
     public void executeDatabasePatches() throws Exception {

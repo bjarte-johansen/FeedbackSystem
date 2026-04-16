@@ -72,8 +72,7 @@ public class Review implements IReview {
     /**
      * Default constructor for the Review class. Initializes a new instance of the Review class with default values.
      */
-    public Review() {
-    }
+    public Review() { }
 
     @Override
     public Long getId() {
@@ -85,7 +84,6 @@ public class Review implements IReview {
         this.id = id;
     }
 
-
     @Override
     public int getStatus() {
         return this.status;
@@ -95,7 +93,6 @@ public class Review implements IReview {
     public void setStatus(int status) {
         this.status = status;
     }
-
 
     @Override
     public String getExternalId() {
@@ -137,7 +134,6 @@ public class Review implements IReview {
         this.score = score;
     }
 
-
     @Override
     public String getTitle() {
         return this.title;
@@ -147,7 +143,6 @@ public class Review implements IReview {
     public void setTitle(String title) {
         this.title = title;
     }
-
 
     @Override
     public String getComment() {

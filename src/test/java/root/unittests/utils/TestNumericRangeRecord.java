@@ -5,8 +5,8 @@ import root.includes.NumericRangeRecord;
 
 import java.rmi.UnexpectedException;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static org.junit.jupiter.api.Assertions.*;
-import static root.common.utils.Preconditions.checkArgument;
 
 public class TestNumericRangeRecord {
 
@@ -17,6 +17,7 @@ public class TestNumericRangeRecord {
         checkArgument((tmp.start().compareTo(tmp.end())) <= 0, "max must be greater or equal to min");
         return tmp;
     }
+
 
     /**
      * uses makeRange to create object and check that min/max is the same as parameters

@@ -3,12 +3,10 @@ package root.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.app.AppConfig;
-import root.controllers.ReviewAggregateStatistics;
+import root.includes.ReviewAggregateStatistics;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewVoteRepository;
-
-import java.util.Set;
 
 @Service
 public class ReviewService {
@@ -187,7 +185,7 @@ public class ReviewService {
             int hits = filteredScoreMap.getOrDefault(i, 0);
             double pct = avg(hits, totalCount, 0.0) * 100.0;
             scoreStats.getScoreDistribution().put(i, pct);
-            scoreStats.getScoreCounts().put(i, hits);
+            scoreStats.getScoreCount().put(i, hits);
         }
 
         return scoreStats;

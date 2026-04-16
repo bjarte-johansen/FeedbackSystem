@@ -1,5 +1,6 @@
-package root.app;
+package root.app.connection;
 
+import root.app.AppRequestSchema;
 import root.database.CustomDataSource;
 
 public class AppMultiTenantConnectionProvider extends root.database.connectionproviders.CustomMultiTenantConnectionProvider {

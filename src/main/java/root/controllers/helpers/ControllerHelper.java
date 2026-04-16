@@ -1,17 +1,18 @@
-package root.controllers;
+package root.controllers.helpers;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.Model;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import javax.naming.ldap.Control;
-import java.util.ArrayList;
-import java.util.List;
+
+/**
+ * small utility to help write unified status messages to error/success pages or similar.
+ *
+ * the class is over-generic in that it accepts lots of patterns that are supposed to be cleaned
+ * up at a later time.
+ *
+ * TODO: clean it
+ */
 
 @Component
 public class ControllerHelper {
@@ -31,22 +32,27 @@ public class ControllerHelper {
         return this;
     }
 
-    private void setStatusMessage(){
+    private void setStatusMessage(boolean redirect){
         boolean hasStatus = this.status != null;
         boolean hasStatusMessage = statusMessage != null;
+        boolean hasProperties = hasStatus || hasStatusMessage;
 
-        if(hasStatus && hasStatusMessage && (redirectAttributes == null && model == null)){
-            throw new RuntimeException("Both model and redirectattributes should not be null");
-        }
+        if(hasProperties){
+            if(redirect) {
+                if (redirectAttributes == null) {
+                    throw new RuntimeException("RedirectAttributes not set");
+                }
 
-        if(redirectAttributes != null){
-            redirectAttributes.addFlashAttribute("status", status);
-            redirectAttributes.addFlashAttribute("statusMessage", statusMessage);
-        }
+                redirectAttributes.addFlashAttribute("status", status);
+                redirectAttributes.addFlashAttribute("statusMessage", statusMessage);
+            } else {
+                if(model == null){
+                    throw new RuntimeException("Model not set");
+                }
 
-        if(model != null){
-            model.addAttribute("status", status);
-            model.addAttribute("statusMessage", statusMessage);
+                model.addAttribute("status", status);
+                model.addAttribute("statusMessage", statusMessage);
+            }
         }
     }
 
@@ -60,26 +66,20 @@ public class ControllerHelper {
     }
 
     public String redirect(String path) {
-        setStatusMessage();
+        setStatusMessage(true);
 
         return "redirect:" + path;
     }
 
     public String forward(String path) {
-        setStatusMessage();
+        setStatusMessage(false);
 
         return "forward:" + path;
     }
 
     public String resolve(String path) {
-        setStatusMessage();
+        setStatusMessage(false);
 
         return path;
     }
-
-/*
-    public String redirect(String path) {
-        return "redirect:" + path;
-    }
-*/
 }

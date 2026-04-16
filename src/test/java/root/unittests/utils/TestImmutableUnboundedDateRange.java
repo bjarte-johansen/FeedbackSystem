@@ -6,8 +6,6 @@ import root.includes.ImmutableUnboundedDateRange;
 
 import java.time.LocalDate;
 
-import static root.common.utils.Preconditions.checkArgument;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestImmutableUnboundedDateRange {

@@ -2,6 +2,7 @@ package root.repositories;
 
 import org.springframework.stereotype.Repository;
 import root.app.ReviewQueryOptions;
+import root.includes.PageCursor;
 import root.database.FSQLQuery;
 import root.includes.NumericRangeRecord;
 import root.includes.WhereExpressionList;
@@ -184,6 +185,20 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
     }
 
 
+    public String buildPageCursorSql(PageCursor pageCursor) {
+        String s = "";
+
+        if (pageCursor.getLimit() > 0) {
+            s += "LIMIT " + pageCursor.getLimit();
+        }
+
+        if (pageCursor.getOffset() > 0) {
+            if (!s.isEmpty()) s += " ";
+            s += "OFFSET " + pageCursor.getOffset();
+        }
+        return s;
+    }
+
     /*
     find with or without external id with pagination and filtering options.
      */
@@ -219,7 +234,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
         String whereStr = whereExpressionList.toSql(true);
 
         // make limit/offset sql
-        String limitOffsetSql = options.getPageCursor().buildLimitOffsetSql();
+        String limitOffsetSql = buildPageCursorSql(options.getPageCursor());
         if(limitOffsetSql != null && !limitOffsetSql.isEmpty()) {
             limitOffsetSql = " " + limitOffsetSql;
         }

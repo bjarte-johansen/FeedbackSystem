@@ -1,6 +1,6 @@
 package root.app;
 
-import root.app.includes.PageCursor;
+import root.includes.PageCursor;
 import root.includes.ImmutableUnboundedDateRange;
 import root.includes.NumericRangeRecord;
 import root.models.Review;
@@ -59,18 +59,23 @@ public class ReviewQueryOptions {
     public static final int OPTION_ORDER_BY_STATUS_APPROVED_FIRST = 21;
     public static final int OPTION_ORDER_BY_STATUS_REJECTED_FIRST = 22;
 
+    public static final int OPTION_ORDER_BY_LIKE_COUNT_ASC = 23;
+    public static final int OPTION_ORDER_BY_LIKE_COUNT_DESC = 24;
+
 
     private static final Map<Integer, String> OPTION_ORDER_BY_MAP = Map.ofEntries(
         Map.entry(OPTION_ORDER_NONE, ""),
         Map.entry(OPTION_ORDER_BY_ID_ASC, "id ASC"),
         Map.entry(OPTION_ORDER_BY_ID_DESC, "id DESC"),
-        Map.entry(OPTION_ORDER_BY_CREATED_AT_ASC, "createdAt ASC"),
-        Map.entry(OPTION_ORDER_BY_CREATED_AT_DESC, "createdAt DESC"),
+        Map.entry(OPTION_ORDER_BY_CREATED_AT_ASC, "created_at ASC"),
+        Map.entry(OPTION_ORDER_BY_CREATED_AT_DESC, "created_at DESC"),
         Map.entry(OPTION_ORDER_BY_SCORE_ASC, "score ASC"),
         Map.entry(OPTION_ORDER_BY_SCORE_DESC, "score DESC"),
         Map.entry(OPTION_ORDER_BY_STATUS_PENDING_FIRST, "(status = " + Review.REVIEW_STATUS_PENDING + ") DESC, id DESC"),
         Map.entry(OPTION_ORDER_BY_STATUS_APPROVED_FIRST, "(status = " + Review.REVIEW_STATUS_APPROVED + ") DESC, id DESC"),
-        Map.entry(OPTION_ORDER_BY_STATUS_REJECTED_FIRST, "(status = " + Review.REVIEW_STATUS_REJECTED + ") DESC, id DESC")
+        Map.entry(OPTION_ORDER_BY_STATUS_REJECTED_FIRST, "(status = " + Review.REVIEW_STATUS_REJECTED + ") DESC, id DESC"),
+        Map.entry(OPTION_ORDER_BY_LIKE_COUNT_DESC, "(like_count) DESC, id DESC"),
+        Map.entry(OPTION_ORDER_BY_LIKE_COUNT_ASC, "(like_count) ASC, id ASC")
     );
 
 
@@ -302,7 +307,13 @@ public class ReviewQueryOptions {
      */
 
     public String buildOrderBySql() {
-        return OPTION_ORDER_BY_MAP.getOrDefault(getOrderByEnum(), "id ASC");
+        var option = OPTION_ORDER_BY_MAP.get(getOrderByEnum());
+        if(option == null){
+            // TODO: should be logged
+            //throw new IllegalArgumentException(String.format("Unsupported order option %s", getOrderByEnum()));
+            return "id DESC";
+        }
+        return option;
     }
 
 

@@ -13,7 +13,7 @@ public class AppConfig {
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test", "h184905", "pass", "test");
     public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
      */
-    public static final DataSourceConnectionParams LOCALHOST = new DataSourceConnectionParams("jdbc:postgresql://localhost:5432/", "postgres", "postgres", "test");
+    //public static final DataSourceConnectionParams LOCALHOST = new DataSourceConnectionParams("jdbc:postgresql://localhost:5432/", "postgres", "postgres", "test");
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905", "h184905", "pass", "test");
     public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
     public static final DataSourceConnectionParams CURRENT_CONNECTION_PARAMS = TEST;

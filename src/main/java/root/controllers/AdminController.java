@@ -77,9 +77,10 @@ public class AdminController {
     public String showDashboard(
         @RequestParam(defaultValue = "-1") String statusFilter,
         @RequestParam(name="cursor", defaultValue = "") String cursorStr,
+        @RequestParam(defaultValue = "-1") int orderByEnum,
         Model model
     ) throws Exception {
-        return showFilteredReviews(/*orderEnum */0, statusFilter, null, null, 0, cursorStr, model);
+        return showFilteredReviews(orderByEnum, statusFilter, null, null, 0, cursorStr, model);
     }
 
 
@@ -103,7 +104,7 @@ public class AdminController {
     @AdminOnly
     @GetMapping("/admin/dashboard/reviews")
     public String showFilteredReviews(
-        @RequestParam(defaultValue = "-1") int orderByEnum,
+        @RequestParam(defaultValue = "-1") Integer orderByEnum,
         @RequestParam(defaultValue = "-1") String statusFilter,
         @RequestParam(required = false) LocalDate dateFilterStart,
         @RequestParam(required = false) LocalDate dateFilterEnd,

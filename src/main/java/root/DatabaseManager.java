@@ -18,7 +18,7 @@ import root.services.PasswordService;
 import root.repositories.*;
 //import root.repositories.TenantRepository;
 
-import java.sql.*;
+import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 @Component
 public class DatabaseManager {
     public static boolean DEBUG = true;
+    public static boolean VERBOSE_SCOPE = true;
 
     @Autowired
     ReviewerRepository reviewerRepo;
@@ -54,34 +55,46 @@ public class DatabaseManager {
             .update();
     }
 
-    public void clean(){
+    public void cleanTenantSchema(){
+        Logger.log("Cleaning tenant schema ...");
         cleanTable(AppConfig.REVIEW_TABLE_NAME);
         cleanTable(AppConfig.REVIEWER_TABLE_NAME);
         cleanTable(AppConfig.REVIEW_VOTE_TABLE_NAME);
+        Logger.log("Cleaning tenant schema OK");
     }
 
     public void resetPublicSchema(){
-        try(var ignore1 = AppRequestSchema.withThreadSchema("public")){
-            cleanTable(AppConfig.TENANT_TABLE_NAME);
-            cleanTable(AppConfig.TENANT_DOMAIN_TABLE_NAME);
+        try(var _ = Logger.scope("Resetting tenant schema...")) {
+            try (var ignore1 = AppRequestSchema.withThreadSchema("public")) {
+                Logger.log("Cleaning public schema ...");
+                cleanTable(AppConfig.TENANT_TABLE_NAME);
+                cleanTable(AppConfig.TENANT_DOMAIN_TABLE_NAME);
+                Logger.log("Cleaning public schema OK");
 
-            insertTenants();
+                Logger.log("Inserting tenants ...");
+                insertTenants();
+                Logger.log("Inserting tenants OK");
+            } catch (Exception e) {
+                Logger.log("Error trying to reset public schema");
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
         }
     }
 
     public void resetTenantSchema() {
-        clean();
+        try(var _ = Logger.scope("resetTenantSchema")){
+            cleanTenantSchema();
 
-        Logger.log("inserting demo data for schema '" + AppRequestSchema.get() + "' ...");
-        try(var ignore = Logger.scope("Inserting demo data...", DEBUG)) {
-            insertAuthors();
-            insertReviews();
+            try(var _ = Logger.scope("inserting schema demo data'" + AppRequestSchema.get() + "' ...")) {
+                insertAuthors();
+                insertReviews();
+            }
         }
-        Logger.log("Inserting demo data... OK");
     }
 
     private void insertTenants(){
-        try (var p = Logger.scope("Inserting tenant", DEBUG)) {
+        try (var p = Logger.scope("Inserting tenant", VERBOSE_SCOPE)) {
             String password = "password1";
             String passwordHash = passwordService.encode(password);
 
@@ -152,77 +165,89 @@ public class DatabaseManager {
         r.setScore(score);
         r.setCreatedAt(created_at);
 
-        if(DEBUG) Logger.log("Created review: " + r);
+        //if(DEBUG) Logger.log("Created review: " + r);
 
         return r;
     }
 
 
     private void insertReviews() {
-        try(var p = Logger.scope("Inserting demo ratings", DEBUG)) {
-            String path1 = "/product/1";
-            String path2 = "/product/2";
-            String path3 = "en-litt-annen-sti";
+        try {
 
-            int[] firstDay = {-365 * 2};
 
-            Supplier<Instant> increasingPastInstant = () -> Instant.now().plus(Duration.ofDays(firstDay[0] += 10));
+            try (var p = Logger.scope("Inserting demo ratings", DEBUG)) {
+                String path1 = "/product/1";
+                String path2 = "/product/2";
+                String path3 = "en-litt-annen-sti";
 
-            Supplier<String> username = FunnyUserNameGenerator::generate;
-            Supplier<String> title = () -> IpsumLoremGenerator.generate(2 + (int) (Math.random() * 3));
-            Supplier<String> comment = () -> Strings.left(IpsumLoremGenerator.generate(10 + (int) (Math.random() * 20)), 255);
+                int[] firstDay = {-365 * 2};
 
-            List<Review> reviews = List.of(
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                Supplier<Instant> increasingPastInstant = () -> Instant.now().plus(Duration.ofDays(firstDay[0] += 10));
 
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 2L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 3L, title.get(), comment.get(), 3, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 2, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 1, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 3, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_PENDING, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_PENDING, path1, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_REJECTED, path1, username.get(), 1L, title.get(), comment.get(), 3, increasingPastInstant.get()),
+                Supplier<String> username = FunnyUserNameGenerator::generate;
+                Supplier<String> title = () -> IpsumLoremGenerator.generate(2 + (int) (Math.random() * 3));
+                Supplier<String> comment = () -> Strings.left(IpsumLoremGenerator.generate(10 + (int) (Math.random() * 20)), 255);
 
-                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 2, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_PENDING, path3, username.get(), 1L, title.get(), comment.get(), 2, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_PENDING, path3, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_REJECTED, path3, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_REJECTED, path3, username.get(), 1L, title.get(), comment.get(), 2, increasingPastInstant.get()),
+                List<Review> reviews = List.of(
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
 
-                createReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 1L, title.get(), comment.get(), 1, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 3L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_PENDING, path2, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_PENDING, path2, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 3, increasingPastInstant.get()),
-                createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 2, increasingPastInstant.get())
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 2L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 3L, title.get(), comment.get(), 3, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 2, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 1, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 3, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_PENDING, path1, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_PENDING, path1, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_REJECTED, path1, username.get(), 1L, title.get(), comment.get(), 3, increasingPastInstant.get()),
 
+                    createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 2, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 3, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path3, username.get(), 2L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_PENDING, path3, username.get(), 1L, title.get(), comment.get(), 2, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_PENDING, path3, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_REJECTED, path3, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_REJECTED, path3, username.get(), 1L, title.get(), comment.get(), 2, increasingPastInstant.get()),
+
+                    createReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 1L, title.get(), comment.get(), 1, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_APPROVED, path2, username.get(), 3L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_PENDING, path2, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_PENDING, path2, username.get(), 1L, title.get(), comment.get(), 5, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 4, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 3, increasingPastInstant.get()),
+                    createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 2, increasingPastInstant.get())
                 );
-            Logger.log("Added " + reviews.size() + " reviews to demo data");
-            reviews.forEach(review -> {
-                reviewRepo.save(review);
-                /*
-                try(var _ = new TryWithTimer("insert reviews")) {
-                    reviewRepo.save(review);
-                }*/
-               });
 
-            if(DEBUG) Logger.log("Inserted reviews: " + reviews);
+                try(var _ = new TryWithTimer("with transaction")) {
+                    // do actual insertion
+                    DataSourceManager.begin();
+
+                    if (DataSourceManager.TX.get() != null) {
+                        Logger.log("We inside a transaction");
+                    }
+                    Logger.log("Inserting " + reviews.size() + " reviews ...");
+                    reviews.forEach(reviewRepo::save);
+                    if (DEBUG) Logger.log("Inserted reviews ... OK");
+
+                    DataSourceManager.commit();
+                }
+            }
+
+        }catch(Exception e){
+            e.printStackTrace();
+            throw new RuntimeException("Error inserting reviews", e);
         }
+
     }
 }
 

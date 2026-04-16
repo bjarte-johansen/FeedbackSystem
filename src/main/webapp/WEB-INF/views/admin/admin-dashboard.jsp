@@ -14,13 +14,11 @@
                 Filtrer status:
                 <c:forEach var="option" items="${reviewStatusFilterOptions}">
                     <!-- fake form with .ajax and .custom-handler will trigger javascript and never be posted -->
-                    <form class="ajax d-inline-block custom-handler" data-cmd="addStatusFilter:${option.value}" method="post">
-                        <button type="submit" class="${option.value == currentReviewStatusFilter ? 'active' : ''}">${option.key}</button>
-                    </form>
+                    <a href="/R/admin/filter/status/${option.value}" class="btn text-deco-none ${option.value == currentReviewStatusFilter ? 'active' : ''}">${option.key}</a>
                 </c:forEach>
             </div>
 
-            <div class="box">
+            <div class="box d-none">
                 Dato fra
                 <input type="date" name="dateFilter" value="${currentDateFilterStart}" onchange="Review.reloadReviewList()">
                 til
@@ -34,6 +32,8 @@
                     <option value="365" ${currentDateFilterPreset == 365 ? 'selected' : ''}>Siste 365 dager</option>
                 </select>
             </div>
+
+            <%@ include file="filters.jsp" %>
 
 <%--
         <div class="box">

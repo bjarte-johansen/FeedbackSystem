@@ -2,15 +2,12 @@ package root.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestParam;
 import root.app.AppConfig;
 import root.app.ReviewQueryOptions;
-import root.app.includes.PageCursor;
-import root.app.includes.PageCursorEncoder;
-import root.controllers.ControllerUtils;
+import root.includes.PageCursor;
+import root.includes.PageCursorEncoder;
+import root.controllers.Utils;
 import root.includes.ImmutableUnboundedDateRange;
-import root.includes.Utils;
 import root.includes.logger.Logger;
 import root.models.Review;
 import root.repositories.ReviewRepository;
@@ -31,10 +28,10 @@ import java.util.function.Function;
 public class AdminReviewPageService {
     private final static Function<String, String> fnToCssIdentifier = (s) -> {
         if (s == null || s.isEmpty()) return "";
-        return Utils.toCssIdentifier(s).toLowerCase();
+        return root.includes.Utils.toCssIdentifier(s).toLowerCase();
     };
 
-    private static Map<String, Object> reviewStatusFilterOptions = Utils.linkedMap(
+    private static Map<String, Object> reviewStatusFilterOptions = root.includes.Utils.linkedMap(
         "Godkjent", Review.REVIEW_STATUS_APPROVED,
         "Kontroll", Review.REVIEW_STATUS_PENDING,
         "Avvist", Review.REVIEW_STATUS_REJECTED,
@@ -62,7 +59,7 @@ public class AdminReviewPageService {
 
     public Map<String, Object> buildReviewListModelData
     (
-        int orderByEnum,
+        Integer orderByEnum,
         String statusFilter,
         LocalDate dateFilterStart,
         LocalDate dateFilterEnd,
@@ -72,16 +69,17 @@ public class AdminReviewPageService {
         Map<String, Object> modelMap = new HashMap<>();
 
         // add data to model for select externalId pill in admin dashboard JSP. This will be used to filter reviews by externalId.
-        ControllerUtils.addSelectExternalIdPillData(modelMap, reviewRepo);
+        Utils.addSelectExternalIdPillData(modelMap, reviewRepo);
 
         // decode reviewStatusFilter from CSV string to set of integers. If the filter contains -1, we want to include
         // all statuses, so we add all possible statuses to the filter set.
-        Set<Integer> reviewStatusFilterSet = new HashSet<>(Utils.parseCsvIntList(statusFilter));
+        Set<Integer> reviewStatusFilterSet = new HashSet<>(root.includes.Utils.parseCsvIntList(statusFilter));
         if (reviewStatusFilterSet.contains(-1) || reviewStatusFilterSet.isEmpty()) {
             // remove -1, if exists, and replace with list of all valid statuses
             reviewStatusFilterSet.remove(-1);
             reviewStatusFilterSet.addAll(Review.getValidReviewStatuses());
         }
+        Logger.log("REVIEWSTATUSFILTERSET: " + reviewStatusFilterSet);
 
 
         // filter by date range or date filter preset
@@ -99,7 +97,7 @@ public class AdminReviewPageService {
             dateRangeFilter = new ImmutableUnboundedDateRange<LocalDate>(presetStartDate, null);
         }
 
-        PageCursor cursor = PageCursorEncoder.decode(pageCursorStr, AppConfig.ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS);
+        PageCursor cursor = PageCursorEncoder.parseOrDefault(pageCursorStr, AppConfig.ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS);
         modelMap.put("pageCursor", cursor.encode());
 
         // make query options object and set filters
@@ -107,15 +105,15 @@ public class AdminReviewPageService {
         options.setPageCursor(cursor);
         options.setDateFilterRange(dateRangeFilter);
         options.getStatusFilterSet().addAll(reviewStatusFilterSet);
-        options.setStatusFilterSet(reviewStatusFilterSet);
-        options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
+        //options.setStatusFilterSet(reviewStatusFilterSet);
+        options.setOrderByEnum(orderByEnum);//ReviewQueryOptions.OPTION_ORDER_BY_STATUS_PENDING_FIRST);
         //o.setOrderByEnum(reviewStatusFilterSet.size() == 1);
 
         // allways order by ID desc if there is only one status in the filter, to show the most recent reviews first.
         // If there are multiple statuses in the filter, we order by pending first to prioritize reviews that need action.
-        if (reviewStatusFilterSet.size() == 1) {
-            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
-        }
+//        if (reviewStatusFilterSet.size() == 1) {
+//            options.setOrderByEnum(ReviewQueryOptions.OPTION_ORDER_BY_ID_DESC);
+//        }
 
         // add dump to model for display in JSP. This is just for demonstration purposes to show how to fetch all
         // reviews for a given externalId with pagination and sorting, and should be removed for production code.

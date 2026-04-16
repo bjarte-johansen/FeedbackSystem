@@ -4,6 +4,7 @@ package root;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import root.app.AppContext;
 import root.includes.logger.Logger;
 import root.includes.logger.LoggerScope;
 import root.models.Review;
@@ -16,7 +17,7 @@ import java.time.Instant;
 
 
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles("local")
 public class TestA0Review extends TestA0Base{
     LoggerScope __logger;
 
@@ -27,18 +28,20 @@ public class TestA0Review extends TestA0Base{
     DatabaseManager databaseManager;
 
 
-    /**
-     * Initializes the test environment by setting the "APP_ENV" system property to "test" before all tests are run.
-     * This allows the application to use test-specific configurations, such as connecting to a test database instead
-     * of a production
-     */
-
-    @BeforeAll
-    static void init() {
-        System.setProperty("APP_ENV", "test");
-    }
-
-
+//    /**
+//     * Initializes the test environment by setting the "APP_ENV" system property to "test" before all tests are run.
+//     * This allows the application to use test-specific configurations, such as connecting to a test database instead
+//     * of a production
+//     */
+//
+//    @BeforeAll
+//    static void init() {
+//        System.setProperty("APP_ENV", "test");
+//    }
+//
+//    public TestA0Review() {
+//
+//    }
 
     protected void insertReview1() throws Exception {
         insertReview1(1);

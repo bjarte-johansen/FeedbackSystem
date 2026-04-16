@@ -30,24 +30,9 @@ public class FSQLQuery {
         T run(Connection conn) throws Exception;
     }
 
-    public record InsertResult(Long id, int count) {
-        //private final Long _id;
-        //private final int _count;
+    public record InsertResult(Long id, int count) {}
 
-        /*
-        public InsertResult(Long id, int count) {
-            this._id = id;
-            this._count = count;
-        }
-
-        public Long getId() {
-            return _id;
-        }
-
-        public int getCount() {
-            return _count;
-        }*/
-    }
+    private static QueryLogger queryLogger = null;
 
     private static final boolean OVERRIDE_DEBUG_SQL = false;
     private static final int DEFAULT_CAPACITY = 32;
@@ -83,6 +68,17 @@ public class FSQLQuery {
         }
     }
 
+
+    // get/set query logger
+
+    public static QueryLogger setQueryLogger(QueryLogger newQueryLogger) {
+        var prev = queryLogger;
+        queryLogger = newQueryLogger;
+        return prev;
+    }
+    public static QueryLogger getQueryLogger() {
+        return queryLogger;
+    }
 
 
     /*
@@ -290,6 +286,10 @@ public class FSQLQuery {
             // bind args
             ArgumentBinder binder = new ArgumentBinder(ps);
             binder.bind(parsed.args);
+
+            if(queryLogger != null){
+                queryLogger.add(FSQLQueryInterpolator.interpolate(parsed.sql, parsed.args));
+            }
 
             //Logger.log("SQL: " + ps.toString());
 

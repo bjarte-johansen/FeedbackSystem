@@ -15,6 +15,7 @@ public class FunnyUserNameGenerator {
         ,"Unicorn","Sloth","Octopus","Dragon","Llama","Pineapple","Cactus","Giraffe","Taco","Robot","Zombie","Mermaid"
         ,"Waffle"};
 
+
     /**
      * Generates a random funny username by combining a random adjective, a random noun, and a random number.
      * Example output: "WobblyPenguin123"

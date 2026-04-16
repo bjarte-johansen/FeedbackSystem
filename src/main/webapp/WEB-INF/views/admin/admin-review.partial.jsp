@@ -8,6 +8,8 @@
                 <strong class="score-text">${review.score}/5</strong> <span class="score score-${review.score}"></span>
             </div>
 
+            <span class="external-id mb-2">Sti: ${not empty review.externalId ? review.externalId : ""}</span>
+
             <span class="title mb-2">${not empty review.title ? review.title : ""}</span>
 
             <span class="name mb-0">${empty review.authorName ? 'Anonym' : review.authorName}</span>

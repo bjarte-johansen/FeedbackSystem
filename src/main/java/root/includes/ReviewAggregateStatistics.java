@@ -1,4 +1,4 @@
-package root.controllers;
+package root.includes;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,7 +20,7 @@ public class ReviewAggregateStatistics {
     private long totalScore;
 
     private Map<Integer, Double> scoreDistribution = new LinkedHashMap<Integer, Double>();
-    private Map<Integer, Integer> scoreCounts = new LinkedHashMap<>();
+    private Map<Integer, Integer> scoreCount = new LinkedHashMap<>();
 
     /**
      * Returns the total score for all reviews. The total score is the sum of all individual review scores and can be
@@ -117,8 +117,8 @@ public class ReviewAggregateStatistics {
      * @return Map<Integer, Integer> representing the score counts for the reviews, where the keys are the score values
      *  and the values are the corresponding counts of reviews that have that score.
      */
-    public Map<Integer, Integer> getScoreCounts() {
-        return scoreCounts;
+    public Map<Integer, Integer> getScoreCount() {
+        return scoreCount;
     }
 
     /**
@@ -126,10 +126,10 @@ public class ReviewAggregateStatistics {
      * each score category. The keys of the map are the score values (e.g., 1, 2, 3, 4, 5), and the values are the
      * corresponding counts of reviews that have that score.
      *
-     * @param scoreCounts Map<Integer, Integer> representing the score counts for the reviews, where the keys are the
+     * @param scoreCount Map<Integer, Integer> representing the score counts for the reviews, where the keys are the
      *  score values and the values are the corresponding counts of reviews that have that score.
      */
-    public void setScoreCounts(Map<Integer, Integer> scoreCounts) {
-        this.scoreCounts = scoreCounts;
+    public void setScoreCount(Map<Integer, Integer> scoreCount) {
+        this.scoreCount = scoreCount;
     }
 }

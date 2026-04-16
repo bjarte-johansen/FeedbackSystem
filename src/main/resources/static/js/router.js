@@ -1,3 +1,9 @@
+/**
+ * DISPATCHER (NOT router) is in part written by chatGPT to save time. Most routers wanted to rewrite window.location
+ * but we just want it to intercept our clicks. Its odd that more routers didnt do this, or was too complicated to
+ * make work effortlessly.
+ */
+
 class Router{
     routes = [];
 
@@ -32,7 +38,7 @@ class Router{
             const params = {};
             r.keys.forEach((k, i) => params[k] = m[i + 1]);
 
-            r.fn({ path, params });
+            r.fn({ path, params, e });
             return true;
         }
 
@@ -44,10 +50,7 @@ class Router{
             if (!a) return;
 
             // only normal left-click
-            if (
-                e.button !== 0 ||
-                e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
-            ) return;
+            if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
             const url = new URL(a.href, location.href);
 

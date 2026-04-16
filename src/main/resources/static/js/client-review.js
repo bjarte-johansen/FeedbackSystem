@@ -202,7 +202,9 @@ var Review = {
         const $select = $reviewList.find('select[name=scoreFilter]');
         $select.val(newValue);
 
-        Review.reloadReviewList({resetCursor: true})
+        this.triggerClientScoreFilterChange($select);
+
+        //Review.reloadReviewList({resetCursor: true})
     },
 
 
@@ -440,7 +442,7 @@ class ReviewListing {
     }
 
     #getReviewCountByScore(score) {
-        return this.reviewStats.scoreCounts[score] || this.getTotalReviewCount();
+        return this.reviewStats.scoreCount[score] || this.getTotalReviewCount();
     }
 
     getAccumulatedReviewCountByScoreFilter() {
@@ -455,7 +457,7 @@ class ReviewListing {
         o.scoreFilter = o.scoreFilter?.split(",").map(s => Number(s)).filter(n => !isNaN(n)) || [-1];
         //o.orderByEnum = o.currentOrderByEnum;
 
-        const deleteKeys = ["currentOrderByEnum", "dateFormatter", "daysAgoFormatter", "dblFormatter1", "dblFormatterCssPointFive", "scoreCountsJson", "pageCursor", "uniqueExternalIds", "defaultNewReviewFormValues", "detailedReviewCount"];
+        const deleteKeys = ["currentOrderByEnum", "dateFormatter", "daysAgoFormatter", "dblFormatter1", "dblFormatterCssPointFive", "scoreCountJson", "pageCursor", "uniqueExternalIds", "defaultNewReviewFormValues", "detailedReviewCount"];
         for(let k in deleteKeys)
             delete o[k];
 
@@ -464,7 +466,7 @@ class ReviewListing {
         delete o.dblFormatter1;
         delete o.dblFormatterCssPointFive;
 
-        delete o.scoreCountsJson;
+        delete o.scoreCountJson;
         delete o.pageCursor;
         delete o.uniqueExternalIds;
         delete o.defaultNewReviewFormValues;
@@ -500,6 +502,11 @@ class ReviewListing {
 
         const $itemsContainer = $(".review--list-items");
         $itemsContainer.empty().hide();
+
+        if(!this.reviews) {
+            console.log("cannot find reviews by json, we probably in admininterface");
+            return;
+        }
 
         this.reviews.forEach((r) => {
             if(r === null) return;
@@ -575,6 +582,16 @@ document.addEventListener("DOMContentLoaded", function () {
     router.route("/R/review/:id/like", ({params}) => { applyReviewVoteAction(params.id, "like"); });
     router.route("/R/review/:id/dislike", ({params}) => applyReviewVoteAction(params.id, "dislike"));
 
+    // admin routes
+    router.route("/R/admin/filter/status/:statusEnum", ({params, e}) => {
+        $(e.target).toggleClass("active");
+        console.log("admin filter review status clicked", params.statusEnum);
+
+        const url = new URL(window.location.href);
+        url.searchParams.set("statusFilter", params.statusEnum); // 👈 overwrite
+        window.location.href = url.toString();
+    });
+
     router.start();
 
     //console.log("Router initialized");
@@ -583,9 +600,39 @@ document.addEventListener("DOMContentLoaded", function () {
     const rl = new ReviewListing();
     const $reviewList = Review.getReviewListingDomElement(false);
 
-    rl.populateFromJson(Review.__getReviewListOptionAsJson($reviewList) ?? {});
+    const dataAsJson = Review.__getReviewListOptionAsJson($reviewList) ?? {};
+    rl.populateFromJson(dataAsJson);
     Review.setReviewListing(rl);
     rl.renderItems();
+
+    // update review stats
+    const updateReviewStats = function(stats){
+        if(!rl.reviews) {
+            console.log("cannot find reviews by json, we probably in admininterface");
+            return;
+        }
+
+        const $outer = $('.review--stats');
+        if($outer.length === 0) throw new Error("Unable to find element .review--stats");
+
+        const bigAverageScore = String((Math.round(stats.averageScore * 2.0) / 2.0).toFixed(1));
+        $outer.find(".big-average-score").text(bigAverageScore + " / 5");
+        $outer.find(".score").addClass("score-" + bigAverageScore.replace(".", "-"));
+
+        $outer.find(".average-score").text(bigAverageScore);
+        $outer.find(".total-review-count").text(stats.totalCount);
+
+        const $scoreBars = $outer.find(".score-pct-bar>div").each(function(i,el){
+            const $el = $(el);
+            $el.css("width", stats.scoreDistribution[5 - i] + "%");
+        });
+
+        const $scoreCount = $outer.find(".score-count").each(function(i,el){
+            const $el = $(el);
+            $el.text(stats.scoreCount[5 - i]);
+        });
+    }
+    updateReviewStats(dataAsJson.reviewStats);
 
     document.addEventListener("submit", async e => {
         const form = e.target.closest("form");

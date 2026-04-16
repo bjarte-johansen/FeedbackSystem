@@ -2,7 +2,7 @@ package root.includes;
 
 import java.time.LocalDate;
 
-import static com.google.common.base.Preconditions.checkArgument;;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class ImmutableUnboundedDateRange<T extends LocalDate> {
     private final T start;
@@ -20,7 +20,6 @@ public class ImmutableUnboundedDateRange<T extends LocalDate> {
     ImmutableUnboundedDateRange<T> withStart(T start) {
         return new ImmutableUnboundedDateRange<>(start, this.end);
     }
-
     ImmutableUnboundedDateRange<T> withEnd(T end) {
         return new ImmutableUnboundedDateRange<>(this.start, end);
     }
@@ -31,27 +30,21 @@ public class ImmutableUnboundedDateRange<T extends LocalDate> {
     public T getEnd(){
         return end;
     }
-
     public boolean isOrdered(){
         return start != null && end != null && !start.isAfter(end);
     }
-
     public boolean isValid(){
         return isOrdered();
     }
-
     public boolean hasStart(){
         return start != null;
     }
-
     public boolean hasEnd() {
         return end != null;
     }
-
     public boolean hasEither(){
         return hasStart() || hasEnd();
     }
-
     public boolean isBounded(){
         return hasStart() && hasEnd();
     }

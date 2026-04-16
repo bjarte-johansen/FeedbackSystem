@@ -4,6 +4,7 @@ import root.database.connectionproviders.CustomConnectionProvider;
 import root.includes.logger.Logger;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -14,6 +15,41 @@ public class DataSourceManager {
 
     private CustomConnectionProvider connectionProvider = null;
     private boolean multiTenant = false;
+
+    public static final ThreadLocal<Connection> TX = new ThreadLocal<>();
+
+    public static void begin() throws Exception {
+        if (TX.get() != null)
+            throw new IllegalStateException("Tx already active");
+
+        Connection c = getConnection();
+        c.setAutoCommit(false);
+        TX.set(c);
+    }
+
+    public static void commit() throws SQLException {
+        Connection c = TX.get();
+        if (c == null) throw new IllegalStateException("No tx");
+
+        try {
+            c.commit();
+        } finally {
+            c.close();
+            TX.remove();
+        }
+    }
+
+    public static void rollback() throws SQLException {
+        Connection c = TX.get();
+        if (c == null) return;
+
+        try {
+            c.rollback();
+        } finally {
+            c.close();
+            TX.remove();
+        }
+    }
 
 
     public static DataSourceManager getSingleton() {
@@ -76,7 +112,15 @@ public class DataSourceManager {
      */
 
     public static Connection getConnection() throws Exception {
+        Connection conn = TX.get();
+        if(conn != null) return conn;
+
         var manager = getSingleton();
+
+        if(manager.connectionProvider == null) {
+            throw new RuntimeException("Connection provider has not been set. Please initialize the connection provider.");
+        }
+
         return manager.connectionProvider.getConnection();
     }
 
