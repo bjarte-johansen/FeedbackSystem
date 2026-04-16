@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
-<div class="box review--list-filters">
+<div class="box review--list-filters d-none">
     <span class="active-filters mobile-full d-none" style="margin-right:8px;">
         Aktive filtre:
         <span class="items mobile-full"></span>
