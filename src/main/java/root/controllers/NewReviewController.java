@@ -61,7 +61,7 @@ public class NewReviewController {
         Map<String, Object> vm = new HashMap<>();
 
         vm.put("externalId", externalId);
-        vm.put("submitUrl", "/api/submit-review");
+        vm.put("submitUrl", "/api/review/submit");
 
         vm.put("form", encodePrefilledValues());
 
@@ -96,7 +96,7 @@ public class NewReviewController {
             model.addAttribute("form", encodePrefilledValues());
         }
 
-        return "client/submit-review-form.partial";
+        return "new-review-form";
     }
 
 
@@ -108,7 +108,7 @@ public class NewReviewController {
      * @return
      */
 
-    @PostMapping({"/api/submit-review", "/api/review/submit"})
+    @PostMapping({"/api/review/submit"})
     public ResponseEntity<Void> submitReview(
         @ModelAttribute NewReviewForm form
     ) {
@@ -139,6 +139,8 @@ public class NewReviewController {
             }
 
             reviewRepo.save(review);
+        }else{
+            // TODO: serve message that form submission is temporarily disabled
         }
 
         return ResponseEntity.ok().build();

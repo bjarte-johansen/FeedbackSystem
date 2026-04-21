@@ -1,6 +1,6 @@
 package root.repositories;
 
-public interface ReviewVoteRepositoryInterface {
+public interface ReviewVoteRepositoryCustom {
 
     /**
      * Votes a review. If the user has already voted, it updates the existing vote.

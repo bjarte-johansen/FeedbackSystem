@@ -18,6 +18,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import java.sql.Connection;
 import java.util.*;
 
+//password for email: 'oxgs zaqa rpqr hib'
 
 @SpringBootApplication
 public class App extends SpringBootServletInitializer {

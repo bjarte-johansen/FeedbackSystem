@@ -1,12 +1,8 @@
 package root.repositories;
 
-import org.springframework.stereotype.Repository;
-import root.app.ReviewQueryOptions;
 import root.includes.proxyrepo.ProxyRepository;
-import root.models.Review;
 import root.models.ReviewSettings;
 
-import java.util.List;
 import java.util.Optional;
 
 
@@ -16,7 +12,7 @@ import java.util.Optional;
  */
 
 //@Repository
-public interface ReviewSettingsRepository extends ProxyRepository<ReviewSettings, Long>, ReviewRepositoryInterface{
+public interface ReviewSettingsRepository extends ProxyRepository<ReviewSettings, Long>, ReviewRepositoryCustom {
     Optional<ReviewSettings> findByExternalId(String externalId);
     long countByExternalId(String externalId);
 }

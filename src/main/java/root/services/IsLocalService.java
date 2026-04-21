@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 
 @Component
-public class LocalService {
+public class IsLocalService {
     @Autowired
     Environment env;
 
@@ -20,6 +20,7 @@ public class LocalService {
      *
      * @return
      */
+
     public boolean isLocal() {
         return Arrays.asList(env.getActiveProfiles()).contains("local");
     }

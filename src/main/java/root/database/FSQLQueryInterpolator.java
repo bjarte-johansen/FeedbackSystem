@@ -27,7 +27,7 @@ public class FSQLQueryInterpolator {
             } else {
                 value = arg.toString();
             }
-            //sql = sql.replaceFirst("\\?", value);
+
             sql = sql.replaceFirst("\\?", Matcher.quoteReplacement(value));
         }
         return sql;

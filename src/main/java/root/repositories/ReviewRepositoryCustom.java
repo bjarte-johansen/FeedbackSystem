@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
-public interface ReviewRepositoryInterface {
+public interface ReviewRepositoryCustom {
 //    /** Increments report vote count for a review, ensuring it stays within the bounds */
 //    void incrementReportVote(long reviewId, int delta);
 

@@ -17,7 +17,7 @@ import java.util.*;
 import static com.google.common.base.Preconditions.checkArgument;;
 
 @Repository
-public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface {
+public class ReviewRepositoryCustomImpl implements ReviewRepositoryCustom {
     // set to false to override debug flags (they are DEBUG & ENABLE_LOCAL_DEBUG_FLAGS, both must be true for debug logs to print)
     public boolean ENABLE_LOCAL_DEBUG_FLAGS = false;
 

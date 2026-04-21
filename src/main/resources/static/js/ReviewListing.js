@@ -335,7 +335,10 @@ class ReviewListing {
         const friendlyStatusName = this.getReviewStatusAsFriendlyName(review.status);
 
         const $clone = $(cloneHtml);
-        $clone.removeClass("review-item-template").addClass("box review mb-2");
+        $clone
+            .removeClass("review-item-template")
+            .removeClass("d-none")
+            .addClass("box review mb-2");
         //$clone.addClass("review-" + review.id);
 
         $clone.find('.score-text').text(`${review.score}/5`);
@@ -348,6 +351,7 @@ class ReviewListing {
         $clone.find(".dislike-count").text(review.dislikeCount);
         //$clone.attr("data-review-status-const", review.status);
         //$clone.attr("data-review-status-name", friendlyStatusName);
+        $clone.addClass("review-item");
         $clone.addClass("review-item-" + review.id);
         $clone.addClass("review-item-" + friendlyStatusName);
         $clone.find('.status').text(friendlyStatusName);

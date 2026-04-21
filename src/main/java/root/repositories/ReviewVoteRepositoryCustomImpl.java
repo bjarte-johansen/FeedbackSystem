@@ -3,7 +3,7 @@ package root.repositories;
 import root.app.AppConfig;
 import root.database.FSQLQuery;
 
-public class ReviewVoteRepositoryCustomImpl implements ReviewVoteRepositoryInterface{
+public class ReviewVoteRepositoryCustomImpl implements ReviewVoteRepositoryCustom {
 
     /**
      * Votes a review. If the user has already voted, it updates the existing vote.

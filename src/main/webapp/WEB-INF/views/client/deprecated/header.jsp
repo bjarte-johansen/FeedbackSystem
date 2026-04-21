@@ -8,6 +8,7 @@
 <head>
     <title>Client</title>
     <meta charset="UTF-8">
+<%--
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/dev-only.css"></link>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/new-review-form.css"></link>
@@ -26,6 +27,7 @@
     <script src="${pageContext.request.contextPath}/js/routes.js"></script>
     <script src="${pageContext.request.contextPath}/js/client-review.js"></script>
     <!-- END OF REQUIRED PART OF SCRIPTS -->
+--%>
 </head>
 <body>
 

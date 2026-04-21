@@ -4,10 +4,7 @@ import root.includes.proxyrepo.ProxyRepository;
 import root.app.ReviewQueryOptions;
 import root.models.Review;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 
 /**
@@ -17,7 +14,7 @@ import java.util.Set;
 
 
 
-public interface ReviewRepository extends ProxyRepository<Review, Long>, ReviewRepositoryInterface{
+public interface ReviewRepository extends ProxyRepository<Review, Long>, ReviewRepositoryCustom {
     List<Review> findByExternalId(String externalId);
     long countByExternalId(String externalId);
 

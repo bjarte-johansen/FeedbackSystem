@@ -4,6 +4,6 @@ import root.models.Tenant;
 
 import java.util.Optional;
 
-interface TenantRepositoryInterface {
+interface TenantRepositoryCustom {
     Optional<Tenant> findSafeCacheableById(Long id);
 }

@@ -170,6 +170,7 @@ a.btn, a.btn-primary {
     font-size:0.9em;
 }
 
+
 /***************************************************/
 
 .review--admin-interface{
@@ -332,33 +333,6 @@ spinner
     }
 }
 
-/********* BEGIN CLIENT REVIEW LISTING STATS ************************/
-
-.score-bars-with-count{
-    .score-description{width:4.5em;}
-
-    .score-pct-bar {
-        display:block;
-        width:100%;
-        height:16px;
-        background-color: #AAA;
-        margin-bottom: 4px;
-        border-radius: 8px;
-
-        &>*{
-            border-radius:8px;
-            background-color: var(--review-primary-btn-color);
-            display:inline-block;
-            height:100%;
-        }
-    }
-
-    .score-count{}
-}
-
-
-
-/********* END CLIENT REVIEW LISTING STATS ************************/
 
 /***************************************************/
 

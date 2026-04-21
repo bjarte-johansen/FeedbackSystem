@@ -17,10 +17,7 @@ import root.app.ReviewQueryOptions;
 import root.models.ReviewSettings;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewSettingsRepository;
-import root.services.CachedReviewSettingsService;
-import root.services.ReviewPageService;
-import root.services.ReviewService;
-import root.services.ReviewSettingsService;
+import root.services.*;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -34,8 +31,6 @@ import static java.util.Objects.requireNonNullElse;
 
 @Controller
 public class ClientController {
-    public static String INDEX_FILE = "client/index";
-
     @Autowired
     ReviewRepository reviewRepo;
 
@@ -67,6 +62,22 @@ public class ClientController {
         return "redirect:/api/reviews/list/html?showDemoPills=true&externalId=/invalid-path";
     }
 
+
+    private ReviewSettings avoidDuplicateCodeRouteHandler(HashMap<String, Object> vm, boolean isAdministrator, String externalId){
+        vm.put("isClient", "true");
+        vm.put("isAdministrator", String.valueOf(isAdministrator));
+
+        final ReviewSettings reviewCfg = cachedReviewSettingsService.findOrCreateByExternalId(
+            Objects.requireNonNullElse(externalId, "")
+        );
+
+        vm.put("reviewConfig", root.includes.Utils.linkedMap(
+            "enableListing", reviewCfg.getEnableListing(),
+            "enableSubmit", reviewCfg.getEnableSubmit()
+        ));
+
+        return reviewCfg;
+    }
 
     /**
      * Return JSON string corresponding to
@@ -101,16 +112,10 @@ public class ClientController {
         // request
         HttpServletRequest req
     ) {
-        final Map<String, Object> vm = new HashMap<>();
+        final HashMap<String, Object> vm = new HashMap<>();
+        final boolean bIsAdministrator = IsAdminService.isAdmin();
 
-        final ReviewSettings reviewCfg = cachedReviewSettingsService.findOrCreateByExternalId(
-            Objects.requireNonNullElse(externalId, "")
-        );
-
-        vm.put("reviewConfig", root.includes.Utils.linkedMap(
-            "enableListing", reviewCfg.getEnableListing(),
-            "enableSubmit", reviewCfg.getEnableSubmit()
-        ));
+        var reviewCfg = avoidDuplicateCodeRouteHandler(vm, bIsAdministrator, externalId);
 
         if(reviewCfg.getEnableListing()) {
             ReviewQueryOptions qo = ReviewQueryOptionsParser.parseRequest(req, defaultLimit);
@@ -163,19 +168,19 @@ public class ClientController {
         // request
         HttpServletRequest req
     ) {
-        final Map<String, Object> vm = new LinkedHashMap<>();
+        final HashMap<String, Object> vm = new LinkedHashMap<>();
+        final boolean bIsAdministrator = IsAdminService.isAdmin();
 
-        final ReviewSettings reviewCfg = cachedReviewSettingsService.findOrCreateByExternalId(
-            Objects.requireNonNullElse(externalId, "")
-        );
-
-        vm.put("reviewConfig", root.includes.Utils.linkedMap(
-            "enableListing", reviewCfg.getEnableListing(),
-            "enableSubmit", reviewCfg.getEnableSubmit()
-        ));
+        var reviewCfg = avoidDuplicateCodeRouteHandler(vm, bIsAdministrator, externalId);
 
         if(reviewCfg.getEnableListing()) {
             ReviewQueryOptions qo = ReviewQueryOptionsParser.parseRequest(req, defaultLimit);
+
+            if(!bIsAdministrator && qo.getStatusFilterSet().isEmpty()){
+                // if not admin and no status filter provided, default to only approved
+                qo.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
+            }
+
             vm.putAll(reviewPageService.buildReviewListingModelData(externalId, qo, includeStats));
 
             // testing values
@@ -195,7 +200,7 @@ public class ClientController {
         vm.put("json", root.includes.Utils.toJson(vm));
 
         model.addAllAttributes(vm);
-        return Boolean.TRUE.equals(realApi) ? (INDEX_FILE + "-partial") : INDEX_FILE;
+        return "client/client";
     }
 
 

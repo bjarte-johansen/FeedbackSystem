@@ -1,5 +1,6 @@
 package root.models;
 
+import jakarta.persistence.Table;
 import root.interfaces.HasId;
 
 import java.lang.reflect.Field;
@@ -17,6 +18,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  * TODO: Any code inserted here must have javadoc comments. This is a requirement for all code in this project.
  */
 
+@Table(name="")
 public class NonPersistableTenant {
     private final Long id;
     private final String name;

@@ -269,7 +269,15 @@ public class Review implements HasId {
      * @return A string like "for 5 minutter siden" indicating how long ago the review was created.
      */
 
+    /*
     public String getShortDateString() {
         return NorwegianTimeAgoTextFormatter.formatInstantAgo(createdAt, "for ", " siden");
     }
+    */
+
+    /*
+    public String getStatusName(){
+        return reviewStatusToStringMap.getOrDefault(status, "unknown").toLowerCase();
+    }
+    */
 }

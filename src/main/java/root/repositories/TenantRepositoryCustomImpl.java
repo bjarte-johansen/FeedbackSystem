@@ -1,19 +1,14 @@
 package root.repositories;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import root.database.FSQLQuery;
-import root.includes.logger.Logger;
-import root.models.NonPersistableTenant;
-import root.models.Review;
 import root.models.Tenant;
 
-import java.util.List;
 import java.util.Optional;
 
 
 @Repository
-public class TenantRepositoryCustomImpl implements TenantRepositoryInterface{
+public class TenantRepositoryCustomImpl implements TenantRepositoryCustom {
     /**
      * Get a tenant, mask its password hash and password salts by setting them to NULL. Be careful
      * with this result. It shall not be written to under any circumstances.

@@ -5,7 +5,7 @@ import root.database.FSQLQuery;
 import root.includes.proxyrepo.ProxyRepository;
 import root.models.ReviewVote;
 
-@Repository
+//@Repository
 public interface ReviewVoteRepository extends ProxyRepository<ReviewVote, Long> {
 
     /**

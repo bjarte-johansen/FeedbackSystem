@@ -1,6 +1,16 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <div class="box review--list-filters">
+    <div class="box filter-buttons">
+        (Admin uferdig)
+        Filtrer status:
+        <a href="/R/admin/filter/status/1" class="btn text-deco-none filter-approved">Godkjent</a>
+        <a href="/R/admin/filter/status/2" class="btn text-deco-none filter-pending">Kontroll</a>
+        <a href="/R/admin/filter/status/3" class="btn text-deco-none filter-rejected">Avvist</a>
+        <a href="/R/admin/filter/status/-1" class="btn text-deco-none filter-any">Alle</a>
+        )
+    </div>
+
     <span class="active-filters mobile-full d-none" style="margin-right:8px;">
         Aktive filtre:
         <span class="items mobile-full"></span>
