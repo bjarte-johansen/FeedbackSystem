@@ -15,13 +15,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.security.web.SecurityFilterChain;
 import root.app.AppRequestSchema;
+import root.includes.logger.Logger;
 import root.repositories.TenantRepository;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-
     /**
      * Defines the security filter chain, which configures how HTTP requests are secured. It disables CSRF protection
      * for simplicity, allows unauthenticated access to static resources and the admin login page, and requires
@@ -48,11 +48,14 @@ public class SecurityConfig {
                 .loginProcessingUrl("/admin/login")
                 // 👇 PUT IT HERE
                 .successHandler((req, res, auth) -> {
-                    System.out.println("LOGIN OK: " + auth.getName());
+                    Logger.log("LOGIN OK: " + auth.getName());
+
                     res.sendRedirect("/admin/dashboard");
                 })
                 .failureHandler((req, res, ex) -> {
-                    System.out.println("LOGIN FAIL: " + ex.getMessage());
+                    Logger.log("LOGIN FAIL: " + ex.getMessage());
+
+                    req.getSession().setAttribute("error", "Ugyldig e-post eller passord");
                     res.sendRedirect("/admin/login");
                 })
                 .defaultSuccessUrl("/admin/dashboard", true)
@@ -74,7 +77,8 @@ public class SecurityConfig {
     @Bean
     UserDetailsService users(TenantRepository repo) {
         return username -> {
-            try (var _ = AppRequestSchema.withThreadSchema("public")) {
+            // find tenant in public schema
+            try (var _1 = AppRequestSchema.withThreadSchema("public")) {
                 var r = repo.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException(username));
 
                 return User.withUsername(r.getEmail())

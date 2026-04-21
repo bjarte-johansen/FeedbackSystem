@@ -89,6 +89,35 @@ public class ReviewQueryOptions {
     private NumericRangeRecord<Integer> scoreFilterRange = null;
     private ImmutableUnboundedDateRange<LocalDate> dateFilterRange = null;
 
+    private Integer numberOfDaysFilter = null;
+
+
+    /*
+    numberOfDaysFilter
+     */
+
+    /** @see #getNumberOfDaysFilter(Integer)  */
+
+    public Integer getNumberOfDaysFilter() {
+        return numberOfDaysFilter != null ? numberOfDaysFilter : null;
+    }
+
+    /**
+     * get number of days filter
+     * @param defaultValue value to return if null or -1. This allows us to treat -1 as a special value that indicates
+     *  "no filter", and return the default value in that case. Unclear if we are doing that atm
+     * @return result value is number of days as value, -1 or defaultValue
+     */
+
+    public Integer getNumberOfDaysFilter(Integer defaultValue, boolean negativeMeansEmpty) {
+        boolean isEmpty = (numberOfDaysFilter == null) || (negativeMeansEmpty && numberOfDaysFilter.equals(-1));
+        return isEmpty ? defaultValue : numberOfDaysFilter;
+    }
+
+    public void setNumberOfDaysFilter(Integer numberOfDaysFilter) {
+        this.numberOfDaysFilter = numberOfDaysFilter;
+    }
+
 
     /*
     score filter range
@@ -309,6 +338,7 @@ public class ReviewQueryOptions {
     public String buildOrderBySql() {
         var option = OPTION_ORDER_BY_MAP.get(getOrderByEnum());
         if(option == null){
+            // TODO: should be "true" or "1"
             // TODO: should be logged
             //throw new IllegalArgumentException(String.format("Unsupported order option %s", getOrderByEnum()));
             return "id DESC";
@@ -349,7 +379,10 @@ public class ReviewQueryOptions {
             ", orderByEnum=" + orderByEnum +
             ", statusFilterSet=" + statusFilterSet +
             ", scoreFilterSet=" + scoreFilterSet +
-            ", scoreFilterRange=" + (scoreFilterRange == null ? "null" : scoreFilterRange.toString()) +
+            ", scoreFilterRange=" + scoreFilterRange +
+            ", startDateFilter=" + dateFilterRange +
+            ", endDateFilter=" + dateFilterRange +
+            ", numberOfDaysFilter=" + numberOfDaysFilter +
             '}';
     }
 }

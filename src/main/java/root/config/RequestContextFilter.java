@@ -11,12 +11,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import root.app.AppConfig;
 import root.app.AppContext;
 import root.app.AppRequestSchema;
+import root.database.DataSourceManager;
 import root.includes.logger.Logger;
 import root.models.Tenant;
 import root.repositories.TenantRepository;
 import root.services.TenantResolver;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.util.UUID;
 
 //import static com.google.common.base.Preconditions.checkArgument;;
@@ -25,6 +27,8 @@ import static com.google.common.base.Preconditions.*;
 @Component("myRequestContextFilter")
 @Order(1)
 public class RequestContextFilter extends OncePerRequestFilter {
+    public static boolean VERBOSE = true;
+
     @Autowired
     private AppContext appContext;
 
@@ -33,6 +37,8 @@ public class RequestContextFilter extends OncePerRequestFilter {
 
     @Autowired
     TenantRepository tenantRepo;
+
+    private static ThreadLocal<Tenant> TENANT = new ThreadLocal<>();
 
     protected void beforeRequest(
         HttpServletRequest req,
@@ -48,6 +54,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
 
     }
 
+
     @Override
     protected void doFilterInternal(
         HttpServletRequest req,
@@ -62,12 +69,13 @@ public class RequestContextFilter extends OncePerRequestFilter {
             return;
         }
 
-
         // open a logging block for this request, so all logs within this block will be grouped together with the
         // request URI and filter count for easier debugging
-        Logger.log("Request (#" + UUID.randomUUID().toString() + "), " + req.getRequestURI());
-        Logger.log("ServerName: " + req.getServerName());
-        Logger.enter();
+        if(VERBOSE) {
+            Logger.log("Request (#" + UUID.randomUUID().toString() + "), " + req.getRequestURI());
+            Logger.log("ServerName: " + req.getServerName());
+            Logger.enter();
+        }
 
         // resolve tenant for this request, and set them in the AppRequestSchema for
         // use in the controllers and other downstream code. We also validate the resolved values and throw an exception
@@ -78,51 +86,63 @@ public class RequestContextFilter extends OncePerRequestFilter {
         Tenant tenant;
         String tenantSchema;
 
-        // resolve tenant and set schema (resolving is done in schema 'public')
-        try {
-            // some bug means we have to reolve tenant in 'public' schema, otherwise we get "relation \"tenant\"
-            // does not exist" error when trying to resolve tenant in the first place, which is really weird.
-            // TODO: fix in URI for connection
-            try(var a = AppRequestSchema.withThreadSchema("public")) {
+        // we have to resolve tenant in 'public' schema, otherwise we get "relation \"tenant\"
+        try(var a = AppRequestSchema.withThreadSchema("public")) {
+//            // check that connections are working
+//            try {
+//                Connection conn = DataSourceManager.getConnection();
+//                if(conn == null){
+//                    throw new Exception("Aborting before tenant resolve, Connection is null");
+//                }
+//                conn.close();
+//            } catch (Exception e) {
+//                throw new RuntimeException("Error occurred trying to find connection", e);
+//            }
+
+            // check resolving tenant
+            try {
                 tenant = tenantResolver.resolve(req);
-            } catch (Exception e) {
+                if(tenant == null)
+                    throw new RuntimeException("Tenant not found, aborting request");
+            }catch(Exception e) {
                 Logger.log(e.getMessage());
-                throw new RuntimeException("Error resolving tenant information, aborting request", e);
+                throw new RuntimeException("Error resolving tenant information", e);
             }
 
-            if(tenant == null) throw new RuntimeException("Fatal error, tenant not found, aborting request");
+            // update tenant threadlocal
+            TENANT.set(tenant);
+            if(VERBOSE) Logger.log("Resolved tenant: " + formatTenantInfo(tenant));
 
-            // validate schema name (TODO: make it better)
-            tenantSchema = tenant.getSchemaName();
-            checkArgument(tenantSchema != null && !tenantSchema.isBlank(), "Invalid tenant schema name, aborting request");
-
-            // set schema and tenant id
-            AppRequestSchema.set(tenantSchema);
-
-            // log
-            Logger.log("Resolved tenant: " + formatTenantInfo(tenant));
-        }catch (Exception e) {
-            Logger.error("Error resolving tenant information: " + e.getMessage(), e);
-             throw new RuntimeException(e);
+        } catch (Exception e) {
+            Logger.log(e.getMessage());
+            throw new RuntimeException("Error resolving tenant information, aborting request", e);
         }
 
-        printRequestParameters(req);
+        // set schema and tenant id
+        AppRequestSchema.set(tenant.getSchemaName());
 
         try {
             // BEFORE request (always runs)
+            printRequestParameters(req);
 
             // runs controller route and other filters (if any)
-            // ex @GetMapping("/") in will run after this line if route is "/"
             chain.doFilter(req, res);
 
         } finally {
             // AFTER request (always runs)
+            tenant = TENANT.get();
+
+            // remove tenant
+            TENANT.remove();
+
+            // remove tenant from AppRequestSchema
             AppRequestSchema.remove();
 
-            Logger.leave();
-            Logger.log("Finished request for: " + formatTenantInfo(tenant));
-            Logger.log("--------------------------------------------------");
-            Logger.log("");
+            if(VERBOSE) {
+                Logger.leave().log("Finished request for: " + formatTenantInfo(tenant));
+                Logger.log("--------------------------------------------------");
+                Logger.log("");
+            }
         }
     }
 
@@ -132,7 +152,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
 
     // print request parameters for debugging
     private void printRequestParameters(HttpServletRequest req) {
-        if(AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS) {
+        if(VERBOSE && AppConfig.CONTROLLER_PRINT_REQUEST_PARAMS) {
             if(req.getParameterMap().isEmpty()) {
                 Logger.log("No request parameters");
             } else {

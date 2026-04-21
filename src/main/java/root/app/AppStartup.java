@@ -5,17 +5,13 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import root.App;
-import root.DatabaseManager;
 import root.database.DataSourceManager;
 import root.database.FSQLQuery;
 import root.database.QueryLogger;
 import root.includes.logger.Logger;
-import root.no_test_extra.TryWithTimer;
-import root.repositories.TenantRepository;
+import root.A_TODO.no_test_extra.TryWithTimer;
 import root.services.DatabaseService;
 
-import javax.management.Query;
-import javax.sql.DataSource;
 import java.util.List;
 
 /**
@@ -73,7 +69,7 @@ class AppStartup implements ApplicationRunner {
         FSQLQuery.setQueryLogger(null);
 
         List<String> loggedQueries = QueryLogger.stop();
-        try(var _ = Logger.scope("Logged queries during demo data reset:")) {
+        try(var _1 = Logger.scope("Logged queries during demo data reset:")) {
             for (String query : loggedQueries) {
                 Logger.log(query);
             }
@@ -224,8 +220,8 @@ class AppStartup implements ApplicationRunner {
         """;
 
         App.ThrowingRunnable fn = () -> {
-            try (var _ = Logger.scope("Trying real fast insertion")) {
-                try (var __ = new TryWithTimer("Real fast insertion with single SQL statement")) {
+            try (var _1 = Logger.scope("Trying real fast insertion")) {
+                try (var _2 = new TryWithTimer("Real fast insertion with single SQL statement")) {
                     DataSourceManager.with(conn -> {
                         try (var stmt = conn.createStatement()) {
                             stmt.execute(sql);

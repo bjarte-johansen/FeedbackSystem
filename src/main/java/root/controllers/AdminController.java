@@ -1,25 +1,25 @@
 package root.controllers;
 
-//import org.apache.coyote.BadRequestException;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import root.annotations.AdminOnly;
+import root.app.AppConfig;
 import root.app.ReviewQueryOptions;
-import root.includes.ImmutableUnboundedDateRange;
+import root.controllers.helpers.ControllerConstantMaps;
 import root.includes.Utils;
 import root.models.Review;
 import root.services.AdminReviewPageService;
 import root.services.ReviewService;
 
-//import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.*;
+
+
 
 @Controller
 public class AdminController {
@@ -33,12 +33,14 @@ public class AdminController {
      */
 
     @AdminOnly
-    private ResponseEntity<Void> markReviewWithStatus(long reviewId, int newStatus) throws Exception {
+    private ResponseEntity<Void> markReviewWithStatus(long reviewId, int newStatus) {
         checkArgument(reviewId > 0, "Invalid review Id");
 
-        reviewService.setReviewStatus(reviewId, newStatus);
+        int affectedRows = reviewService.setReviewStatus(reviewId, newStatus);
 
-        return ResponseEntity.ok().build();
+        return (affectedRows == 0)
+            ? ResponseEntity.noContent().build()
+            : ResponseEntity.ok().build();
     }
 
 
@@ -65,29 +67,6 @@ public class AdminController {
      * Shows the admin dashboard page with a list of reviews filtered by status. The status filter is passed as a query
      * parameter, and defaults to -1 (which means all reviews). The method uses the AdminReviewPageService to build the
      * model data for the view, and adds it to the model before returning the view name.
-     *
-     * @param statusFilter
-     * @param model
-     * @return
-     * @throws Exception
-     */
-
-    @AdminOnly
-    @GetMapping("/admin/dashboard")
-    public String showDashboard(
-        @RequestParam(defaultValue = "-1") String statusFilter,
-        @RequestParam(name="cursor", defaultValue = "") String cursorStr,
-        @RequestParam(defaultValue = "-1") int orderByEnum,
-        Model model
-    ) throws Exception {
-        return showFilteredReviews(orderByEnum, statusFilter, null, null, 0, cursorStr, model);
-    }
-
-
-    /**
-     * Shows the admin dashboard page with a list of reviews filtered by status. The status filter is passed as a query
-     * parameter, and defaults to -1 (which means all reviews). The method uses the AdminReviewPageService to build the
-     * model data for the view, and adds it to the model before returning the view name.
      * <p>
      * Note that dateFilterPreset overrides dateFilterStart and dateFilterEnd if provided, so we check for that and set
      * the dateRangeFilter accordingly.
@@ -102,19 +81,28 @@ public class AdminController {
      */
 
     @AdminOnly
-    @GetMapping("/admin/dashboard/reviews")
+    @GetMapping({"/admin/dashboard", "/admin", "/admin/", "/admin/dashboard/reviews"})
     public String showFilteredReviews(
-        @RequestParam(defaultValue = "-1") Integer orderByEnum,
-        @RequestParam(defaultValue = "-1") String statusFilter,
+        @RequestParam(required = false) Integer orderByEnum,
+        @RequestParam(required = false) String statusFilter,
         @RequestParam(required = false) LocalDate dateFilterStart,
         @RequestParam(required = false) LocalDate dateFilterEnd,
         @RequestParam(required = false) Integer dateFilterPreset,
         @RequestParam(name = "cursor", required = false, defaultValue="") String pageCursorStr,
-        Model model) throws Exception {
+        HttpServletRequest req,
+        Model model
+    ) throws Exception {
+        int defaultLimit = AppConfig.ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS;
+
+        ReviewQueryOptions po = ReviewQueryOptionsParser.parseRequest(req, defaultLimit);
 
         // build model data for the view using the service
-        var vm = adminReviewPageService.buildReviewListModelData(orderByEnum, statusFilter, dateFilterStart, dateFilterEnd, dateFilterPreset, pageCursorStr);
+        var vm = adminReviewPageService.buildReviewListModelData(po);
 
+        // put in names/lookups etc
+        vm.put("constants", ControllerConstantMaps.ALL_CONSTANTS);
+
+        // make json representation
         vm.put("json", Utils.toJson(vm.get("reviews")));
 
         model.addAllAttributes(vm);
@@ -131,7 +119,7 @@ public class AdminController {
      */
 
     @AdminOnly
-    @PostMapping("/api/review/mark-approved")
+    @PatchMapping("/api/review/mark-approved")
     public ResponseEntity<Void> markReviewAsApproved(@RequestParam long reviewId) throws Exception {
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_APPROVED);
     }
@@ -146,7 +134,7 @@ public class AdminController {
      */
 
     @AdminOnly
-    @PostMapping("/api/review/mark-rejected")
+    @PatchMapping("/api/review/mark-rejected")
     public ResponseEntity<Void> markReviewAsRejected(@RequestParam long reviewId) throws Exception {
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_REJECTED);
     }
@@ -161,7 +149,7 @@ public class AdminController {
      */
 
     @AdminOnly
-    @PostMapping("/api/review/mark-pending")
+    @PatchMapping("/api/review/mark-pending")
     public ResponseEntity<Void> markReviewAsPending(@RequestParam long reviewId) throws Exception {
         return markReviewWithStatus(reviewId, Review.REVIEW_STATUS_PENDING);
     }

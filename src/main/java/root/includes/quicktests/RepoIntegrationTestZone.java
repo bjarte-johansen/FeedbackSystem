@@ -51,7 +51,7 @@ public class RepoIntegrationTestZone {
             List<Review> reviews = reviewRepo.findByExternalId("/product/69");
 
             for (IReview r : reviews) {
-                System.out.println("Fetched review: " + r.getComment() + " with score: " + r.getScore());
+                Logger.log("Fetched review: " + r.getComment() + " with score: " + r.getScore());
             }
         }
     }

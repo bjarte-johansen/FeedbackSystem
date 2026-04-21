@@ -16,8 +16,8 @@ import java.util.*;
 public class WhereExpressionList {
     public static int DEFAULT_SIZE_HINT = 20;
 
-    private List<String> expressions;
-    private List<Object> arguments;
+    private final List<String> expressions;
+    private final List<Object> arguments;
 
     public WhereExpressionList() {
         this(DEFAULT_SIZE_HINT);

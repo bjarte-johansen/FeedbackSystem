@@ -1,135 +1,14 @@
-/*
-let Utils = {
-    requireNonNull: function (value, name = "value") {
-        if (value == null) { // catches null AND undefined
-            throw new Error(`${name} must not be null`);
-        }
-        return value;
-    }, validateInputElement(el) {
-        el.setCustomValidity("");
-        if (!el.checkValidity()) {
-            el.reportValidity();
-            return false;
-        }
-        return true;
-    }
-}
-*/
+// import { initClientRoutes, initAdminRoutes } from "./routes.js";
 
-
-var Review = {
-    utils: {
-        clamp: function (x, min, max) {
-            return Math.min(max, Math.max(min, x));
-        },
-
-        parseIntOr: function (v, def = 0) {
-            if (v == null) return def;
-
-            if (typeof v === "number")
-                return Number.isInteger(v) ? v : def;
-
-            if (typeof v === "string") {
-                const s = v.trim();
-                if (!/^-?\d+$/.test(s)) return def; // only base-10 ints
-                return Number(s);
-            }
-
-            return def;
-        },
-
-        snakeToCamel: function (s) {
-            let out = '', up = false;
-            for (let i = 0; i < s.length; i++) {
-                const ch = s[i];
-                if (ch === '_') {
-                    up = true;
-                } else {
-                    out += up ? ch.toUpperCase() : ch;
-                    up = false;
-                }
-            }
-            return out;
-        },
-
-        dashedToCamel: function (s) {
-            let out = '', up = false;
-            for (let i = 0; i < s.length; i++) {
-                const ch = s[i];
-                if (ch === '-') {
-                    up = true;
-                } else {
-                    out += up ? ch.toUpperCase() : ch;
-                    up = false;
-                }
-            }
-            return out;
-        },
-
-        /**
-         * parse value has been written by chatGPT, it tries to parse a string value into a boolean, number, or
-         * leaves it as a string if it cannot be parsed. It handles trimming whitespace, case-insensitive boolean
-         * parsing, and strict number parsing that only accepts valid finite numbers. This is useful for converting
-         * string values from data attributes or user input into their appropriate types for easier handling in the
-         * code.
-         */
-
-        parsePrimitive: function (v) {
-            if (typeof v !== "string") return v;
-
-            const s = v.trim();
-            if (s === "") return v;
-
-            // boolean
-            if (s === "true" || s === "TRUE") return true;
-            if (s === "false" || s === "FALSE") return false;
-
-            // number (strict)
-            const n = Number(s);
-            if (!Number.isFinite(n)) return v;
-
-            // int vs float
-            return Number.isInteger(n) ? n : n;
-        },
-
-
-        /**
-         * creates an immutable page cursor object with the given offset and limit. The returned object has methods to
-         * advance the cursor by a given delta (number of pages) while ensuring it does not exceed a maximum offset, and
-         * to serialize the cursor to a CSV string format. This is used for managing pagination state when fetching review
-         * lists from the API.
-         */
-
-        createPageCursorFromString: function (cursorStr) {
-            const parts = (cursorStr || "0,9007199254740991").split(",");
-
-            const offset = Review.utils.parseIntOr(parts?.[0], 0);
-            const limit = Review.utils.parseIntOr(parts?.[1], Number.MAX_SAFE_INTEGER);
-
-            console.log("Creating page cursor from string:", cursorStr, "parsed values:", parts);
-
-            return new PageCursor(offset, limit);
-        }
-    },
-
-    client: {
-        resetReviewListFilters: function () {
-            const $reviewList = $(".review--list");
-            if (!$reviewList.length) return console.warn("No .review--list element found");
-
-            const $activeFilters = $reviewList.find(".active-filters");
-
-            $activeFilters.find(".items").empty();
-
-            $reviewList.find("select[name='scoreFilter']").val(-1);
-            $reviewList.find("select[name='orderByEnum']").val($reviewList.attr("data-order-by-enum") || -1);
-            $activeFilters.addClass('d-none');
-
-            Review.reloadReviewList({resetCursor: true});
-        }
-    },
+let Review = {
+    client: {},
+    admin: {},
 
     reviewListing: null,
+
+    utils: Utils,
+
+
 
     setReviewListing: function (newReviewListing) {
         Review.reviewListing = newReviewListing;
@@ -143,26 +22,101 @@ var Review = {
         return Review.reviewListing;
     },
 
-    activeFilterDisplay: {
-        addFilterButton: function (type, text, replace) {
-            const $reviewList = Review.getReviewListingDomElement(true);
-            const $container = $reviewList.find('.active-filters');
-
-            if (replace && $container.find(`.btn.${type}`).length) {
-                $container.find(`.btn.${type}`).text(text);
-            } else {
-                const $btn = $container.find('.templates .btn').clone();
-                $btn.addClass(type).text(text);
-                $container.find('.items').append($btn);
+    // oldKey: activeFilterDisplay
+    activeFiltersHelper: {
+        toggleFilter: function (type, text, replace, forced = true) {
+            if(!forced && this.hasFilter(type)){
+                this.removeFilter(type);
+            }else {
+                this.addFilter(type, text, replace);
             }
-            $container.removeClass('d-none').show();
+
+            this.updateVisibility();
         },
-        clear: function () {
+
+        hasFilter(type){
+            const $container = this.getContainer();
+            const $items = $container.find('.items');
+
+            return $items.find(`.btn.${type}`).length > 0;
+        },
+
+        addFilter: function (type, text, replace) {
             const $reviewList = Review.getReviewListingDomElement(true);
             const $container = $reviewList.find('.active-filters');
+            const $items = $container.find(".items");
+            if(!$items.length) throw new Error(".items not found");
 
-            $container.find('.items').empty();
-            $container.addClass('d-none').hide();
+            if (replace && $items.find(`.btn.${type}`).length) {
+                $items.find(`.btn.${type}`).text(text);
+            } else {
+                const $btn = $container.find('.templates .btn')
+                    .clone()
+                    .removeClass(".templates")
+                    .addClass(type)
+                    .text(text);
+                $items.append($btn);
+            }
+
+            this.updateVisibility($container);
+        },
+
+        removeFilter: function(type) {
+            const $reviewList = Review.getReviewListingDomElement(true);
+            const $container = $reviewList.find('.active-filters');
+            const $items = $container.find('.items');
+
+            $items.find(`.btn.${type}`).remove();
+
+            this.updateVisibility($container);
+        },
+
+        getContainer(){
+            const $reviewList = Review.getReviewListingDomElement(true);
+            const $container = $reviewList.find('.active-filters');
+            return $container;
+        },
+
+        updateVisibility: function($container = null){
+            $container = $container || this.getContainer();
+
+            const numFilters = $container.find('.items').children().length;
+            if(numFilters > 0){
+                $container.removeClass('d-none').show();
+            } else {
+                $container.find('.items').empty();
+                $container.addClass('d-none').hide();
+            }
+        },
+
+        clear: function () {
+            const $reviewList = $(".review--list");
+            if (!$reviewList.length) return console.warn("No .review--list element found");
+
+            const $container = $reviewList.find('.active-filters');
+            $container.find(".items").empty();
+            this.updateVisibility($container);
+
+            $reviewList.find("select[name='scoreFilter']").val("");
+            $reviewList.find("select[name='orderByEnum']").val("");
+            $reviewList.find("select[name='statusFilterEnum']").val("");
+            $reviewList.find("input[name='startDateFilter']").val("");
+            $reviewList.find("input[name='endDateFilter']").val("");
+            $reviewList.find("select[name='numberOfDaysFilter']").val("");
+
+            const rvlc = Review.getReviewListing(true);
+            rvlc.loadFilterSnapshot();
+            /*
+            rvlc.setOrderByEnum(null);
+            rvlc.setStatusFilter([]);
+            rvlc.setScoreFilter([]);
+            rvlc.setStartDateFilter(null);
+            rvlc.setEndDateFilter(null);
+            rvlc.setNumberOfDaysFilter(null);
+
+             */
+
+            Review.reloadReviewList({resetCursor: true, reloadStats: true});
         }
     },
 
@@ -172,69 +126,92 @@ var Review = {
         return $reviewList;
     },
 
+
+
+    /*
+    UI triggering stuff
+     */
+
+    triggerClientStatusFilterChange(select) {
+        const $select = $(select);
+        //const value = Review.utils.parseIntOr($select.val(), null);
+        const value = Review.utils.parseIntOrIntArrayOr($select.val(), ",", []);
+        const empty = value === null || value.length === 0;
+        const text = "Filter: " + $select.find(':selected').text();
+
+        Review.activeFiltersHelper.toggleFilter("order-by-enum", text, true, !empty);
+
+        const rc = Review.getReviewListing(true);
+        rc.setStatusFilter(empty ? [] : value);
+
+        Review.reloadReviewList({resetCursor: true, reloadStats: true});
+    },
+
     triggerClientOrderByEnumChange(select) {
-        const text = $(select).find(':selected').text();
-        Review.activeFilterDisplay.addFilterButton('order-by-enum', "Sorter: " + text, true);
+        const $select = $(select);
+        const value = Review.utils.parseIntOr($select.val(), null);
+        const empty = (value === null);
+        const text = /*"Sorter: "*/ $select.find(':selected').text();
+
+        Review.activeFiltersHelper.toggleFilter("order-by-enum", text, true, !empty);
+
+        const rc = Review.getReviewListing(true);
+        rc.setOrderByEnum(empty ? null : Number(value));
 
         Review.reloadReviewList({resetCursor: true});
     },
 
     triggerClientScoreFilterChange(select) {
-        const text = $(select).find(':selected').text();
-        Review.activeFilterDisplay.addFilterButton('score-filter-enum', text, true);
+        const $select = $(select);
+        const value = $select.val();
+        const empty = (value === null || value === "" || value === "-1");
+        const text = $select.find(':selected').text();
+        if($select.val() === "0" || $select.val() === "-1") throw new Error("Value can not be 0 or -1");
+
+        Review.activeFiltersHelper.toggleFilter("score-filter-enum", text, true, !empty);
+
+        const rc = Review.getReviewListing(true);
+        rc.setScoreFilter(empty ? [] : [Number(value)]);
 
         Review.reloadReviewList({resetCursor: true});
     },
 
-
-    /**
-     * This function is triggered when a user selects a preset score filter (e.g., "5 stars", "4 stars and above")
-     * from the UI. It reads the integral score value from the data attribute of the clicked element, updates the
-     * score filter select element in the review list with this value, triggers a change event to update the UI,
-     * and then calls reloadReviewList to fetch and display the reviews that match the selected score filter preset.
-     *
-     * @param sender
-     */
-    triggerClientScoreFilterPresetChange(sender) {
-        const newValue = Number($(sender).attr('data-integral-score-attr'));
-
+    triggerClientScoreFilterPresetChange(newValue) {
         const $reviewList = Review.getReviewListingDomElement(true);
         const $select = $reviewList.find('select[name=scoreFilter]');
         $select.val(newValue);
 
         this.triggerClientScoreFilterChange($select);
-
-        //Review.reloadReviewList({resetCursor: true})
     },
 
+    triggerStartDateFilterChange(sender){
+        const dt = Review.utils.parseDateOr($(sender).val(), null);
 
+        // push
+        const rc = Review.getReviewListing(true);
+        rc.setStartDateFilter(dt);
 
-    __getReviewListOptionAsJson($reviewList, options = {exclude: null}) {
-        if($reviewList.length === 0) return new Map();
-
-        const raw = $reviewList.attr("data-json") ?? "{}";
-        return JSON.parse(raw);
+        Review.reloadReviewList({resetCursor: true, reloadStats: true});
     },
 
+    triggerEndDateFilterChange(sender){
+        const dt = Review.utils.parseDateOr($(sender).val(), null);
 
-    /**
-     * Reads the current state of the review list UI (like sorting and filtering options) and updates the corresponding
-     * data attributes on the .review--list element. This ensures that when reloadReviewList is called, it uses the
-     * latest user-selected options to construct the search parameters for the API call.
-     */
+        const rc = Review.getReviewListing(true);
+        rc.setEndDateFilter(dt);
 
-    updateReviewListOptionsFromUI: function () {
-        const rvl = Review.getReviewListing(true);
-
-        const $reviewList = $(".review--list");
-        if (!$reviewList.length) return console.warn("No .review--list element found for reloadReviewList");
-
-        const $orderByEnumSelect = $reviewList.find("select[name='orderByEnum']");
-        if ($orderByEnumSelect.length !== 0) rvl.setOrderByEnum(Number($orderByEnumSelect.val()));
-
-        const $scoreFilter = $reviewList.find("select[name='scoreFilter']");
-        if ($scoreFilter.length !== 0) rvl.setScoreFilter([Number($scoreFilter.val())]);
+        Review.reloadReviewList({resetCursor: true, reloadStats: true});
     },
+
+    triggerNumberOfDaysFilterChange(sender){
+        const days = Review.utils.parseIntOr($(sender).val(), null);
+
+        const rc = Review.getReviewListing(true);
+        rc.setNumberOfDaysFilter(days);
+
+        Review.reloadReviewList({resetCursor: true, reloadStats: true});
+    },
+
 
 
     /**
@@ -246,8 +223,8 @@ var Review = {
      * The method will automatically limit cursor to bounds
      */
 
-    reloadReviewList: function (options = {resetCursor: false}) {
-        Review.updateReviewListOptionsFromUI();
+    reloadReviewList: function (options = {resetCursor: false, reloadStats: false}) {
+        //Review.updateReviewListOptionsFromUI();
 
         const rvl = Review.getReviewListing(true);
 
@@ -255,24 +232,58 @@ var Review = {
             rvl.setCursor(rvl.getCursor().withReset());
         }
 
+        const reloadStats = options?.reloadStats ?? false;
+        if(reloadStats) rvl.setIncludeStatsOnce(reloadStats);
+
         // create url with search params
         const searchParams = rvl.buildQuerySearchParams();
-        const url = "/reviews/build-json?" + searchParams.toString();
-
-        console.log("Reloading review list with URL:", url);
+        const url = "/api/reviews/list/json?" + searchParams.toString();
 
         // fetch
-        $.ajax({
-            url: url, method: "GET", dataType: "json", success: function (json) {
-                rvl
-                    .populateFromJson(json)
-                    .renderItems();
+        Spinner.with(async () => {
+            console.log("Reloading list, url", url, JSON.stringify(searchParams, null, 2));
 
-                console.log("Replace old content with content from json");
-                console.log('-----------------------------------------------------------');
-            }, error: function (xhr, status, error) {
-                console.error(`Failed to reload review list:`, status, error);
+            const json = await $.ajax({
+                url: url,
+                method: "GET",
+                dataType: "json"
+            });
+
+            rvl.loadItemsFromJson(json);
+            console.log("Replace old content with content from json");
+
+            if(reloadStats && json?.statistics) {
+                rvl.setStatistics(json.statistics);
+
+                // initialize stats renderer, uses review listing state
+                const statsRenderer = new StatisticsRenderer();
+                statsRenderer.updateFromJson(rvl.getStatistics());
+
+                console.log("refreshed statistics")
             }
+        });
+    },
+
+
+    /**
+     * reload a single review element by its ID. This is used after actions that affect a specific review
+     * (like liking, disliking, or changing its status) to fetch the updated HTML for that review and replace the
+     * existing review element in the DOM.
+     */
+
+    reloadReview(reviewId) {
+        console.log("Review.reloadReview called with reviewId:", reviewId);
+
+        Spinner.with(async () => {
+            return $.ajax({
+                url: `/api/review/${reviewId}/json`, dataType: "json", method: "GET", success: function (json) {
+                    if (json === null) return;   // should catch errors here
+
+                    const $newReview = Review.getReviewListing(true).renderItem(json);
+                    const $oldReview = $(`.review--list .review-item-${reviewId}`);
+                    if ($oldReview.length) $oldReview.replaceWith($newReview);
+                }
+            });
         });
     },
 
@@ -296,9 +307,7 @@ var Review = {
         const newCursor = prevCursor
             .withAdvance(prevCursor.limit * pageDelta)
             .withClamp(rvl.getAccumulatedReviewCountByScoreFilter());
-
         rvl.setCursor(newCursor);
-
 
         Review.reloadReviewList();
     },
@@ -315,413 +324,146 @@ var Review = {
     },
 
 
-    /**
-     * reload a single review element by its ID. This is used after actions that affect a specific review
-     * (like liking, disliking, or changing its status) to fetch the updated HTML for that review and replace the
-     * existing review element in the DOM.
-     */
+    initRoutes(){
+        const router = new Router();
 
-    reloadReview(reviewId) {
-        console.log("Review.reloadReview called with reviewId:", reviewId);
+        initClientRoutes(router);
+        initAdminRoutes(router);
 
-        $.ajax({
-            url: `/api/review/${reviewId}/json`, dataType: "json", method: "GET", success: function (json) {
-                if(json === null) return;   // should catch errors here
+        router.start();
+    },
 
-                const $newReview = Review.getReviewListing(true).renderItem(json);
-                const $oldReview = $(`.review--list .review[data-review-id="${reviewId}"]`);
-                if ($oldReview.length) {
-                    $oldReview.replaceWith($newReview);
-                }
+    _isInitialised: 0,
 
-                console.log('-----------------------------------------------------------');
-            }, error: function (xhr, status, error) {
-                console.error(`Failed to reload review with ID ${reviewId}:`, status, error);
+    initReviewJs() {
+        if (++this._isInitialised > 1) return;
+
+        // initialize routes
+        Review.initRoutes();
+
+
+        /*
+        parse JSON from review--listing / html element (has json set in an attribute)
+         */
+
+        const getJsonFromDocument = () => {
+            const $reviewList = $(".review--list");
+            if ($reviewList.length === 0) throw new Error("Unable to find root review list element");
+
+            const raw = $reviewList.attr("data-json");
+            if (raw === null || raw === "") throw new Error("data-json attribute was null or empty");
+
+            const state = JSON.parse(raw ?? "");
+            if (state === null || state === "") throw new Error("parsed json was null or empty");
+
+            return state;
+        }
+
+        // get json from document
+        const state = getJsonFromDocument();
+
+
+        /*
+        check if listing is enabled for this page, if not, we will not initialize the review listing and just show a
+        warning in the console. This allows us to reuse the same client-side code for pages that do not have review
+        listings without breaking functionality.
+         */
+
+        //console.log("parsed json", JSON.stringify(state, null, 2));
+
+        //state.reviewConfig.enableListing = false;
+
+        if (!(state?.reviewConfig?.enableListing ?? true)) {
+            // listing disabled for this page
+            console.log("Warning: review listing has been disabled for this page");
+            console.log("client-review.js loaded");
+            return;
+        } else {
+            /*
+            create review listing object and load settings from json + render + render stats
+             */
+
+            // initialize review listing
+            const rl = new ReviewListing();
+            rl.loadAllFromJson(state);
+
+            // save snapshot of filters we loaded from json
+            rl.saveFilterSnapshot();
+
+            Review.setReviewListing(rl);
+
+            // initialize stats renderer, uses review listing state
+            const statsRenderer = new StatisticsRenderer();
+            statsRenderer.updateFromJson(rl.getStatistics());
+
+            $(".container--reviews").removeClass("d-none");
+        }
+
+
+
+        /***********************************************************/
+
+        document.addEventListener("submit", async function (e) {
+            const form = e.target.closest("form.form--submit-review-form");
+            if (form.length > 0) {
+                Spinner.with(async () => {
+                    e.preventDefault();
+
+                    const data = $(form).serialize();
+
+                    await fetch(form.action, {
+                        method: form.method,
+                        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                        body: data
+                    }).then(() => {
+                        alert("Din omtale har blitt lagt til");
+
+                        Review.reloadReviewList({resetCursor: true, reloadStats: true});
+                        form.remove();
+                    });
+                });
             }
         });
-    },
 
-
-    /**
-     * handler are called with form,res IF form is tagged with class "ajax" and have a data-handler attribute matching
-     * the handler name. This allows for custom handling of form submissions without needing to write separate event
-     * listeners for each form. The handlers can perform actions like reloading a specific review or updating the
-     * review list based on the response from the server after a form submission.
-     */
-    handlers: {
-
-        // like/dislike events
-        likeReviewDone: function (form, res) {
-            console.log("Review.formHandlers.likeReviewDone called");
-            if (res.status !== 200) return;
-
-            const reviewId = $(form).closest(".review").data("review-id");
-            Review.reloadReview(reviewId);
-        }, dislikeReviewDone: function (form, res) {
-            console.log("Review.formHandlers.dislikeReviewDone called");
-            if (res.status !== 200) return;
-
-            const reviewId = $(form).closest(".review").data("review-id");
-            Review.reloadReview(reviewId);
-        },
-
-        // review management events
-        deleteReviewDone: function (form, res) {
-            console.log("Review.formHandlers.deleteReviewDone called");
-        }, submitReviewDone: function (form, res) {
-            console.log("Review.formHandlers.submitReviewDone called");
-        },
-
-        // status marking events
-        markApprovedReviewDone: function (form, res) {
-            if (res.status !== 200) return;
-
-            console.log("Review.formHandlers.markApprovedReviewDone called");
-        }, markRejectedReviewDone: function (form, res) {
-            if (res.status !== 200) return;
-
-            console.log("Review.formHandlers.markRejectedReviewDone called");
-        }, markPendingReviewDone: function (form, res) {
-            if (res.status !== 200) return;
-
-            console.log("Review.formHandlers.markPendingReviewDone called");
-        }
-    },
-
-    invokeHandler: function (name, form, res) {
-        const handler = this.handlers[name];
-        if (typeof handler === "function") {
-            handler(form, res);
-            return;
-        }
-
-        console.warn(`No form handler found for name: ${name}`);
+        console.log("client-review.js loaded");
     }
 };
 
-
-class ReviewListing {
-    externalId = null;
-    orderByEnum = -1;
-    scoreFilter = -1;
-    cursor = new PageCursor(0, Number.MAX_SAFE_INTEGER);
-    //totalReviewCount = 0;
-
-    templateHtml = null;
-
-    constructor() {
-    }
-
-    getExternalId(){
-        return this.externalId;
-    }
-
-    getOrderByEnum(){
-        return this.orderByEnum;
-    }
-    setOrderByEnum(orderByEnum){
-        this.orderByEnum = orderByEnum;
-    }
-
-    getScoreFilter(){
-        return this.scoreFilter;
-    }
-    setScoreFilter(scoreFilter){
-        this.scoreFilter = scoreFilter;
-    }
-
-    getCursor(){
-        return this.cursor;
-    }
-    setCursor(cursor){
-        this.cursor = cursor;
-    }
-
-    getTotalReviewCount(){
-        return this?.reviewStats?.totalCount ?? 0;
-    }
-
-    #getReviewCountByScore(score) {
-        return this.reviewStats.scoreCount[score] || this.getTotalReviewCount();
-    }
-
-    getAccumulatedReviewCountByScoreFilter() {
-        const filteredCount = this.scoreFilter?.reduce(
-            (acc, score) => acc + this.#getReviewCountByScore(score),
-            0);
-        return filteredCount || this.getTotalReviewCount();
-    }
-
-    populateFromJson(o) {
-        o.cursor = o?.pageCursor ? Review.utils.createPageCursorFromString(o?.pageCursor) : new PageCursor(0, Number.MAX_SAFE_INTEGER);
-        o.scoreFilter = o.scoreFilter?.split(",").map(s => Number(s)).filter(n => !isNaN(n)) || [-1];
-        //o.orderByEnum = o.currentOrderByEnum;
-
-        const deleteKeys = ["currentOrderByEnum", "dateFormatter", "daysAgoFormatter", "dblFormatter1", "dblFormatterCssPointFive", "scoreCountJson", "pageCursor", "uniqueExternalIds", "defaultNewReviewFormValues", "detailedReviewCount"];
-        for(let k in deleteKeys)
-            delete o[k];
-
-        delete o.dateFormatter;
-        delete o.daysAgoFormatter;
-        delete o.dblFormatter1;
-        delete o.dblFormatterCssPointFive;
-
-        delete o.scoreCountJson;
-        delete o.pageCursor;
-        delete o.uniqueExternalIds;
-        delete o.defaultNewReviewFormValues;
-
-        delete o.detailedReviewCount;
-
-
-        for(let key in o){
-            if(o.hasOwnProperty(key)){
-                //console.log("setting key ", key, "to value", o[key]);
-                this[key] = o[key];
-            }
-        }
-
-        //console.log(JSON.stringify(o, null, 2));
-
-        return this;
-    }
-
-    getTemplateHtml() {
-        if (this.templateHtml === null) {
-            // load template html from DOM
-            const $tpl = $('.review--list .review-item-template');
-            if (!$tpl) throw new Error("Unable to find first element child");
-            this.templateHtml = $tpl[0].outerHTML;
-        }
-
-        return this.templateHtml;
-    }
-
-    renderItems(){
-        const _this = this;
-
-        const $itemsContainer = $(".review--list-items");
-        $itemsContainer.empty().hide();
-
-        if(!this.reviews) {
-            console.log("cannot find reviews by json, we probably in admininterface");
-            return;
-        }
-
-        this.reviews.forEach((r) => {
-            if(r === null) return;
-            const $item = this.renderItem(r);
-            $itemsContainer.append($item);
-        });
-
-        $itemsContainer.show();
-    }
-
-    renderItem(review){
-        console.log("called renderItem", review);
-        0
-        const templateHtml = this.getTemplateHtml();
-        const cloneHtml = templateHtml.replaceAll("{reviewId}", review.id);
-
-        const roundToHalf = (x) => Math.round(x * 2.0) / 2.0;
-        const formatNumber = (num, maxPrec = 2, minPrec = 0, dot_to_dash) =>
-            num.toLocaleString("en-US", {
-                minimumFractionDigits: minPrec,
-                maximumFractionDigits: maxPrec
-            }).replace(".", dot_to_dash ? "-" : ".");
-
-        const avgScore = Math.round((this.reviewStats.averageScore * 2.0) / 2.0);
-        const avgDashedScore = (x) => Math.round((x * 2.0) / 2.0).replace(".", "-");
-
-        const $clone = $(cloneHtml);
-        $clone.removeClass("review-item-template").addClass("box review review--review-14 mb-2");
-        $clone.addClass("review-" + review.id);
-        $clone.addClass("review-item-" + review.id);
-        $clone.find('.score-text').text(`${review.score}/5`);
-        $clone.find('.score-value').addClass(`score-${formatNumber(roundToHalf(review.score),1,1, true)}`);
-        $clone.find(".title").text(`${review.title ?? "(tom)"}`);
-        $clone.find(".name").text(`${review.authorName ?? "(anonym)"}`);
-        $clone.find(".time").text(`${review.createdAt}`)
-        $clone.find(".comment").text(review.comment ?? "(empty)");
-        $clone.find(".like-count").text(review.likeCount);
-        $clone.find(".dislike-count").text(review.dislikeCount);
-
-        return $clone;
-    }
-
-    buildQuerySearchParams() {
-        const map = new Map();
-        map.set("externalId", this.getExternalId());
-        map.set("orderByEnum", this.getOrderByEnum());
-        map.set("scoreFilter", this.getScoreFilter().join(","));
-        map.set("cursor", this.cursor.toCsv());
-
-        return new URLSearchParams(Object.fromEntries(map));
-    }
-}
-
-
-
 document.addEventListener("DOMContentLoaded", function () {
-
-    const applyReviewVoteAction = function (reviewId, voteType) {
-        fetch(`/api/review/${reviewId}/${voteType}`, {method: "POST"})
-            .then(res => {
-                if (!res.ok) {
-                    return;
-                }
-                Review.reloadReview(reviewId);
-            })
-            .catch(err => {
-                console.error("Error voting ${voteType} for review", reviewId, err);
-            });
-    };
-
-    const router = new Router();
-
-    router.route("/R/review/:id/like", ({params}) => { applyReviewVoteAction(params.id, "like"); });
-    router.route("/R/review/:id/dislike", ({params}) => applyReviewVoteAction(params.id, "dislike"));
-
-    // admin routes
-    router.route("/R/admin/filter/status/:statusEnum", ({params, e}) => {
-        $(e.target).toggleClass("active");
-        console.log("admin filter review status clicked", params.statusEnum);
-
-        const url = new URL(window.location.href);
-        url.searchParams.set("statusFilter", params.statusEnum); // 👈 overwrite
-        window.location.href = url.toString();
-    });
-
-    router.start();
-
-    //console.log("Router initialized");
-
-
-    const rl = new ReviewListing();
-    const $reviewList = Review.getReviewListingDomElement(false);
-
-    const dataAsJson = Review.__getReviewListOptionAsJson($reviewList) ?? {};
-    rl.populateFromJson(dataAsJson);
-    Review.setReviewListing(rl);
-    rl.renderItems();
-
-    // update review stats
-    const updateReviewStats = function(stats){
-        if(!rl.reviews) {
-            console.log("cannot find reviews by json, we probably in admininterface");
-            return;
-        }
-
-        const $outer = $('.review--stats');
-        if($outer.length === 0) throw new Error("Unable to find element .review--stats");
-
-        const bigAverageScore = String((Math.round(stats.averageScore * 2.0) / 2.0).toFixed(1));
-        $outer.find(".big-average-score").text(bigAverageScore + " / 5");
-        $outer.find(".score").addClass("score-" + bigAverageScore.replace(".", "-"));
-
-        $outer.find(".average-score").text(bigAverageScore);
-        $outer.find(".total-review-count").text(stats.totalCount);
-
-        const $scoreBars = $outer.find(".score-pct-bar>div").each(function(i,el){
-            const $el = $(el);
-            $el.css("width", stats.scoreDistribution[5 - i] + "%");
-        });
-
-        const $scoreCount = $outer.find(".score-count").each(function(i,el){
-            const $el = $(el);
-            $el.text(stats.scoreCount[5 - i]);
-        });
-    }
-    updateReviewStats(dataAsJson.reviewStats);
-
-    document.addEventListener("submit", async e => {
-        const form = e.target.closest("form");
-        if (!form) return;
-
-        if (form.matches(".ajax") && form.matches(".custom-handler")) {
-            e.preventDefault();
-
-            const __parsed = form.dataset.cmd?.split(":");
-            const cmd = __parsed?.[0];
-            const args = (__parsed?.[1]?.split(',') || []).map(Review.utils.parsePrimitive);
-            //for (var a in args) args[a] = Review.utils.parsePrimitive(args[a]);
-
-            //if(debug) console.log("cmd", cmd, "args", args);
-
-            switch (cmd) {
-                case "addStatusFilter": {
-                    const statusEnum = Review.utils.parseIntOr(args[0], -1);
-                    const params = new URLSearchParams();
-                    const rvl = Review.getReviewListing(true);
-                    params.set("statusFilter", statusEnum);
-
-                    window.location.href = window.location.pathname + "?" + params.toString();
-                    return;
-                }
-            }
-
-            console.log("custom handler called");
-        }
-    });
-
-    document.addEventListener("submit", async e => {
-        const form = e.target.closest("form");
-        if (!form) return;
-
-        if (!form.matches(".ajax")) return;
-        e.preventDefault();
-
-        if (form.matches(".custom-handler")) {
-            return false;
-        }
-
-        const res = await fetch(form.action, {
-            method: (form.method || "POST").toUpperCase(), body: new FormData(form)
-        });
-
-        const key = "[FormPoster]";
-
-        // status
-        console.log(key, res.status, res.ok, res.statusText);
-
-        const ct = res.headers.get("content-type") || "";
-        let text = null;
-        if (ct.includes("text") || ct.includes("html")) {
-            text = await res.clone().text();
-            if (text && text.length > 0) {
-                console.log(key, "text:", text);
-            }
-        }
-
-        if (!res.ok) {
-            console.warn(key, "Form submission failed", "HTTP error", res.status);
-            return;
-        }
-
-        console.log(key, "Form submission succeeded");
-
-        if (form.matches(".reload-on-success")) {
-            location.reload();
-            return;
-        }
-
-        if (form.dataset.handler) {
-            const fn = Review.handlers[form.dataset.handler];
-            if (fn) fn(form, res);
-        }
-    });
-
-    console.log("client-review.js loaded");
+    Review.initReviewJs();
 });
 
+if(document.readyState === "complete"){
+    Review.initReviewJs();
+}
 
 
 // TODO: refactor this function, used with "Legg til ny omtale" button, to be more generic and reusable for toggling
 //  any form or element, not just the review form. It should also be renamed to reflect its more general purpose.
 
-function toggleReviewForm() {
-    $(".form--submit-review-form")
-        .toggle()
-        .removeClass("d-none");
-    return false;
+Review.client.showNewReviewForm = function() {
+    const rvl = Review.getReviewListing(true);
+    if(!rvl.getReviewListingConfig().enableSubmit){
+        alert("Lagring av omtale er midlertidig slått av for denne siden");
+        return;
+    }
+
+
+    const searchParams = new URLSearchParams();
+    searchParams.set("externalId", Review.getReviewListing().getExternalId());
+    searchParams.set("prefilled", 1);
+
+    console.log("loading", "/api/new-review-form/create?" + searchParams.toString());
+
+    Spinner.with(() => {
+        return $.ajax({
+            url: "/api/new-review-form/create?" + searchParams.toString(), method: "GET", success: function (html) {
+                const $form = $(html);
+
+                const $formContainer = $('.submit-review-form-container').empty();
+                $formContainer.append($form);
+                $form.removeClass("d-none");
+            }
+        });
+    });
 }

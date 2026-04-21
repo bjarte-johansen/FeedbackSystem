@@ -3,10 +3,13 @@ package root.includes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.util.StringUtils;
 import root.app.AppConfig;
+import root.includes.logger.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;;
 
@@ -37,11 +40,11 @@ public class Utils {
 
 
     /**
-     * @see #parseCsvIntList(String, String)
+     * @see #parseCsvIntList(String, String, boolean)
      */
 
     public static List<Integer> parseCsvIntList(String s) {
-        return parseCsvIntList(s, ",");
+        return parseCsvIntList(s, ",", true);
     }
 
 
@@ -49,19 +52,34 @@ public class Utils {
      * Parses a comma-separated string of integers into a list of integers. Example: "1, 2, 3" -> List.of(1, 2, 3) -
      * Handles null or empty input by returning an empty list. - Trims whitespace around numbers.
      *
+     * note will handle "1", "1,2,3", "1,", "1,s,t,3" safely but looses invalid data
+     *
      * @param s the comma-separated string to parse
      * @return a list of integers parsed from the input string
      * @throws NumberFormatException if any of the parts cannot be parsed as an integer
      */
 
-    public static List<Integer> parseCsvIntList(String s, String delimiter) {
+    public static List<Integer> parseCsvIntList(String s, String delimiter, boolean skipInvalidValues) {
+        checkArgument(delimiter != null && !delimiter.isEmpty(), "Delimiter cannot be null or empty");
+
         if (s == null || s.isEmpty()) return List.of();
 
-        String[] parts = s.split(delimiter);
+        String[] parts = s.split(Pattern.quote(delimiter));
 
         List<Integer> result = new ArrayList<>(parts.length);
         for (String p : parts) {
-            result.add(Integer.parseInt(p.trim()));
+            p = p.trim();
+            if(p.isBlank()) continue; // skip empty parts
+
+            try {
+                int tmp = Integer.parseInt(p);
+                result.add(tmp);
+            }catch(NumberFormatException e) {
+                if(!skipInvalidValues) {
+                    throw new RuntimeException("Invalid csv integer list", e);
+                }
+                //Logger.log("parseCsvIntList error '" + p + "': " + e.getMessage());
+            }
         }
         return result;
     }

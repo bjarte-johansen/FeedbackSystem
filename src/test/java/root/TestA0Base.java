@@ -127,11 +127,12 @@ public class TestA0Base {
         __logger.close();
     }
 
-    @Test
-    public void printReviews(){
-        Logger.log("testing dummy dummy");
-
-        var reviews = reviewRepo.findAll();
-        reviews.forEach(System.out::println);
-    }
+//    @Test
+//    public void printReviews(){
+//        // this just shows how to use a repo in test cases
+//        Logger.log("testing dummy dummy");
+//
+//        var reviews = reviewRepo.findAll();
+//        reviews.forEach(System.out::println);
+//    }
 }

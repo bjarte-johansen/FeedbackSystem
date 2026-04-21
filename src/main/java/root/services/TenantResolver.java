@@ -66,7 +66,7 @@ public class TenantResolver {
         checkArgument(!host.isBlank(), "Host is missing or blank");
 
         return TenantResolverCache
-            .computeIfAbsent(host, h -> { Logger.log("recomputed tenant"); return Optional.ofNullable(findByHost(h)); })
+            .computeIfAbsent(host, h -> Optional.ofNullable(findByHost(h)))
             .orElse(null);
     }
 

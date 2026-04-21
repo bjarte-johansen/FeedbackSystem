@@ -127,7 +127,8 @@ public class PageCursor {
 
     /** encode cursor into string, format is int,int */
     public String encode(){
-        return this.offset + "," + this.limit;
+        return PageCursorEncoder.encode(this);
+        //return this.offset + "," + this.limit;
     }
 
 

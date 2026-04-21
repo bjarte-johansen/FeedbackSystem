@@ -1,5 +1,7 @@
 package root.includes;
 
+import java.time.Instant;
+
 /**
  * Formats a java.time.Instant into a human-readable "time ago" format in Norwegian. Example: "for 5 minutter siden",
  * "for 2 timer siden", etc. Note: This is a simple implementation and may not cover all edge cases or localization
@@ -13,18 +15,8 @@ public class NorwegianTimeAgoTextFormatter {
 
 
     /**
-     * Formats the given Instant into a "time ago" string in Norwegian.
-     * <p>
-     * We could write nicer code, buts fast enough for now. The logic is to calculate the difference in seconds,
-     * minutes, hours, days, weeks, months, and years, and show it based on assumptions about the average length of
-     * months and years. The method also takes a prefix and suffix to allow for different formatting styles (e.g., "for
-     * 5 minutter siden" vs "5 minutter siden").
-     *
-     * @param t
-     * @param prefix Text to prepend to the formatted string (e.g., "for " to produce "for 5 minutter siden").
-     * @param suffix Text to append to the formatted string (e.g., " siden" to produce "for 5 minutter siden").
-     * @return
-     */
+     * @see #formatInstantAgo(Instant, String, String, String)
+     * */
 
     public static String formatInstantAgo(java.time.Instant t, String prefix, String suffix) {
         return formatInstantAgo(t, prefix, suffix, "(ukjent tidspunkt)");

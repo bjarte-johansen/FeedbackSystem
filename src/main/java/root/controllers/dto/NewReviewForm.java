@@ -43,11 +43,9 @@ public record NewReviewForm(
     public static List<String> validate(NewReviewForm dto, List<String> errors){
         checkArgument(dto != null, "DTO cannot be null.");
         checkArgument(errors != null, "Error list cannot be null.");
-        //errors = errors != null ? errors : new ArrayList<String>();
 
         try {
             // Validate input parameters (you can add more validation as needed)
-            //checkArgument(dto.tenantId > 0, "Tenant ID must be a positive number.");
             checkArgument(dto.score >= 1 && dto.score <= 5, "Score must be between 1 and 5.");
 
             if (AppConfig.ENABLE_CLIENT_EMAIL_AND_PASSWORD_REQUIRED) {

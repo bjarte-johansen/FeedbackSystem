@@ -9,81 +9,85 @@ import root.includes.WhereExpressionList;
 import root.models.Review;
 
 import java.sql.ResultSet;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;;
 
 @Repository
-public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
+public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface {
     // set to false to override debug flags (they are DEBUG & ENABLE_LOCAL_DEBUG_FLAGS, both must be true for debug logs to print)
     public boolean ENABLE_LOCAL_DEBUG_FLAGS = false;
 
 
     /*
     condition accumulators
-    , consider moving these methods
+    , consider moving these methods out of repository
+    TODO: do that!!
      */
-
-    /*
-    */
-
-/*
-    private void clampLongSafeExprSql(whereExpressionList exprList, String col, long min, long max, String expr, String op, long exprVal) {
-        Set<String> allValidComparisonOps = Set.of(">", ">=", "<", "<=", "=", "<>");
-        Set<String> allValidArithmeticOps = Set.of("+", "-", "*", "/", "%");
-        if(op
-        exprList.where("LEAST(?, GREATEST(?, " + expr + " " + op + " ?))", max, min, exprVal);
-    }
-    private String clampIntSql(String col, int min, int max, String expr) {
-        return clampLongSql(col, (long) min, (long) max, expr);
-    }
- */
 
     /*
      * smarter
      */
 
     private void buildScoreFilterSetConditions(WhereExpressionList whereExpressionList, Set<Integer> scoreFilter) {
-        if(scoreFilter != null && !scoreFilter.isEmpty()) {
+        if (scoreFilter != null && !scoreFilter.isEmpty()) {
             whereExpressionList.whereIn("score", scoreFilter);
         }
     }
 
     private void buildScoreFilterRangeConditions(WhereExpressionList whereExpressionList, NumericRangeRecord<Integer> rangeFilter) {
-        if(rangeFilter != null && rangeFilter.isValid()) {
+        if (rangeFilter != null && rangeFilter.isValid()) {
             whereExpressionList.whereBetween("score", rangeFilter.start(), rangeFilter.end());
         }
     }
 
     private void buildStatusFilterConditions(WhereExpressionList whereExpressionList, Set<Integer> statusFilter) {
-        whereExpressionList.whereIn("status", statusFilter, true);
+        if (statusFilter != null && !statusFilter.isEmpty()) {
+            whereExpressionList.whereIn("status", statusFilter, true);
+        }
     }
 
     private void applyReviewQueryOptionFilters(WhereExpressionList whereExpressionList, ReviewQueryOptions options) {
         // filter by status
         buildStatusFilterConditions(whereExpressionList, options.getStatusFilterSet());
 
-        // filter by score range (scoreFilterRange and scoreFilterList are mutually exclusive. If range is valid,
-        // it will be used, otherwise filter by list (if any)).
+        // filter by score range (scoreFilterRange and scoreFilterList are mutually exclusive.
+        // range takes precedence as it is faster
         NumericRangeRecord<Integer> scoreFilterRange = options.getScoreFilterRange();
         buildScoreFilterRangeConditions(whereExpressionList, scoreFilterRange);
 
         // filter by score list, mutually exclusive with score range filter
-        if(scoreFilterRange == null || !scoreFilterRange.isValid()) {
+        if (scoreFilterRange == null || !scoreFilterRange.isValid()) {
             buildScoreFilterSetConditions(whereExpressionList, options.getScoreFilterSet());
         }
 
-        // add date filter if exists
-        if(options.getDateFilterRange() != null) {
-            whereExpressionList.whereBetween(
-                "created_at",
-                options.getDateFilterRange().getStart(),
-                options.getDateFilterRange().getEnd().plusDays(1)
-                );
+        // filter by number of dates list, mutually exclusive with date range filter
+        // filter number of days takes presence if exists
+        int numberOfDaysFilter = options.getNumberOfDaysFilter(-1, true);
+
+        if (numberOfDaysFilter >= 0) {
+            // filter by number of days
+            Instant end = Instant.now();
+            Instant start = end.minusSeconds(numberOfDaysFilter * 24L * 3600L);
+            whereExpressionList.whereBetween("created_at", start, end);
+        } else {
+            // add date filter if exists
+            var dateRangeFilter = options.getDateFilterRange();
+
+            if ((dateRangeFilter != null) && dateRangeFilter.hasAnyBound()) {
+                LocalDate dtStart = dateRangeFilter.getStart();
+                LocalDate dtEnd = dateRangeFilter.getEnd();
+
+                Instant start = (dtStart != null) ? dtStart.atStartOfDay(ZoneId.systemDefault()).toInstant() : null;
+                Instant end = (dtEnd != null) ? dtEnd.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant() : null;
+
+                whereExpressionList.whereBetween("created_at", start, end);
+            }
         }
     }
-
-    //
 
 
 
@@ -92,22 +96,27 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
      */
 
 
+//    /**
+//     * Atomically increments the report count for a review, ensuring it stays within the bounds of a signed 16-bit
+//     * integer.
+//     *
+//     * @param reviewId
+//     */
+//
+//    @Override
+//    public void incrementReportVote(long reviewId, int delta) {
+//        String sql = "UPDATE review SET report_count = LEAST(32767, GREATEST(0, report_count + ?)) WHERE id = ?";
+//
+//        FSQLQuery.create(sql)
+//            .bind(delta)
+//            .bind(reviewId)
+//            .update();
+//    }
+
+
     /**
-     * Atomically increments the report count for a review, ensuring it stays within the bounds of a signed 16-bit
-     * integer.
-     * @param reviewId
+     * Increments like count for a review, ensuring it stays within the bounds
      */
-
-    @Override
-    public void incrementReportVote(long reviewId, int delta) {
-        String sql = "UPDATE review SET report_count = LEAST(32767, GREATEST(0, report_count + ?)) WHERE id = ?";
-
-        FSQLQuery.create(sql)
-            .bind(1)
-            .bind(reviewId)
-            .update();
-    }
-
 
     @Override
     public void incrementLikeVote(long reviewId, int delta) {
@@ -119,6 +128,9 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .update();
     }
 
+    /**
+     * Increments dislike count for a review, ensuring it stays within the bounds
+     */
 
     @Override
     public void incrementDislikeVote(long reviewId, int delta) {
@@ -131,28 +143,33 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
     }
 
 
+    /**
+     * Update review status for a given review Status should be one of Review.STATUS_APPROVED, Review.STATUS_PENDING,
+     * Review.STATUS_REJECTED, etc.
+     *
+     * @param reviewId
+     * @param newStatus
+     * @return
+     */
     @Override
-    public void updateReviewStatus(long reviewId, int newStatus) {
+    public int updateReviewStatus(long reviewId, int newStatus) {
         String sql = "UPDATE review SET status = ? WHERE id = ?";
 
-        FSQLQuery.create(sql)
+        return FSQLQuery.create(sql)
             .bind(newStatus)
             .bind(reviewId)
             .update();
     }
 
 
+    /**
+     * Get review score statistics as a map of (score -> count) for a given externalId. The method takes an optional set
+     * of status filters to include in the statistics. The results are ordered by score in ascending order. If
+     * statusFilterSet is provided, only reviews with a status in the filter set will be included in the distribution.
+     */
+
     @Override
-    public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId){
-
-        WhereExpressionList whereExprList = new WhereExpressionList(20);
-        whereExprList.where("(external_id = ?)", externalId);
-        whereExprList.where("(status = ?)", Review.REVIEW_STATUS_APPROVED);
-
-        // build sql
-        String whereStr = whereExprList.toSql(true);
-        String sql = "SELECT score, COUNT(*) AS count FROM review" + whereStr + " GROUP BY score";
-
+    public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> statusFilterSet) {
         // lambda to read result set and convert to LinkedHashMap<Integer, Integer>
         FSQLQuery.ResultSetFunction<LinkedHashMap<Integer, Integer>> fnReadResultSet = (ResultSet rs) -> {
             LinkedHashMap<Integer, Integer> res = new LinkedHashMap<>();
@@ -164,10 +181,28 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             return res;
         };
 
+        WhereExpressionList whereExprList = new WhereExpressionList(20);
+
+        whereExprList.where("(external_id = ?)", externalId);
+
+        if (statusFilterSet != null && !statusFilterSet.isEmpty()) {
+            whereExprList.whereIn("status", statusFilterSet);
+        }
+
+        // build sql
+        String whereStr = whereExprList.toSql(true);
+        String sql = "SELECT score, COUNT(*) AS count FROM review" + whereStr + " GROUP BY score";
+
         return FSQLQuery.create(sql)
             .bind(whereExprList.getArguments())
             .fetchCallback(fnReadResultSet);
     }
+
+    /**
+     * Find distinct list of externalId from reviews, can be used to find what externalIds has reviews in the system.
+     * This can be useful for various purposes such as displaying a list of products that have reviews, or for
+     * administrative purposes to see which externalIds are being reviewed.
+     */
 
     @Override
     public List<String> findDistinctExternalIdByExternalId() {
@@ -177,7 +212,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .fetchCallback((ResultSet rs) -> {
                 List<String> result = new ArrayList<>();
                 int colIndex = rs.findColumn("external_id");
-                while(rs.next()) {
+                while (rs.next()) {
                     result.add(rs.getString(colIndex));
                 }
                 return result;
@@ -185,7 +220,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
     }
 
 
-    public String buildPageCursorSql(PageCursor pageCursor) {
+    private String buildPageCursorSql(PageCursor pageCursor) {
         String s = "";
 
         if (pageCursor.getLimit() > 0) {
@@ -196,17 +231,31 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             if (!s.isEmpty()) s += " ";
             s += "OFFSET " + pageCursor.getOffset();
         }
+
         return s;
     }
 
-    /*
-    find with or without external id with pagination and filtering options.
+
+    /**
+     * @see #findByOptionalExternalIdWithPagination(String, ReviewQueryOptions) Main difference is that this method does
+     * not take externalId at all, that is it works regardless of externalId. The actual query construction and
+     * execution logic is shared in the private helper method to avoid code duplication.
      */
 
     @Override
     public List<Review> findByAnyExternalIdWithPagination(ReviewQueryOptions options) {
         return findByOptionalExternalIdWithPagination(null, options);
     }
+
+
+    /**
+     * @see #findByOptionalExternalIdWithPagination(String, ReviewQueryOptions)
+     * <p>
+     * Main difference is that this method requires a non-null and non-empty externalId, while
+     * findByAnyExternalIdWithPagination allows for fetching reviews across all externalIds without filtering by a
+     * specific externalId. The actual query construction and execution logic is shared in the private helper method to
+     * avoid code duplication.
+     */
 
     @Override
     public List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options) {
@@ -216,6 +265,14 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
     }
 
 
+    /**
+     * Find list of reviews by optional externalId and a ReviewQueryOptions object that contains various filtering and
+     * pagination options. If externalId is provided, the reviews will be filtered by that externalId. If externalId is
+     * null or empty, reviews for any externalId will be returned based on the filters in options. The method constructs
+     * a dynamic SQL query based on the provided parameters and executes it to fetch the matching reviews from the
+     * database.
+     */
+
     private List<Review> findByOptionalExternalIdWithPagination(String externalId, ReviewQueryOptions options) {
         String columnStr = "id, external_id, author_name, score, title, comment, like_count, dislike_count, status, created_at";
 
@@ -223,7 +280,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
         WhereExpressionList whereExpressionList = new WhereExpressionList(20);
 
         // add condition for external id
-        if(externalId != null && !externalId.isEmpty()){
+        if (externalId != null && !externalId.isEmpty()) {
             whereExpressionList.where("(external_id = ?)", externalId);
         }
 
@@ -235,13 +292,13 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
 
         // make limit/offset sql
         String limitOffsetSql = buildPageCursorSql(options.getPageCursor());
-        if(limitOffsetSql != null && !limitOffsetSql.isEmpty()) {
+        if (limitOffsetSql != null && !limitOffsetSql.isEmpty()) {
             limitOffsetSql = " " + limitOffsetSql;
         }
 
         // make order by sql
         String orderBySql = options.buildOrderBySql();
-        if(orderBySql != null && !orderBySql.isEmpty()) {
+        if (orderBySql != null && !orderBySql.isEmpty()) {
             orderBySql = " ORDER BY " + orderBySql;
         }
 
@@ -250,12 +307,11 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
 
         return FSQLQuery.create(sql)
             .bind(whereExpressionList.getArguments())
-            .debug(ENABLE_LOCAL_DEBUG_FLAGS)
+            .debug(ENABLE_LOCAL_DEBUG_FLAGS || true)
             .fetchAll(Review.class);
     }
 
-
-
+/*
     @Override
     public int countByExternalId(String externalId, ReviewQueryOptions options) {
         WhereExpressionList whereExpressionList = new WhereExpressionList(20);
@@ -288,15 +344,5 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryInterface{
             .selectCount();
     }
 
-    /*
-    public int countByExternalIdAndStatus(String externalId, int status) {
-        checkArgument(externalId != null && !externalId.isEmpty(), "externalId cannot be null or empty");
-
-        String sql = "SELECT COUNT(*) FROM review WHERE (external_id = ?) AND (status = ?)";
-        return (int) FSQLQuery.create(sql)
-            .bind(externalId)
-            .bind(status)
-            .selectCount();
-    }
-     */
+ */
 }

@@ -18,6 +18,4 @@ public class AdminModelAdvice {
     public Map<String, Object> constants() {
         return CONSTS;
     }
-
-
 }

@@ -2,7 +2,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
-        <div class="box review review--review-${review.id}" data-review-id="${review.id}">
+        <div class="box review review-item-${review.id} review-item-${constants.reviewStatus.constToFriendlyName[review.status]}">
 
             <div class="score-outer mb-0">
                 <strong class="score-text">${review.score}/5</strong> <span class="score score-${review.score}"></span>

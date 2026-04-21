@@ -9,17 +9,17 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestNorwegianTimeAgoFormatter {
-    private String fmt(Instant instant) {
+    private String fmt(Instant instant, String... def) {
         String prefix = "for ";
         String suffix = " siden";
 
-        return NorwegianTimeAgoTextFormatter.formatInstantAgo(instant, prefix, suffix);
+        return NorwegianTimeAgoTextFormatter.formatInstantAgo(instant, prefix, suffix, (def != null && def.length > 0) ? def[0] : "-");
     }
 
     @Test
     public void test() {
 
-        assertEquals("-", fmt(null));
+        assertEquals("-", fmt(null, "-"));
         assertEquals("for 10 sekunder siden", fmt(Instant.now().plus(Duration.ofSeconds(-10))));
         assertEquals("for 10 minutter siden", fmt(Instant.now().plus(Duration.ofMinutes(-10))));
         assertEquals("for 10 timer siden", fmt(Instant.now().plus(Duration.ofHours(-10))));

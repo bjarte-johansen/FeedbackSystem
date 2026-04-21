@@ -5,25 +5,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import root.app.AppConfig;
 import root.app.AppRequestSchema;
-import root.common.utils.FunnyUserNameGenerator;
-import root.common.utils.IpsumLoremGenerator;
+import root.common.testdata.FunnyUserNameGenerator;
+import root.common.testdata.IpsumLoremGenerator;
 import root.database.*;
 import root.includes.logger.Logger;
 import root.models.Review;
-import root.models.Reviewer;
+//import root.models.Reviewer;
 import root.models.Tenant;
 import root.models.TenantDomain;
-import root.no_test_extra.TryWithTimer;
+import root.A_TODO.no_test_extra.TryWithTimer;
 import root.services.PasswordService;
 import root.repositories.*;
 //import root.repositories.TenantRepository;
 
-import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
 
+
+// -Dspring.profiles.active=local
 
 
 @Component
@@ -31,8 +32,8 @@ public class DatabaseManager {
     public static boolean DEBUG = true;
     public static boolean VERBOSE_SCOPE = true;
 
-    @Autowired
-    ReviewerRepository reviewerRepo;
+    //@Autowired
+    //ReviewerRepository reviewerRepo;
 
     @Autowired
     TenantRepository tenantRepo;
@@ -64,7 +65,7 @@ public class DatabaseManager {
     }
 
     public void resetPublicSchema(){
-        try(var _ = Logger.scope("Resetting tenant schema...")) {
+        try(var __ = Logger.scope("Resetting tenant schema...")) {
             try (var ignore1 = AppRequestSchema.withThreadSchema("public")) {
                 Logger.log("Cleaning public schema ...");
                 cleanTable(AppConfig.TENANT_TABLE_NAME);
@@ -83,11 +84,11 @@ public class DatabaseManager {
     }
 
     public void resetTenantSchema() {
-        try(var _ = Logger.scope("resetTenantSchema")){
+        try(var __1 = Logger.scope("resetTenantSchema")){
             cleanTenantSchema();
 
-            try(var _ = Logger.scope("inserting schema demo data'" + AppRequestSchema.get() + "' ...")) {
-                insertAuthors();
+            try(var __2 = Logger.scope("inserting schema demo data'" + AppRequestSchema.get() + "' ...")) {
+                //insertAuthors();
                 insertReviews();
             }
         }
@@ -117,42 +118,42 @@ public class DatabaseManager {
             if(DEBUG) Logger.log("Inserted tenant: " + tenant);
         }
     }
-
-    private Reviewer createReviewer(
-        String email,
-        String displayName,
-        String passwordHash,
-        String passwordSalt,
-        Instant createdAt,
-        Instant verifiedAt
-    ) {
-        Reviewer reviewer = new Reviewer();
-        reviewer.setEmail(email);
-        reviewer.setDisplayName(displayName);
-        reviewer.setPasswordHash(passwordHash);
-        reviewer.setPasswordSalt(passwordSalt);
-        reviewer.setCreatedAt(createdAt);
-        reviewer.setVerifiedAt(verifiedAt);
-
-        return reviewer;
-    }
-    private void insertAuthors() {
-        // TODO: move to
-        var passwordHashForPasswordPass = passwordService.encode("myPassword1");
-
-        List<Reviewer> reviewers = List.of(
-            createReviewer("test@test.com", "Leif", passwordHashForPasswordPass, "", Instant.now(), Instant.now()),
-            createReviewer("alice@example.com", "Alice", "hash1", "", Instant.now(), Instant.now()),
-            createReviewer("bob@example.com", "Bob", "hash2", "", Instant.now(), Instant.now()),
-            createReviewer("charlie@example.com", "Charlie", "hash3", "", Instant.now(), Instant.now()),
-            createReviewer("diana@example.com", "Diana", "hash4", "", Instant.now(), Instant.now()),
-            createReviewer("eve@example.com", "Eve", "hash5", "", Instant.now(), Instant.now())
-        );
-
-        reviewers.forEach(reviewerRepo::save);
-
-        if (DEBUG) Logger.log("Inserted reviewers: " + reviewers);
-    }
+//
+//    private Reviewer createReviewer(
+//        String email,
+//        String displayName,
+//        String passwordHash,
+//        String passwordSalt,
+//        Instant createdAt,
+//        Instant verifiedAt
+//    ) {
+//        Reviewer reviewer = new Reviewer();
+//        reviewer.setEmail(email);
+//        reviewer.setDisplayName(displayName);
+//        reviewer.setPasswordHash(passwordHash);
+//        reviewer.setPasswordSalt(passwordSalt);
+//        reviewer.setCreatedAt(createdAt);
+//        reviewer.setVerifiedAt(verifiedAt);
+//
+//        return reviewer;
+//    }
+//    private void insertAuthors() {
+//        // TODO: move to
+//        var passwordHashForPasswordPass = passwordService.encode("myPassword1");
+//
+//        List<Reviewer> reviewers = List.of(
+//            createReviewer("test@test.com", "Leif", passwordHashForPasswordPass, "", Instant.now(), Instant.now()),
+//            createReviewer("alice@example.com", "Alice", "hash1", "", Instant.now(), Instant.now()),
+//            createReviewer("bob@example.com", "Bob", "hash2", "", Instant.now(), Instant.now()),
+//            createReviewer("charlie@example.com", "Charlie", "hash3", "", Instant.now(), Instant.now()),
+//            createReviewer("diana@example.com", "Diana", "hash4", "", Instant.now(), Instant.now()),
+//            createReviewer("eve@example.com", "Eve", "hash5", "", Instant.now(), Instant.now())
+//        );
+//
+//        reviewers.forEach(reviewerRepo::save);
+//
+//        if (DEBUG) Logger.log("Inserted reviewers: " + reviewers);
+//    }
 
     private Review createReview(int status, String external_id, String displayName, long author_id, String title, String comment, int score, Instant created_at) {
         Review r = new Review();
@@ -228,7 +229,7 @@ public class DatabaseManager {
                     createReview(Review.REVIEW_STATUS_REJECTED, path2, username.get(), 1L, title.get(), comment.get(), 2, increasingPastInstant.get())
                 );
 
-                try(var _ = new TryWithTimer("with transaction")) {
+                try(var __ = new TryWithTimer("with transaction")) {
                     // do actual insertion
                     DataSourceManager.begin();
 

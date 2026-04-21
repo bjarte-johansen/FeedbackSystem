@@ -1,24 +1,26 @@
 package root.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 import root.App;
+import root.app.AppContext;
 import root.app.AppRequestSchema;
 import root.database.DataSourceManager;
 import root.DatabaseManager;
-import root.database.FSQLQuery;
 import root.includes.logger.Logger;
 import root.models.Review;
 import root.models.Tenant;
-import root.no_test_extra.TryWithTimer;
 import root.repositories.TenantRepository;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.util.List;
 
 @Service
+@DependsOn("appContext")
 public class DatabaseService {
+    @Autowired
+    AppContext appContext;
+
     @Autowired
     TenantRepository tenantRepo;
 
@@ -69,7 +71,7 @@ public class DatabaseService {
             try(var ignore2 = Logger.scope("Resetting tenant schemas...")){
                 AppRequestSchema.withThreadSchema("public", () -> {
                     for (var tenant : tenantRepo.findAll()) {
-                        try (var _ = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
+                        try (var ignore3 = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
                             databaseManager.resetTenantSchema();
                         }
                     }
@@ -107,7 +109,7 @@ public class DatabaseService {
 
     public void executeDatabasePatches() throws Exception {
         // create lambda patcher
-        App.ConnectionStatementRunnable patchAddReviewVoteTable = (_, st) -> {
+        App.ConnectionStatementRunnable patchAddReviewVoteTable = (_1, st) -> {
             st.execute("""
 CREATE TABLE IF NOT EXISTS review_vote (
 	id		   BIGSERIAL PRIMARY KEY,
@@ -122,13 +124,13 @@ CREATE TABLE IF NOT EXISTS review_vote (
         };
 
         // create lambda patcher
-        App.ConnectionStatementRunnable patchAddStatusFieldForReview = (_, st) -> {
+        App.ConnectionStatementRunnable patchAddStatusFieldForReview = (_1, st) -> {
             st.execute("ALTER TABLE review ADD COLUMN IF NOT EXISTS status SMALLINT NOT NULL DEFAULT 0");
             st.execute("CREATE INDEX IF NOT EXISTS idx_review_status ON review (status)");
         };
 
         // create lambda patcher
-        App.ConnectionStatementRunnable patchAddStatusIndexDescSortedForReview = (_, st) -> {
+        App.ConnectionStatementRunnable patchAddStatusIndexDescSortedForReview = (_1, st) -> {
             // drop old indexes if they exist, we will replace them with new ones that are sorted by id desc and filtered by status
             st.execute("DROP INDEX IF EXISTS idx_review_status_1_created;");
             st.execute("DROP INDEX IF EXISTS idx_review_status_equals_1;");

@@ -25,9 +25,7 @@ public class AppRequestSchema {
     }
 
     public static void set(String name){
-        if(name != null && !name.isEmpty())
-            SqlSchemaNameValidator.validateSchemaName(name);
-
+        SqlSchemaNameValidator.validateSchemaName(name);
         TENANT_SCHEMA.set(name);
     }
 

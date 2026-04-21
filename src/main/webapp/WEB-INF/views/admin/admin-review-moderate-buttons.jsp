@@ -1,30 +1,15 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
-<div class="box-virtual">
+<div class="box-virtual admin-review-moderate-buttons">
+    <a class="btn disabled current-status">
+        <span class="d-none show-if-approved">Status: Godkjent</span>
+        <span class="d-none show-if-rejected">Status: Avvist</span>
+        <span class="d-none show-if-pending">Status: Til vurdering</span>
+    </a>
 
-    <span class="status-buttons">
-        <button class="review-status-${toCssIdentifier.apply(review.statusToString(review.status))}" disabled>Status: ${review.statusToNorwegianString(review.status)}</button>
+    <span class="actions">
+        <a href="/R/api/review/${review.id}/mark-approved" class="btn mark-approved hide-if-approved">Godkjenn</a>
+        <a href="/R/api/review/${review.id}/mark-rejected" class="btn mark-rejected hide-if-rejected">Avvis</a>
+        <a href="/R/api/review/${review.id}/mark-pending" class="btn mark-pending hide-if-pending">Vurder på ny</a>
     </span>
-
-    <c:if test="${review.status != review.getApprovedStatusConst()}">
-    <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/review/mark-approved" method="post">
-        <input type="hidden" name="reviewId" value="${review.id}">
-        <button type="submit">Godkjenn</button>
-    </form>
-    </c:if>
-
-    <c:if test="${review.status != review.getRejectedStatusConst()}">
-    <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/review/mark-rejected" method="post">
-        <input type="hidden" name="reviewId" value="${review.id}">
-        <button type="submit">Avvis</button>
-    </form>
-    </c:if>
-
-    <c:if test="${review.status != review.getPendingStatusConst()}">
-    <form class="ajax d-inline-block reload-on-success" action="${pageContext.request.contextPath}/api/review/mark-pending" method="post">
-        <input type="hidden" name="reviewId" value="${review.id}">
-        <button type="submit">Vurder på ny</button>
-    </form>
-    </c:if>
-
 </div>

@@ -1,0 +1,40 @@
+.submit-review-form {
+
+    .form-group {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+
+    }
+    .form-group::after {
+        content: "";
+        display: block;
+        clear: both;
+    }
+
+    label {
+        display: inline-block;
+        /*margin-bottom: 5px;*/
+        width: 200px;
+        font-size: 1em;
+        font-weight: bold;
+    }
+
+    textarea, select, input {
+        box-sizing: border-box;
+        border-color: #666;
+        border-style: solid;
+        border-width: 1px;
+        padding: 8px;
+        width: auto;
+        flex: 1;
+
+    }
+
+    textarea {
+        box-sizing: border-box;
+        min-height: 100px;
+        flex: 1;
+    }
+}

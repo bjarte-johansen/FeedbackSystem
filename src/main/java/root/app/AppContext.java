@@ -10,7 +10,8 @@ import root.includes.logger.Logger;
 
 @Component("appContext")
 public class AppContext {
-    //private boolean isInitialized = false;
+    private boolean isInitialized = false;
+
 
     /**
      * Initializes the application context, including data sources and connection providers.
@@ -18,7 +19,6 @@ public class AppContext {
      */
 
     public AppContext() {
-        initialize();
     }
 
     public void init(){
@@ -27,16 +27,14 @@ public class AppContext {
 
     @PostConstruct
     public void initialize() {
-        Logger.log("Initializing Application Context");
-        /*
         if(isInitialized) return;
         isInitialized = true;
-        */
 
-        try(var _ = Logger.scope("initializing AppContext instance")) {
+        Logger.log("Initializing Application Context");
 
+        try(var __ = Logger.scope("initializing AppContext instance")) {
             // print app text banner
-            //AppTextBanner.print();
+            // AppTextBanner.print();
 
             try (var scope = Logger.scope("Initializing connection providers")) {
                 // initialize data sources and connection providers

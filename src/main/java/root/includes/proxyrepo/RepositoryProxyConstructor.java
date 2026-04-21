@@ -46,7 +46,7 @@ public class RepositoryProxyConstructor {
             for (String pkg : MODEL_PACKAGE_SEARCH_PATH) {
                 try {
                     return Class.forName(pkg + "." + name);
-                } catch (Exception _) {
+                } catch (Exception __) {
 
                 }
             }

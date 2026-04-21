@@ -12,21 +12,29 @@ package root;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+
 import java.sql.Connection;
 import java.util.*;
 
 
 @SpringBootApplication
-public class App {
+public class App extends SpringBootServletInitializer {
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(App.class);
         app.setDefaultProperties(Map.of(
-            "spring.profiles.active", "test"
+            "spring.profiles.active", "local"
         ));
 
         app.run(args);
     }
 
+    // used when deployed as WAR in Tomcat
+    @Override
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+        return builder.sources(App.class);
+    }
 
     @FunctionalInterface
     public interface ConnectionStatementRunnable{

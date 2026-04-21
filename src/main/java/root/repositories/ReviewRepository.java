@@ -21,7 +21,7 @@ public interface ReviewRepository extends ProxyRepository<Review, Long>, ReviewR
     List<Review> findByExternalId(String externalId);
     long countByExternalId(String externalId);
 
-    Optional<Review> findFirstByExternalIdNotEquals(String externalId);
+    //Optional<Review> findFirstByExternalIdNotEquals(String externalId);
 
     // find unique review ids
     List<String> findDistinctExternalIdByExternalId();

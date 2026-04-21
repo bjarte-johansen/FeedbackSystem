@@ -10,7 +10,7 @@ package root.services;
  * extraneous whitespace, and port numbers that could interfere with tenant resolution logic.
  */
 
-class HostNameNormalizer {
+public class HostNameNormalizer {
     // normalize host by converting to lowercase, trimming whitespace, and removing port numbers and trailing dots
     public static String normalize(String host) {
         if (host == null) return "";

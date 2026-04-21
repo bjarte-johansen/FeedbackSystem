@@ -31,7 +31,7 @@ public class ImmutableUnboundedDateRange<T extends LocalDate> {
         return end;
     }
     public boolean isOrdered(){
-        return start != null && end != null && !start.isAfter(end);
+        return (start != null) && (end != null) && !start.isAfter(end);
     }
     public boolean isValid(){
         return isOrdered();
@@ -42,10 +42,11 @@ public class ImmutableUnboundedDateRange<T extends LocalDate> {
     public boolean hasEnd() {
         return end != null;
     }
-    public boolean hasEither(){
+    public boolean hasAnyBound(){
         return hasStart() || hasEnd();
     }
     public boolean isBounded(){
         return hasStart() && hasEnd();
     }
+    //public boolean isUnbounded(){ return !isBounded(); }
 }

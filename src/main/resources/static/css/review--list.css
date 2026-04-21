@@ -1,0 +1,52 @@
+.review--list{
+    color:#333;
+
+    .review {
+        .votes{
+            &:before{
+                content: "Nyttigt? ";
+                font-size: 0.9em;
+                opacity: 0.7;
+                margin-right:8px;
+            }
+
+            .vote {
+                display: inline-block;
+                margin-right: 8px;
+                font-size: 0.9em;
+
+                svg path {
+                    fill: currentColor;
+                }
+
+                a {
+                    margin-right: 4px;
+                }
+            }
+
+            .down-votes{
+                display:none !important;
+            }
+        }
+
+
+        &>span, &>em{
+            display: block;
+        }
+        .score-outer{
+            display:block;
+            margin-bottom: 4px;
+            .score-text {
+                display:inline-block;
+                margin-right: 4px;
+            }
+            .score{display:inline-block;}
+        }
+
+        .name{font-weight: bold;font-size:0.9em;opacity: 0.8;}
+        .name:empty::before{ content: "Anonym"; }
+        .time{opacity: 0.7; font-size: 0.9em;}
+        .title{font-weight:bold;}
+        .comment{}
+    }
+}

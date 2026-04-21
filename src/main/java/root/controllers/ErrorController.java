@@ -22,11 +22,6 @@ public class ErrorController {
 
     @GetMapping("/403")
     public String accessDeniedError(@RequestParam(required = false) String statusMessage, Model model) {
-        /*
-        if (statusMessage != null && !model.containsAttribute("statusMessage")) {
-            model.addAttribute("statusMessage", statusMessage);
-        }
-         */
         model.addAttribute("statusMessage", statusMessage != null ? statusMessage : "Du har ikke tilgang til denne siden.");
 
         return "error";

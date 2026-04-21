@@ -5,7 +5,7 @@
         Aktive filtre:
         <span class="items mobile-full"></span>
 
-        <a class="btn text-deco-none btn-primary btn-remove-filters mobile-full" href="javascript:void(0);" onclick="Review.client.resetReviewListFilters();">Fjern filtre</a>
+        <a class="btn text-deco-none btn-primary btn-remove-filters mobile-full" href="javascript:void(0);" onclick="Review.client.clear();">Fjern filtre</a>
 
         <div class="templates d-none">
             <a class="btn text-deco-none btn-primary mobile-full button-template disabled" href="/reviews/build-html?externalId=/product/1">Score: 5</a>

@@ -7,6 +7,8 @@ import java.util.Map;
 /**
  * ScoreStatsHelper is a helper class that encapsulates the score statistics for reviews. It contains the average score,
  * total score count, score distribution, and score counts for each score value.
+ *
+ * This object is used as a DTO (data transer object) only
  */
 
 public class ReviewAggregateStatistics {
@@ -19,8 +21,19 @@ public class ReviewAggregateStatistics {
     private long totalCount;
     private long totalScore;
 
-    private Map<Integer, Double> scoreDistribution = new LinkedHashMap<Integer, Double>();
-    private Map<Integer, Integer> scoreCount = new LinkedHashMap<>();
+    private Map<Integer, Double> scoreDistribution;
+    private Map<Integer, Integer> scoreCount;
+
+
+    public ReviewAggregateStatistics(){
+        averageScore = 0.0;
+        totalCount = 0;
+        totalScore = 0;
+
+        scoreDistribution = new  LinkedHashMap<>();
+        scoreCount = new LinkedHashMap<>();
+    }
+
 
     /**
      * Returns the total score for all reviews. The total score is the sum of all individual review scores and can be

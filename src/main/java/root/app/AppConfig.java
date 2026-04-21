@@ -15,7 +15,7 @@ public class AppConfig {
      */
     //public static final DataSourceConnectionParams LOCALHOST = new DataSourceConnectionParams("jdbc:postgresql://localhost:5432/", "postgres", "postgres", "test");
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905", "h184905", "pass", "test");
-    public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
+    public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905", "h184905", "pass", "test");
     public static final DataSourceConnectionParams CURRENT_CONNECTION_PARAMS = TEST;
 
     // client settings
@@ -34,11 +34,16 @@ public class AppConfig {
     // prevent double vote expiration time in days, after which a reviewer can vote again on the same review
     public static int DEFAULT_REVIEW_VOTE_EXPIRATION_IN_DAYS = 30;
 
+    public static int DEFAULT_MIN_SCORE = 1;
+    public static int DEFAULT_MAX_SCORE = 5;
+
     // controller settings
     // TODO: must be set to false for production, otherwise request parameters and stack traces will be printed in logs,
     //  which can lead to security issues and performance degradation.
     public static boolean CONTROLLER_PRINT_REQUEST_PARAMS = true;
     public static boolean CONTROLLER_PRINT_STACK_TRACE_ON_ERROR = true;
+
+    public static String DEFAULT_INVALID_EXTERNAL_ID = "/no-valid-path-supplied";
 
     // max number of connections in the connection pool, should be set according to expected load and database limits
     public final static int DB_MAX_CONNECTION_POOL_SIZE = 30;
@@ -47,8 +52,8 @@ public class AppConfig {
     public static boolean TESTING_MODE = true;
 
     // default pagination settings for reviews listing page
-    public static int CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS = 5;
-    public static int ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS = 10;
+    public final static int CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS = 5;
+    public final static int ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS = Integer.MAX_VALUE;
 
     // TODO: must be set to false in production, otherwise all reviews will be automatically approved without moderation.
     public static boolean AUTO_APPROVE_NEW_REVIEWS = true;

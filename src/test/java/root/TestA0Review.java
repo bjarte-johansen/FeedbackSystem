@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.Instant;
+import java.util.List;
 
 
 @SpringBootTest
@@ -42,6 +43,16 @@ public class TestA0Review extends TestA0Base{
 //    public TestA0Review() {
 //
 //    }
+
+    @BeforeEach
+    public void cleanDatabase(){
+        List<Review> reviews = reviewRepo.findAll();
+        reviews.forEach((e) -> {
+            reviewRepo.delete(e);
+        });
+
+        databaseManager.cleanTenantSchema();
+    }
 
     protected void insertReview1() throws Exception {
         insertReview1(1);

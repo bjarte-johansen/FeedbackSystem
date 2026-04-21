@@ -13,7 +13,9 @@ import java.util.List;
 @Repository
 public class TenantRepositoryCustomImpl {
     private Tenant findByHostExact(String host){
-        String sql = "SELECT t.* FROM public.tenant_domain d JOIN public.tenant t ON t.id = d.tenant_id WHERE d.domain = ? LIMIT 1;";
+        String sql = "SELECT t.* FROM public.tenant_domain" +
+            " d JOIN public.tenant t ON t.id = d.tenant_id" +
+            " WHERE d.domain = ? LIMIT 1;";
 
         return FSQLQuery.create(sql)
             .bind(host)

@@ -8,6 +8,10 @@ import root.models.Review;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewVoteRepository;
 
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
+
 @Service
 public class ReviewService {
     @Autowired
@@ -141,8 +145,8 @@ public class ReviewService {
      * @param newStatus
      */
 
-    public void setReviewStatus(long reviewId, int newStatus) {
-        reviewRepo.updateReviewStatus(reviewId, newStatus);
+    public int setReviewStatus(long reviewId, int newStatus) {
+        return reviewRepo.updateReviewStatus(reviewId, newStatus);
     }
 
 
@@ -162,8 +166,10 @@ public class ReviewService {
      * @throws Exception
      */
 
-    public ReviewAggregateStatistics getScoreStatsHelper(String externalId, int defaultScore) {
-        var filteredScoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId);
+    public ReviewAggregateStatistics getReviewAggregateStatistics(String externalId, Set<Integer> statusFilterSet, int defaultScore) {
+        checkArgument((statusFilterSet != null) && !statusFilterSet.isEmpty(), "StatusFilter can not be empty or null");
+
+        var filteredScoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId, statusFilterSet);
 
         var scoreStats = new ReviewAggregateStatistics();
 
@@ -176,7 +182,7 @@ public class ReviewService {
             totalCount += hits;
         }
 
-        double averageScore = avg(totalScoreSum, totalCount, defaultScore);
+        double averageScore = avg(totalScoreSum, totalCount, 0);
         scoreStats.setAverageScore(averageScore);
         scoreStats.setTotalCount(totalCount);
         scoreStats.setTotalScore(totalScoreSum);

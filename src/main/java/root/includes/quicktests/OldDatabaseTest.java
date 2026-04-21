@@ -3,10 +3,10 @@ package root.includes.quicktests;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import root.includes.logger.Logger;
-import root.models.Reviewer;
 import root.services.PasswordService;
 import root.repositories.ReviewRepository;
-import root.repositories.ReviewerRepository;
+//import root.models.Reviewer;
+//import root.repositories.ReviewerRepository;
 import root.repositories.TenantRepository;
 
 import java.time.Instant;
@@ -17,8 +17,8 @@ import java.util.List;
 class OldDatabaseTest {
     public static boolean DEBUG = false;
 
-    @Autowired
-    ReviewerRepository reviewerRepo;
+//    @Autowired
+//    ReviewerRepository reviewerRepo;
 
     @Autowired
     TenantRepository tenantRepo;
@@ -39,7 +39,7 @@ class OldDatabaseTest {
             if (DEBUG) System.out.println("DB Test ran ok");
         }
     }
-
+/*
     private Reviewer insertReviewer(
         String authorEmail,
         String authorDisplayName,
@@ -58,6 +58,7 @@ class OldDatabaseTest {
 
         return reviewer;
     }
+ */
 
     private void fetchAndPrintReviews() throws Exception {
         var reviews = reviewRepo.findAll();

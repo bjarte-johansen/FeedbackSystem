@@ -23,9 +23,14 @@ public class ProxyFactoryBeans {
     }
 
     @Bean
-    public static ReviewerRepository createReviewerRepository() {
-        return RepositoryProxyConstructor.create(ReviewerRepository.class);
+    public static ReviewSettingsRepository createReviewSettingsRepository() {
+        return RepositoryProxyConstructor.create(ReviewSettingsRepository.class);
     }
+//
+//    @Bean
+//    public static ReviewerRepository createReviewerRepository() {
+//        return RepositoryProxyConstructor.create(ReviewerRepository.class);
+//    }
 
     @Bean
     public static TenantRepository createTenantRepository() {
