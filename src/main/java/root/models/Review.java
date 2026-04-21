@@ -1,7 +1,7 @@
 package root.models;
 
 import root.includes.NorwegianTimeAgoTextFormatter;
-import root.interfaces.IReview;
+import root.interfaces.HasId;
 
 import java.time.Instant;
 import java.util.Map;
@@ -20,7 +20,7 @@ import java.util.Set;
  * documented in the IReview interface.
  */
 
-public class Review implements IReview {
+public class Review implements HasId {
     /**
      * Vote type constants:
      * Important: remember to update validVoteTypes set if you add new vote types
@@ -74,112 +74,112 @@ public class Review implements IReview {
      */
     public Review() { }
 
-    @Override
+    /** get id */
     public Long getId() {
         return id != null ? id : 0L;
     }
 
-    @Override
+    /** set id */
     public void setId(long id) {
         this.id = id;
     }
 
-    @Override
+    /** get status */
     public int getStatus() {
         return this.status;
     }
 
-    @Override
+    /** set status */
     public void setStatus(int status) {
         this.status = status;
     }
 
-    @Override
+    /** get external id */
     public String getExternalId() {
         return externalId;
     }
 
-    @Override
+    /** set external id */
     public void setExternalId(String externalId) {
         this.externalId = externalId;
     }
 
-    @Override
+    /** get author id */
     public long getAuthorId() {
         return authorId;
     }
 
-    @Override
+    /** set author id */
     public void setAuthorId(long authorId) {
         this.authorId = authorId;
     }
 
-    @Override
+    /** get author name */
     public String getAuthorName() {
         return authorName;
     }
 
-    @Override
+    /** set author name */
     public void setAuthorName(String authorName) {
         this.authorName = authorName;
     }
 
-    @Override
+    /** get score */
     public int getScore() {
         return score;
     }
 
-    @Override
+    /** set score */
     public void setScore(int score) {
         this.score = score;
     }
 
-    @Override
+    /** get title */
     public String getTitle() {
         return this.title;
     }
 
-    @Override
+    /** set title */
     public void setTitle(String title) {
         this.title = title;
     }
 
-    @Override
+    /** get comment */
     public String getComment() {
         return comment;
     }
 
-    @Override
+    /** set comment */
     public void setComment(String comment) {
         this.comment = comment;
     }
 
-    @Override
+    /** get created at timestamp */
     public Instant getCreatedAt() {
         return createdAt;
     }
 
-    @Override
+    /** set created at timestamp */
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    @Override
+    /** get dislike count */
     public int getDislikeCount() {
         return dislikeCount;
     }
 
-    @Override
+    /** set dislike count */
     public void setDislikeCount(int dislikeCount) {
         this.dislikeCount = dislikeCount;
     }
 
-    @Override
+    /** get like count */
     public int getLikeCount() {
         return likeCount;
     }
 
-    @Override
+    /** set like count */
     public void setLikeCount(int likeCount) {
         this.likeCount = likeCount;
     }
@@ -190,6 +190,7 @@ public class Review implements IReview {
      *
      * @return A string representation of the Review object.
      */
+
     @Override
     public String toString() {
         return "Review(" +

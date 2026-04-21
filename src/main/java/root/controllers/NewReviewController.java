@@ -108,7 +108,7 @@ public class NewReviewController {
      * @return
      */
 
-    @PostMapping("/api/submit-review")
+    @PostMapping({"/api/submit-review", "/api/review/submit"})
     public ResponseEntity<Void> submitReview(
         @ModelAttribute NewReviewForm form
     ) {

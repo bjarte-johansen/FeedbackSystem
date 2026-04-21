@@ -16,6 +16,11 @@ public class HostNameNormalizer {
         if (host == null) return "";
         host = host.toLowerCase().trim();
 
+        int protocolIndex = host.indexOf("://");
+        if(protocolIndex != -1){
+            host = host.substring(protocolIndex + 3);
+        }
+
         int colonIndex = host.indexOf(":");
         if (colonIndex != -1) {
             host = host.substring(0, colonIndex);

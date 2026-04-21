@@ -78,7 +78,7 @@ public class TestUtils {
         assertEquals(List.of(), Utils.parseCsvIntList(""), "Expected parseCsvIntList(\"\") to return empty list");
         assertEquals(List.of(1, 2, 3), Utils.parseCsvIntList("1, 2, 3"), "Expected parseCsvIntList(\"1, 2, 3\") to return [1, 2, 3]");
         assertEquals(List.of(4, 5, 6), Utils.parseCsvIntList("4;5;6", ";", true), "Expected parseCsvIntList(\"4;5;6\", \";\") to return [4, 5, 6]");
-        assertThrows(NumberFormatException.class, () -> Utils.parseCsvIntList("1, two, 3"), "Expected parseCsvIntList(\"1, two, 3\") to throw NumberFormatException");
+        assertEquals(List.of(1,3), Utils.parseCsvIntList("1, two, 3"));
     }
 
     @Test

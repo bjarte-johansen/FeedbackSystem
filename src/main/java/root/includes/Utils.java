@@ -78,7 +78,6 @@ public class Utils {
                 if(!skipInvalidValues) {
                     throw new RuntimeException("Invalid csv integer list", e);
                 }
-                //Logger.log("parseCsvIntList error '" + p + "': " + e.getMessage());
             }
         }
         return result;
@@ -177,6 +176,7 @@ public class Utils {
 
     public static String toCssIdentifier(String s) {
         if (s == null || s.isEmpty()) return "_";
+
         s = s.replaceAll("[^a-zA-Z0-9_-]", "-");
         if (!Character.isLetter(s.charAt(0)) && s.charAt(0) != '_' && s.charAt(0) != '-') {
             s = "_" + s.substring(1);

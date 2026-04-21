@@ -56,7 +56,7 @@ public class Test_ClientController_Api_Review_Id extends TestA0Base {
 
         // assert output taken from actual testing, a real route
         assertEquals(
-            "{\"id\":17,\"externalId\":\"/product/1\",\"authorId\":1,\"authorName\":\"GoofyLlama178\",\"score\":3,\"title\":\"Dolor labore.\",\"comment\":\"Sit lorem elit dolor consectetur ex. ad amet. do. consectetur eiusmod nisi ut ad sit. exercitation et sed.\",\"createdAt\":\"2024-10-02T22:28:28.685206Z\",\"status\":3,\"likeCount\":0,\"dislikeCount\":0,\"shortDateString\":\"for 1 Ã¥r siden\"}",
+            "{\"id\":17,\"externalId\":\"/product/1\",\"authorId\":1,\"authorName\":\"GoofyLlama178\",\"score\":3,\"title\":\"Dolor labore.\",\"comment\":\"Sit lorem elit dolor consectetur ex. ad amet. do. consectetur eiusmod nisi ut ad sit. exercitation et sed.\",\"createdAt\":\"2024-10-02T22:28:28.685206Z\",\"status\":3,\"likeCount\":0,\"dislikeCount\":1,\"shortDateString\":\"for 1 Ã¥r siden\"}",
             body
         );
     }
@@ -96,6 +96,27 @@ public class Test_ClientController_Api_Review_Id extends TestA0Base {
     public void test_existing_review_like() throws Exception {
         // expect is2xxSuccessful for non-existing reviewId
         var result = mockMvc.perform(post("/api/review/17/like"))
+            .andExpect(status().is2xxSuccessful())
+            .andReturn();
+    }
+
+
+    /*
+    test dislike functionality
+     */
+
+    @Test
+    public void test_non_existing_review_dislike() throws Exception {
+        // expect isNotFound for non-existing reviewId
+        var result = mockMvc.perform(post("/api/review/-1/dislike"))
+            .andExpect(status().is2xxSuccessful())
+            .andReturn();
+    }
+
+    @Test
+    public void test_existing_review_dislike() throws Exception {
+        // expect is2xxSuccessful for non-existing reviewId
+        var result = mockMvc.perform(post("/api/review/17/dislike"))
             .andExpect(status().is2xxSuccessful())
             .andReturn();
     }

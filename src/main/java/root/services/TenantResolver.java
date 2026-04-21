@@ -65,9 +65,19 @@ public class TenantResolver {
         host = HostNameNormalizer.normalize(host);
         checkArgument(!host.isBlank(), "Host is missing or blank");
 
+        Tenant t = TenantResolverCache.get(host);
+        if(t != null) return t;
+
+        t = findByHost(host);
+        if(t != null) TenantResolverCache.put(host, t);
+
+        return t;
+
+        /*
         return TenantResolverCache
             .computeIfAbsent(host, h -> Optional.ofNullable(findByHost(h)))
             .orElse(null);
+        */
     }
 
 

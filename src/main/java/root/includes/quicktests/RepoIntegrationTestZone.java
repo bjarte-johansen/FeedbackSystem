@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import root.database.*;
 import root.includes.logger.Logger;
-import root.interfaces.IReview;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 
@@ -50,7 +49,7 @@ public class RepoIntegrationTestZone {
             Logger.warn("ACTUALLY USING findByExternalId");
             List<Review> reviews = reviewRepo.findByExternalId("/product/69");
 
-            for (IReview r : reviews) {
+            for (Review r : reviews) {
                 Logger.log("Fetched review: " + r.getComment() + " with score: " + r.getScore());
             }
         }

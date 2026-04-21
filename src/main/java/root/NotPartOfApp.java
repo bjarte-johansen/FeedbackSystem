@@ -20,7 +20,7 @@ import root.repositories.TenantRepository;
 @Configuration
 @ComponentScan("root")
 @Service
-public class Main {
+public class NotPartOfApp {
     public static boolean PRINT_META_DATA_AT_STARTUP = false;
 
     @Autowired
@@ -78,7 +78,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws Throwable{
-        var ctx = new AnnotationConfigApplicationContext(Main.class);
+        var ctx = new AnnotationConfigApplicationContext(NotPartOfApp.class);
 
         //var bean = ctx.getBean(FantasyRepository.class); // @Autowired works
 

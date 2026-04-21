@@ -11,6 +11,7 @@ import root.TestA0Base;
 import root.config.RequestContextFilter;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -39,5 +40,19 @@ public class Test_Create extends TestA0Base {
         mockMvc.perform(get(productionUrl))
             .andExpect(status().isOk())
             .andReturn();
+    }
+
+    @Test
+    void submitReviewForm() throws Exception {
+        mockMvc.perform(post("/api/review/submit")
+            .param("externalId", "/product/1")
+            .param("email", "test@test.com")
+            .param("password", "Abacus556!")
+            .param("displayName", "ClumsyOctopus405")
+            .param("score", "5")
+            .param("title", "Consectetur aliquip")
+            .param("comment", "Do lorem...")
+        )
+        .andExpect(status().isOk());
     }
 }

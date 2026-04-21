@@ -10,7 +10,6 @@ import java.time.Instant;
  */
 
 public class UserVerificationRecord implements HasId {
-
     private Long id;
     private Long userId = 0L;
     private String verificationCode;

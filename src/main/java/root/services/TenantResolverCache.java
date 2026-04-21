@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * TenantResolverCache is a simple in-memory cache for storing tenant resolution results based on host strings. It uses
+ * Simple in-memory cache for storing tenant resolution results based on host strings. It uses
  * a ConcurrentHashMap to allow for thread-safe access and modifications. The cache stores mappings from normalized host
  * strings to Optional<Tenant> objects, allowing it to represent both the presence and absence of a tenant for a given
  * host. The class provides methods to retrieve tenants from the cache, add new entries, compute values if absent, and

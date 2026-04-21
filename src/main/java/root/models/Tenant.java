@@ -1,8 +1,19 @@
 package root.models;
 
-import root.interfaces.ITenant;
+import root.interfaces.HasId;
 
-public class Tenant implements ITenant {
+
+/**
+ * Represents a tenant in the system. A tenant is an entity that can have multiple users and resources associated with it.
+ * The tenant is responsible for managing its own users and resources, and it can have its own settings and configurations.
+ * The ITenant interface defines the properties and methods that a tenant should have, such as name, domain, API key,
+ * email, password hash, and password salt. This interface can be implemented by any class that represents a tenant in the
+ * system, such as a Tenant class that is used to store tenant information in a database.
+ *
+ * TODO: Any code inserted here must have javadoc comments. This is a requirement for all code in this project.
+ */
+
+public class Tenant implements HasId {
     private Long id;
     private String name;
     private String domain;
@@ -11,11 +22,31 @@ public class Tenant implements ITenant {
     private String passwordHash;
     private String passwordSalt;
     private String schemaName;
+    private boolean enableListing;
+    private int scoreMin;
+    private int scoreMax;
+
+
+    /**
+     * Constructs a new Tenant object
+     */
 
     public Tenant() {
         this("", "", "" , "", "", "" , "");
     }
 
+
+    /**
+     * Construct a new Tenant object with given properties
+     *
+     * @param name
+     * @param domain
+     * @param apiKey
+     * @param email
+     * @param password_hash
+     * @param passwordSalt
+     * @param schemaName
+     */
     public Tenant(String name, String domain, String apiKey, String email, String password_hash, String passwordSalt, String schemaName) {
         //this.id = null;
         this.name = name;
@@ -27,78 +58,92 @@ public class Tenant implements ITenant {
         this.schemaName = schemaName;
     }
 
-    @Override
+    /** get id */
     public Long getId() {
         return id;
     }
 
-    @Override
+    /** set id */
     public void setId(long id) {
         this.id = id;
     }
 
-    @Override
+    /** get name */
     public String getName() {
         return name;
     }
 
-    @Override
+    /** set name */
     public void setName(String name) {
         this.name = name;
     }
 
-    @Override
+    /** get domain */
     public String getDomain() {
         return domain;
     }
 
-    @Override
+    /** set domain */
     public void setDomain(String domain) {
         this.domain = domain;
     }
 
-    @Override
+    /** get api key */
     public String getApiKey() {
         return apiKey;
     }
 
-    @Override
+    /** set api key */
     public void setApiKey(String api_key) {
         this.apiKey = api_key;
     }
 
-    @Override
+    /** set email */
     public String getEmail() {
         return email;
     }
 
-    @Override
+    /** set email */
     public void setEmail(String email) {
         this.email = email;
     }
 
-    @Override
+    /** get password hash */
     public String getPasswordHash() {
         return passwordHash;
     }
 
-    @Override
+    /** set password hash */
     public void setPasswordHash(String password_hash) {
         this.passwordHash = password_hash;
     }
 
-    @Override
+    /** get password salt */
     public String getPasswordSalt() {
         return passwordSalt;
     }
 
-    @Override
+    /** set password salt */
     public void setPasswordSalt(String password_salt) {
         this.passwordSalt = password_salt;
     }
 
+    /** get schema name */
     public String getSchemaName() { return schemaName; }
+
+    /** set schema name */
     public void setSchemaName(String schemaName) { this.schemaName = schemaName; }
+
+
+    public boolean getEnableListing() { return enableListing; }
+    public void setEnableListing(boolean enableListing) { this.enableListing = enableListing; }
+
+    public int getScoreMin() { return scoreMin; }
+    public void setScoreMin(int score_min) { this.scoreMin = score_min; }
+
+    public int getScoreMax() { return scoreMax; }
+    public void setScoreMax(int score_max) { this.scoreMax = score_max; }
+
 
     @Override
     public String toString()

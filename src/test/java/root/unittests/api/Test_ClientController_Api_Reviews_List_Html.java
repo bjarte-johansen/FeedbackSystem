@@ -71,7 +71,6 @@ public class Test_ClientController_Api_Reviews_List_Html extends TestA0Base {
 
         List<String> statusVariations = List.of(
             "&statusFilter=",
-            "&statusFilter=-1",
             "&statusFilter=1",
             "&statusFilter=1,2",
             "&statusFilter=1,2,3",

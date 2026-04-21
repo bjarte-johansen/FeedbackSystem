@@ -169,7 +169,7 @@ public class AdminReviewPageService {
         //modelMap.put("totalStatusFilterCount", totalStatusFilterCount);
 
         // add function to convert strings to CSS identifiers to model for use in JSP.
-        modelMap.put("toCssIdentifier", fnToCssIdentifier);
+        //modelMap.put("toCssIdentifier", fnToCssIdentifier);
 
         //Logger.log("statusFilter: " + statusFilter);
 
