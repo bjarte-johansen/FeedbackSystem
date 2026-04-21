@@ -17,6 +17,7 @@ import root.app.ReviewQueryOptions;
 import root.models.ReviewSettings;
 import root.repositories.ReviewRepository;
 import root.repositories.ReviewSettingsRepository;
+import root.services.CachedReviewSettingsService;
 import root.services.ReviewPageService;
 import root.services.ReviewService;
 import root.services.ReviewSettingsService;
@@ -47,7 +48,7 @@ public class ClientController {
     @Autowired
     ReviewSettingsRepository reviewSettingsRepo;
     @Autowired
-    private ReviewSettingsService reviewSettingsService;
+    private CachedReviewSettingsService cachedReviewSettingsService;
 
 
     /**
@@ -102,7 +103,7 @@ public class ClientController {
     ) {
         final Map<String, Object> vm = new HashMap<>();
 
-        final ReviewSettings reviewCfg = reviewSettingsService.findCachedReviewSettings(
+        final ReviewSettings reviewCfg = cachedReviewSettingsService.findOrCreateByExternalId(
             Objects.requireNonNullElse(externalId, "")
         );
 
@@ -164,7 +165,7 @@ public class ClientController {
     ) {
         final Map<String, Object> vm = new LinkedHashMap<>();
 
-        final ReviewSettings reviewCfg = reviewSettingsService.findCachedReviewSettings(
+        final ReviewSettings reviewCfg = cachedReviewSettingsService.findOrCreateByExternalId(
             Objects.requireNonNullElse(externalId, "")
         );
 

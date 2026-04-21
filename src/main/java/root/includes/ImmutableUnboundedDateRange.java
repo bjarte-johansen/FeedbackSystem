@@ -48,5 +48,4 @@ public class ImmutableUnboundedDateRange<T extends LocalDate> {
     public boolean isBounded(){
         return hasStart() && hasEnd();
     }
-    //public boolean isUnbounded(){ return !isBounded(); }
 }

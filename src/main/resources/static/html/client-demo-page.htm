@@ -34,6 +34,7 @@
 
             // check if listing is enabled
             const isListingEnabled = (elReviewList.getAttribute("data-enable-listing") !== "false");
+
             if(!isListingEnabled){
                 console.log("early rejection or review listing, cause: enable-listing = false")
                 return;

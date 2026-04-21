@@ -22,12 +22,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 @Controller
 public class NewReviewController {
-
     @Autowired
     ReviewRepository reviewRepo;
 
     @Autowired
     ReviewSettingsService reviewSettingsService;
+
 
     /**
      * get suggested form values for pre-filling, externalId is in result.externalId, rest is in result.formValues
@@ -52,6 +52,7 @@ public class NewReviewController {
      * @param externalId
      * @return
      */
+
     @ResponseBody
     @GetMapping("/api/default-dev-form-values")
     public Map<String, Object> defaultDevFormValues(
@@ -66,7 +67,6 @@ public class NewReviewController {
 
         return vm;
     }
-
 
 
     /**
@@ -100,7 +100,6 @@ public class NewReviewController {
     }
 
 
-
     /**
      * API endpoint to submit a new review. For simplicity, we are using request parameters for all input, but in a real
      * application you would likely want to use a request body with a DTO object for better structure and validation.
@@ -116,9 +115,10 @@ public class NewReviewController {
         List<String> errors = NewReviewForm.validate(form, new ArrayList<String>());
         checkArgument(errors.isEmpty(), errors.toString());
 
-        final ReviewSettings reviewCfg = reviewSettingsService.findCachedReviewSettings(
+        final ReviewSettings reviewCfg = reviewSettingsService.findOrCreateByExternalId(
             Objects.requireNonNullElse(form.externalId(), "")
-        );
+            )
+            .orElseThrow(() -> new RuntimeException("Unexpected empty review settings"));
 
         if(reviewCfg.getEnableSubmit()){
             // no reviewer, verification code in the future
@@ -139,11 +139,8 @@ public class NewReviewController {
             }
 
             reviewRepo.save(review);
-
         }
-
 
         return ResponseEntity.ok().build();
     }
-
 }
