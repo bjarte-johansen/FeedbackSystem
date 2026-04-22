@@ -3,6 +3,10 @@
  */
 
 class Constants{
+    /*
+    review status
+     */
+
     static REVIEW_STATUS_APPROVED = 1;
     static REVIEW_STATUS_PENDING = 2;
     static REVIEW_STATUS_REJECTED = 3;
@@ -22,9 +26,23 @@ class Constants{
     };
 
     static getReviewStatusFriendlyCssName(id_const){
-        return this.REVIEW_STATUS_CSS_NAMES[id_const] ?? "review-status-unknown review-status-any";
+        return Constants.REVIEW_STATUS_CSS_NAMES[id_const] ?? "review-status-unknown review-status-any";
     }
     static getReviewStatusFriendlyDisplayName(id_const){
-        return this.REVIEW_STATUS_FRIENDLY_NAMES[id_const] ?? "Ingen statusfilter";
+        return Constants.REVIEW_STATUS_FRIENDLY_NAMES[id_const] ?? "Ingen statusfilter";
     }
+
+
+    /*
+    order by options
+    */
+
+    static ORDER_BY_OPTIONS = {
+        "Nyest først": 2,
+        "Eldst først": 1,
+        "Nyttigst først": 24,
+        "Score (høyest først)": 9,
+        "Score (lavest først)": 8,
+        "Alle": ""
+    };
 }

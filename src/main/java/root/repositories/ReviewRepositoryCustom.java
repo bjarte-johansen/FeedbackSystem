@@ -19,12 +19,12 @@ public interface ReviewRepositoryCustom {
 
     int updateReviewStatus(long reviewId, int newStatus);
 
-    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> statusFilterSet);
+    LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId);
 
     List<String> findDistinctExternalIdByExternalId();
     List<Review> findByExternalIdWithPagination(String externalId, ReviewQueryOptions options);
     List<Review> findByAnyExternalIdWithPagination(ReviewQueryOptions options);
 
-    //int countByExternalId(String externalId, ReviewQueryOptions options);
+    int countByExternalId(String externalId, ReviewQueryOptions options);
     //int countByAnyExternalId(ReviewQueryOptions options);
 }

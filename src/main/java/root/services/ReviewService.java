@@ -166,10 +166,8 @@ public class ReviewService {
      * @throws Exception
      */
 
-    public ReviewAggregateStatistics getReviewAggregateStatistics(String externalId, Set<Integer> statusFilterSet, int defaultScore) {
-        checkArgument((statusFilterSet != null) && !statusFilterSet.isEmpty(), "StatusFilter can not be empty or null");
-
-        var filteredScoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId, statusFilterSet);
+    public ReviewAggregateStatistics getReviewAggregateStatistics(String externalId, int defaultScore) {
+        var filteredScoreMap = reviewRepo.findReviewScoreStatsByExternalId(externalId);
 
         var scoreStats = new ReviewAggregateStatistics();
 

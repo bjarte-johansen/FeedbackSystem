@@ -144,6 +144,8 @@ let Review = {
         const rc = Review.getReviewListing(true);
         rc.setStatusFilter(empty ? [] : value);
 
+        //Review.updateAdminStatusFilterButtons(rc.getStatusFilter());
+
         Review.reloadReviewList({resetCursor: true, reloadStats: true});
     },
 
@@ -228,9 +230,16 @@ let Review = {
 
         const rvl = Review.getReviewListing(true);
 
-        if (options?.resetCursor || (rvl.getCursor().isOutOfBounds(rvl.getAccumulatedReviewCountByScoreFilter()))) {
+        if (options?.resetCursor/* || (rvl.getCursor().isOutOfBounds(rvl.getUnpaginatedFilteredReviewCount()))*/) {
             rvl.setCursor(rvl.getCursor().withReset());
         }
+
+        console.log("clamping cursor to max offset", rvl.getCursor(), rvl.getAccumulatedReviewCountByScoreFilter());
+        const cursor = rvl.getCursor().withClamp(rvl.getAccumulatedReviewCountByScoreFilter());
+        rvl.setCursor(cursor);
+        console.log("new cursor", rvl.getCursor());
+
+
 
         const reloadStats = options?.reloadStats ?? false;
         if(reloadStats) rvl.setIncludeStatsOnce(reloadStats);
@@ -303,10 +312,9 @@ let Review = {
         const rvl = Review.getReviewListing(true);
 
         // advance the cursor by the given offset, ensuring it does not exceed the maximum offset
+        // note that it will get clamped by reloading review listing, so we dont do it here
         const prevCursor = rvl.getCursor();
-        const newCursor = prevCursor
-            .withAdvance(prevCursor.limit * pageDelta)
-            .withClamp(rvl.getAccumulatedReviewCountByScoreFilter());
+        const newCursor = prevCursor.withAdvance(prevCursor.limit * pageDelta);
         rvl.setCursor(newCursor);
 
         Review.reloadReviewList();
@@ -323,7 +331,6 @@ let Review = {
         Review.nextReviewListPage(-1);
     },
 
-
     initRoutes(){
         const router = new Router();
 
@@ -332,15 +339,100 @@ let Review = {
 
         router.start();
     },
+/*
+    updateAdminStatusFilterButtons(statusFilterArry){
+        $statusFilterButtons = $(".admin-filter-by-status-buttons a");
+        if(statusFilterArry?.length > 0){
+            const currentStatusNames = statusFilterArry?.map(Constants.getReviewStatusFriendlyCssName);
+            console.log("status filters", currentStatusNames);
+
+            $statusFilterButtons.each((i, el) => {
+                const $el = $(el);
+                let hit = false;
+                for(const statusName of currentStatusNames) {
+                    if ($el.hasClass("filter-" + statusName)) {
+                        $el.addClass("disabled");
+                        $el.attr("old-href", $el.attr("href"));
+                        $el.attr("href", "javascript:void(0);");
+                        hit = true;
+                    }
+                }
+                if(!hit){
+                    if($el.attr("old-href") !== ""){
+                        $el.attr("href", $el.attr("old-href"));
+                    }
+                }
+            });
+        }
+    },
+ */
+
+    initClient(state) {
+        try {
+            console.log("initClient() called");
+
+            if ((state?.isAdministrator !== true)) {
+                //$orderBySelect.
+                console.log("TODO: hide status filter");
+
+                const $statusFilterSelect = $(".review--list select[name='statusFilterEnum']").closest(".filter-component");
+                $statusFilterSelect.hide();
+            }
+
+            /*
+            check if listing is enabled for this page, if not, we will not initialize the review listing
+             */
+
+            if (!(state?.reviewConfig?.enableListing ?? true)) {
+                // listing disabled for this page
+                console.log("Warning: review listing has been disabled for this page");
+                console.log("client-review.js loaded");
+                return;
+            }
+
+            /*
+            create review listing object and load settings from json + render + render stats
+             */
+
+            const $orderBySelect = $(".review--list select[name='orderByEnum']");
+            for (const key in Constants.ORDER_BY_OPTIONS) {
+                const value = Constants.ORDER_BY_OPTIONS[key];
+                $orderBySelect.append(`<option value="${value}">${key}</option>`);
+            }
+
+            // initialize review listing
+            const rl = new ReviewListing();
+            rl.loadAllFromJson(state);
+
+            // save snapshot of filters we loaded from json
+            rl.saveFilterSnapshot();
+            console.log("filter snapshop", rl.getFilterSnapshot());
+
+            Review.setReviewListing(rl);
+
+            // initialize stats renderer, uses review listing state
+            const statsRenderer = new StatisticsRenderer();
+            statsRenderer.updateFromJson(rl.getStatistics());
+
+            $(".container--reviews").removeClass("d-none");
+        }finally{
+            console.log("initClient() OK");
+        }
+    },
+
+    initAdmin(state){
+        console.log("initAdmin() called");
+
+        //this.updateAdminStatusFilterButtons(state?.filters?.statusFilter);
+        // code here
+
+        console.log("initAdmin() OK");
+    },
 
     _isInitialised: 0,
 
     initReviewJs() {
         if (++this._isInitialised > 1) return;
-
-        // initialize routes
-        Review.initRoutes();
-
 
         /*
         parse JSON from review--listing / html element (has json set in an attribute)
@@ -362,70 +454,41 @@ let Review = {
         // get json from document
         const state = getJsonFromDocument();
 
-
-        /*
-        check if listing is enabled for this page, if not, we will not initialize the review listing and just show a
-        warning in the console. This allows us to reuse the same client-side code for pages that do not have review
-        listings without breaking functionality.
-         */
+        console.log(state?.isAdministrator, "isAdministrator");
 
         //console.log("parsed json", JSON.stringify(state, null, 2));
-
         //state.reviewConfig.enableListing = false;
 
-        if (!(state?.reviewConfig?.enableListing ?? true)) {
-            // listing disabled for this page
-            console.log("Warning: review listing has been disabled for this page");
-            console.log("client-review.js loaded");
-            return;
-        } else {
-            /*
-            create review listing object and load settings from json + render + render stats
-             */
+        Review.initClient(state);
+        Review.initAdmin(state);
 
-            // initialize review listing
-            const rl = new ReviewListing();
-            rl.loadAllFromJson(state);
-
-            // save snapshot of filters we loaded from json
-            rl.saveFilterSnapshot();
-
-            Review.setReviewListing(rl);
-
-            // initialize stats renderer, uses review listing state
-            const statsRenderer = new StatisticsRenderer();
-            statsRenderer.updateFromJson(rl.getStatistics());
-
-            $(".container--reviews").removeClass("d-none");
-        }
-
-
+        // initialize routes
+        Review.initRoutes();
 
         /***********************************************************/
 
         document.addEventListener("submit", async function (e) {
             const form = e.target.closest("form.form--submit-review-form");
-            if (form.length > 0) {
-                Spinner.with(async () => {
-                    e.preventDefault();
+            if(!form.length) throw new Error("Could not find new review form element from event target");
 
-                    const data = $(form).serialize();
+            Spinner.with(async () => {
+                e.preventDefault();
 
-                    await fetch(form.action, {
-                        method: form.method,
-                        headers: {"Content-Type": "application/x-www-form-urlencoded"},
-                        body: data
-                    }).then(() => {
-                        alert("Din omtale har blitt lagt til");
+                await fetch(form.action, {
+                    method: form.method,
+                    headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                    body: $(form).serialize()
+                }).then(() => {
+                    form.remove();
 
-                        Review.reloadReviewList({resetCursor: true, reloadStats: true});
-                        form.remove();
-                    });
+                    alert("Din omtale har blitt lagt til");
+
+                    Review.reloadReviewList({resetCursor: true, reloadStats: true});
                 });
-            }
+            });
         });
 
-        console.log("client-review.js loaded");
+        console.log("client-review.js OK");
     }
 };
 
@@ -443,10 +506,35 @@ if(document.readyState === "complete"){
 
 Review.client.showNewReviewForm = function() {
     const rvl = Review.getReviewListing(true);
-    if(!rvl.getReviewListingConfig().enableSubmit){
+    if (!rvl.getReviewListingConfig().enableSubmit) {
         alert("Lagring av omtale er midlertidig slått av for denne siden");
         return;
     }
+
+
+
+    // open
+    function openDialog() {
+        $("#dlg").addClass("show").text("Hello world");
+        $("body").css("overflow", "hidden"); // prevent background scroll
+        console.log("dialog opened");
+    }
+
+    // close
+    function closeDialog() {
+        $("#dlg").removeClass("show");
+        $("body").css("overflow", "");
+    }
+
+    //openDialog();
+
+    // events
+    $(document).on("click", ".dlg-close", closeDialog);
+
+    // optional: close on background click
+    $(document).on("click", "#dlg", function(e){
+        if (e.target === this) closeDialog();
+    });
 
 
     const searchParams = new URLSearchParams();
@@ -459,6 +547,18 @@ Review.client.showNewReviewForm = function() {
         return $.ajax({
             url: "/api/new-review-form/create?" + searchParams.toString(), method: "GET", success: function (html) {
                 const $form = $(html);
+
+                const $html = $(`
+    <div id="dlg" className="dlg">
+        <div className="dlg-content">
+            <button className="dlg-close">×</button>
+            <div class="content"></div>
+        </div>
+    </div>`);
+                $html.find(".content").append($form);
+                openDialog();
+
+                $('body').append(html);
 
                 const $formContainer = $('.submit-review-form-container').empty();
                 $formContainer.append($form);

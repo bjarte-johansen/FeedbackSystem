@@ -27,31 +27,34 @@
 
             <div class="form-group">
                 <label for="displayName">Navn:</label>
-                <input type="text" id="displayName" name="displayName" class="form-control display-name" placeholder="Ditt navn" value="${form.displayNameSuggestion}">
+                <input type="text" id="displayName" name="displayName" class="form-control display-name" placeholder="Ditt navn" value="${form != null ? form.displayNameSuggestion : ''}">
             </div>
 
             <div class="form-group">
                 <label for="score">Score:</label>
                 <select id="score" name="score" class="form-control score-filter">
-                    <option value="1" ${form.scoreSuggestion == 1 ? 'selected' : ''}>1</option>
-                    <option value="2" ${form.scoreSuggestion == 2 ? 'selected' : ''}>2</option>
-                    <option value="3" ${form.scoreSuggestion == 3 ? 'selected' : ''}>3</option>
-                    <option value="4" ${form.scoreSuggestion == 4 ? 'selected' : ''}>4</option>
-                    <option value="5" ${form.scoreSuggestion == 4 ? 'selected' : ''}>5</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5" selected>5</option>
+                    <c:if test="${form != null && form.scoreSuggestion != null}">
+                        <option value="${form.scoreSuggestion}" selected>${form.scoreSuggestion}</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="title">Tittel:</label>
-                <input type="text" id="title" name="title" class="form-control title" placeholder="Tittel på din review" value="${form.titleSuggestion}">
+                <input type="text" id="title" name="title" class="form-control title" placeholder="Tittel på din review" value="${form != null ? form.titleSuggestion : ''}">
             </div>
 
-            <div class="form-group">
+            <div class="form-group mb-4">
                 <label for="comment">Kommentar:</label>
-                <textarea id="comment" name="comment" class="form-control comment" placeholder="Skriv din kommentar her...">${form.commentSuggestion}</textarea>
+                <textarea id="comment" name="comment" class="form-control comment" placeholder="Skriv din kommentar her...">${form != null ? form.commentSuggestion : ''}</textarea>
             </div>
 
-            <div class="form-group">
+            <div class="form-group w-100">
+                <button type="button" class="btn btn-cancel" onclick="$(this).closest('.submit-review-form').remove();">Avbryt</button>
                 <button type="submit" class="btn btn-primary">Lagre</button>
             </div>
         </fieldset>

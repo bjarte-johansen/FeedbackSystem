@@ -10,15 +10,18 @@
 
 package root;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import root.includes.EmailVerificationCodeSender;
 
 import java.sql.Connection;
 import java.util.*;
 
-//password for email: 'oxgs zaqa rpqr hib'
+
 
 @SpringBootApplication
 public class App extends SpringBootServletInitializer {
@@ -27,6 +30,15 @@ public class App extends SpringBootServletInitializer {
         app.setDefaultProperties(Map.of(
             "spring.profiles.active", "local"
         ));
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                EmailVerificationCodeSender.send("bjartej@hotmail.com", "minserver.no", "123456");
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        });
 
         app.run(args);
     }

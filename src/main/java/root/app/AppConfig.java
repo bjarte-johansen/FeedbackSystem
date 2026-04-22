@@ -9,10 +9,6 @@ import java.util.regex.Pattern;
 
 @Component
 public class AppConfig {
-    /*
-    public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=test", "h184905", "pass", "test");
-    public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905?currentSchema=public", "h184905", "pass", "public");
-     */
     //public static final DataSourceConnectionParams LOCALHOST = new DataSourceConnectionParams("jdbc:postgresql://localhost:5432/", "postgres", "postgres", "test");
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905", "h184905", "pass", "test");
     public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905", "h184905", "pass", "test");
@@ -27,6 +23,26 @@ public class AppConfig {
 
     // email stuff
     public static String VALID_EMAIL_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$";
+
+    // verification code stuff
+    // note that VERIFICATION_CODE_EMAIL_FORMAT includes TWO %s, that are inserted during sending; the first
+    // is the code, the second is host so user knows its from the right domain
+    public static int VERIFICATION_CODE_EXPIRATION_SECONDS = 300;
+    public static int MAX_VERIFICATION_CODE_ATTEMPTS = 5;
+    public static String VERIFICATION_CODE_SECRET = "everyone-likes-a-spicy-meatball";
+    public static String VERIFICATION_CODE_EMAIL_FORMAT = """
+        <html>
+          <body style="font-family: Arial, sans-serif;">
+            <div style="font-size:24px;font-weight:bold;
+                        background:#f2f2f2;padding:10px;
+                        display:inline-block;border-radius:6px;margin-bottom:16px;">%s</div>
+            <p>Bruk denne koden for å bekrefte omtalen din på %s</p>
+            <p style="margin-top:20px;color:#555;">
+                Vennlig hilsen FeedbackSystem DAT109
+            </p>
+          </body>
+        </html>
+        """;
 
     // schema validator, allows only letters, numbers and underscores, must start with a letter or underscore
     public static final Pattern VALID_SCHEMA_NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
@@ -49,7 +65,7 @@ public class AppConfig {
     public final static int DB_MAX_CONNECTION_POOL_SIZE = 30;
 
     // TODO: must be set to false for production
-    public static boolean TESTING_MODE = true;
+    //public static boolean TESTING_MODE = true;
 
     // default pagination settings for reviews listing page
     public final static int CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS = 5;

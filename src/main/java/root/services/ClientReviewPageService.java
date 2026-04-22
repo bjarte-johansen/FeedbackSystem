@@ -14,7 +14,7 @@ import java.util.*;
 
 
 @Service
-public class ReviewPageService {
+public class ClientReviewPageService {
     // map of ordering options for the review list page, with display name as key and corresponding
     // orderByEnum value as value
     public static LinkedHashMap<String, Object> orderByOptionsMap() {
@@ -33,7 +33,7 @@ public class ReviewPageService {
     private final ReviewRepository reviewRepo;
     private final ReviewService reviewService;
 
-    public ReviewPageService(ReviewRepository reviewRepo, ReviewService reviewService, AppContext appContext) {
+    public ClientReviewPageService(ReviewRepository reviewRepo, ReviewService reviewService, AppContext appContext) {
         this.reviewRepo = reviewRepo;
         this.reviewService = reviewService;
         this.appContext = appContext;
@@ -68,16 +68,13 @@ public class ReviewPageService {
         List<Review> reviews = reviewRepo.findByExternalIdWithPagination(externalId, options);
         vm.put("reviews", reviews);
 
+        int totalReviewCount = reviewRepo.countByExternalId(externalId, options);
+        vm.put("unpaginatedFilteredReviewCount", totalReviewCount);
+
         // add stats to model for display in JSP if includeStats is true.
         if (includeStats) {
-            // make local copy in this listing to make sure we got only approved in our set
-            Set<Integer> copyOfStatusFilterSet = new HashSet<>(options.getStatusFilterSet());
-            if(copyOfStatusFilterSet.isEmpty()){
-                copyOfStatusFilterSet.add(Review.REVIEW_STATUS_APPROVED);
-            }
-
             // get score stats for the given externalId for approved reviews. This will be used for display of average score,
-            ReviewAggregateStatistics reviewStats = reviewService.getReviewAggregateStatistics(externalId, copyOfStatusFilterSet, AppConfig.DEFAULT_MAX_SCORE);
+            ReviewAggregateStatistics reviewStats = reviewService.getReviewAggregateStatistics(externalId, AppConfig.DEFAULT_MAX_SCORE);
 
             // get score stats for the given externalId and add to model
             vm.put("statistics", reviewStats);

@@ -15,6 +15,7 @@
 
     <!-- REQUIRED PART OF SCRIPTS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <!--<script src="/js/DynamicReviewLoader.js"></script>-->
 
     <script>
         /**
@@ -89,17 +90,22 @@
             tmp.style.display = "";
         }
 
-        // usage, our code
-        document.addEventListener("DOMContentLoaded", async () => {
-            const article = encodeURIComponent("/product/1");
-            const url = "/api/reviews/list/html?realApi=true&externalId=" + article;
+        const loadReviewListing = async function(target, search_params){
+            const url = "/api/reviews/list/html?" + search_params.toString();
 
             const res = await fetch(url);
             const html = await res.text();
 
             await injectHtmlLikePage(document.getElementById("omtaler"), html);
+        }
 
-            console.log("all scripts + css loaded");
+        // usage, our code
+        document.addEventListener("DOMContentLoaded", () => {
+            const searchParams = new URLSearchParams();
+            searchParams.set("realApi", true);
+            searchParams.set("externalId",  "/product/1");
+
+            loadReviewListing(document.getElementById("omtaler"), searchParams);
         });
     </script>
 </head>

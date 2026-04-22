@@ -162,6 +162,30 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryCustom {
     }
 
 
+    private WhereExpressionList createCommonExpressionList(WhereExpressionList whereExpressionList, ReviewQueryOptions options) {
+        whereExpressionList = whereExpressionList != null ? whereExpressionList : new WhereExpressionList();
+
+        // apply filters from options
+        applyReviewQueryOptionFilters(whereExpressionList, options);
+
+        // make where expr-list sql
+        String whereStr = whereExpressionList.toSql(true);
+
+        // make limit/offset sql
+        String limitOffsetSql = buildPageCursorSql(options.getPageCursor());
+        if (limitOffsetSql != null && !limitOffsetSql.isEmpty()) {
+            limitOffsetSql = " " + limitOffsetSql;
+        }
+
+        // make order by sql
+        String orderBySql = options.buildOrderBySql();
+        if (orderBySql != null && !orderBySql.isEmpty()) {
+            orderBySql = " ORDER BY " + orderBySql;
+        }
+
+        return whereExpressionList;
+    }
+
     /**
      * Get review score statistics as a map of (score -> count) for a given externalId. The method takes an optional set
      * of status filters to include in the statistics. The results are ordered by score in ascending order. If
@@ -169,20 +193,21 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryCustom {
      */
 
     @Override
-    public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId, Set<Integer> statusFilterSet) {
-        WhereExpressionList whereExprList = new WhereExpressionList(20);
+    public LinkedHashMap<Integer, Integer> findReviewScoreStatsByExternalId(String externalId) {
+        WhereExpressionList whereExpressionList = new WhereExpressionList(20);
 
-        whereExprList.where("(external_id = ?)", externalId);
-
-        if (statusFilterSet != null && !statusFilterSet.isEmpty()) {
-            whereExprList.whereIn("status", statusFilterSet);
+        // add condition for external id
+        if (externalId != null && !externalId.isEmpty()) {
+            whereExpressionList.where("(external_id = ?)", externalId);
         }
 
+        whereExpressionList.where("(status = ?)", Review.REVIEW_STATUS_APPROVED);
+
         // build sql
-        String sql = "SELECT score, COUNT(*) AS count FROM review" + whereExprList.toSql(true) + " GROUP BY score";
+        String sql = "SELECT score, COUNT(*) AS count FROM review" + whereExpressionList.toSql(true) + " GROUP BY score";
 
         return FSQLQuery.create(sql)
-            .bind(whereExprList.getArguments())
+            .bind(whereExpressionList.getArguments())
             .fetchCallback((ResultSet rs) -> {
                 LinkedHashMap<Integer, Integer> res = new LinkedHashMap<>();
                 while (rs.next()) {
@@ -272,8 +297,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryCustom {
     private List<Review> findByOptionalExternalIdWithPagination(String externalId, ReviewQueryOptions options) {
         String columnStr = "id, external_id, author_name, score, title, comment, like_count, dislike_count, status, created_at";
 
-        // make condition list
-        WhereExpressionList whereExpressionList = new WhereExpressionList(20);
+        var whereExpressionList = new WhereExpressionList(20);
 
         // add condition for external id
         if (externalId != null && !externalId.isEmpty()) {
@@ -307,7 +331,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryCustom {
             .fetchAll(Review.class);
     }
 
-/*
+
     @Override
     public int countByExternalId(String externalId, ReviewQueryOptions options) {
         WhereExpressionList whereExpressionList = new WhereExpressionList(20);
@@ -326,6 +350,7 @@ public class ReviewRepositoryCustomImpl implements ReviewRepositoryCustom {
             .selectCount();
     }
 
+/*
     @Override
     public int countByAnyExternalId(ReviewQueryOptions options) {
         WhereExpressionList whereExpressionList = new WhereExpressionList(20);

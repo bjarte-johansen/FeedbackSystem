@@ -35,6 +35,8 @@ class ReviewListing {
     statistics = {};
     constants = {};
 
+    #filteredReviewCount = 0;
+
     #reviewListingConfig = {};
 
     #includeStatsOnce = false;
@@ -47,6 +49,8 @@ class ReviewListing {
     constructor() {
     }
 
+    //
+
     setReviewListingConfig(config){
         Assert.checkArgument(config !== null, "Missing config object");
 
@@ -57,6 +61,8 @@ class ReviewListing {
         return this.#reviewListingConfig;
     }
 
+    //
+
     loadFilterSnapshot(){
         this.filters = structuredClone(this.#filterSnapshot);
         this.orderByEnum = structuredClone(this.#orderByEnumSnapshot);
@@ -65,6 +71,22 @@ class ReviewListing {
         this.#filterSnapshot = structuredClone(this.filters);
         this.#orderByEnumSnapshot = structuredClone(this.orderByEnum);
     }
+    getFilterSnapshot(){
+        return this.#filterSnapshot;
+    }
+
+    //
+
+    getUnpaginatedFilteredReviewCount(){
+        return this.#filteredReviewCount;
+    }
+    setUnpaginatedFilteredReviewCount(val){
+        Assert.checkType(val, "integer", "Filtered review count must be an integer");
+
+        this.#filteredReviewCount = val;
+    }
+
+    //
 
     getNumberOfDaysFilter(){
         return this.filters.numberOfDaysFilter;
@@ -226,6 +248,8 @@ class ReviewListing {
             map.set("includeStats", "true");
         }
 
+         //map.set("includeStats", "true");
+
         console.log(map);
 
         return new URLSearchParams(Object.fromEntries(map));
@@ -256,17 +280,17 @@ class ReviewListing {
 
         this.setExternalId(o.externalId ?? "");
         this.setOrderByEnum(o?.orderByEnum ?? "");
+        this.setUnpaginatedFilteredReviewCount(o?.unpaginatedFilteredReviewCount ?? 0);
 
-        if(!o?.filters) {
-            console.log("Error loading options from json, no 'filters' key present");
-            return;
-        }
+        if(!o?.filters) throw new Error("Filters not found");
+
+        //console.log("loaded status filter: ", o?.filters?.statusFilter);
 
         this.setScoreFilter(o?.filters?.scoreFilter);
-        this.setStatusFilter(o?.filter?.statusFilter);
-        this.setStartDateFilter(o.filters.startDateFilter);
-        this.setEndDateFilter(o.filters.endDateFilter);
-        this.setNumberOfDaysFilter(o?.filters.numberOfDaysFilter);
+        this.setStatusFilter(o?.filters?.statusFilter);
+        this.setStartDateFilter(o.filters?.startDateFilter);
+        this.setEndDateFilter(o.filters?.endDateFilter);
+        this.setNumberOfDaysFilter(o?.filters?.numberOfDaysFilter);
     }
 
     loadAllFromJson(o) {

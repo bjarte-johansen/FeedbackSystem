@@ -2,17 +2,11 @@ package root.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import root.app.AppConfig;
 import root.app.ReviewQueryOptions;
-import root.includes.PageCursor;
-import root.includes.PageCursorEncoder;
-import root.controllers.Utils;
-import root.includes.ImmutableUnboundedDateRange;
-import root.includes.logger.Logger;
+import root.A_TODO.Utils;
 import root.models.Review;
 import root.repositories.ReviewRepository;
 
-import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
 
@@ -109,9 +103,6 @@ public class AdminReviewPageService {
     public Map<String, Object> buildReviewListModelData(ReviewQueryOptions options) throws Exception {
         Map<String, Object> modelMap = new HashMap<>();
 
-        // add data to model for select externalId pill in admin dashboard JSP. This will be used to filter reviews by externalId.
-        Utils.addSelectExternalIdPillData(modelMap, reviewRepo);
-
         // add dump to model for display in JSP. This is just for demonstration purposes to show how to fetch all
         // reviews for a given externalId with pagination and sorting, and should be removed for production code.
         List<Review> reviews = reviewRepo.findByAnyExternalIdWithPagination(options);
@@ -119,7 +110,6 @@ public class AdminReviewPageService {
 
         // add ordering options to model
         modelMap.put("reviewStatusFilterOptions", reviewStatusFilterOptions);
-        //modelMap.put("currentReviewStatusFilter", statusFilter);
 
         return modelMap;
     }

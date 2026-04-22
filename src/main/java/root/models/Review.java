@@ -75,114 +75,70 @@ public class Review implements HasId {
     public Review() { }
 
     /** get id */
-    public Long getId() {
-        return id != null ? id : 0L;
-    }
+    public Long getId() {return id != null ? id : 0L;}
 
     /** set id */
-    public void setId(long id) {
-        this.id = id;
-    }
+    public void setId(long id) {this.id = id;}
 
     /** get status */
-    public int getStatus() {
-        return this.status;
-    }
+    public int getStatus() {return this.status;}
 
     /** set status */
-    public void setStatus(int status) {
-        this.status = status;
-    }
+    public void setStatus(int status) {this.status = status;}
 
     /** get external id */
-    public String getExternalId() {
-        return externalId;
-    }
+    public String getExternalId() {return externalId;}
 
     /** set external id */
-    public void setExternalId(String externalId) {
-        this.externalId = externalId;
-    }
+    public void setExternalId(String externalId) {this.externalId = externalId;}
 
     /** get author id */
-    public long getAuthorId() {
-        return authorId;
-    }
+    public long getAuthorId() {return authorId;}
 
     /** set author id */
-    public void setAuthorId(long authorId) {
-        this.authorId = authorId;
-    }
+    public void setAuthorId(long authorId) {this.authorId = authorId;}
 
     /** get author name */
-    public String getAuthorName() {
-        return authorName;
-    }
+    public String getAuthorName() {return authorName;}
 
     /** set author name */
-    public void setAuthorName(String authorName) {
-        this.authorName = authorName;
-    }
+    public void setAuthorName(String authorName) {this.authorName = authorName;}
 
     /** get score */
-    public int getScore() {
-        return score;
-    }
+    public int getScore() {return score;}
 
     /** set score */
-    public void setScore(int score) {
-        this.score = score;
-    }
+    public void setScore(int score) {this.score = score;}
 
     /** get title */
-    public String getTitle() {
-        return this.title;
-    }
+    public String getTitle() {return this.title;}
 
     /** set title */
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    public void setTitle(String title) {this.title = title;}
 
     /** get comment */
-    public String getComment() {
-        return comment;
-    }
+    public String getComment() {return comment;}
 
     /** set comment */
-    public void setComment(String comment) {
-        this.comment = comment;
-    }
+    public void setComment(String comment) {this.comment = comment;}
 
     /** get created at timestamp */
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+    public Instant getCreatedAt() {return createdAt;}
 
     /** set created at timestamp */
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public void setCreatedAt(Instant createdAt) {this.createdAt = createdAt;}
 
     /** get dislike count */
-    public int getDislikeCount() {
-        return dislikeCount;
-    }
+    public int getDislikeCount() {return dislikeCount;}
 
     /** set dislike count */
-    public void setDislikeCount(int dislikeCount) {
-        this.dislikeCount = dislikeCount;
-    }
+    public void setDislikeCount(int dislikeCount) {this.dislikeCount = dislikeCount;}
 
     /** get like count */
-    public int getLikeCount() {
-        return likeCount;
-    }
+    public int getLikeCount() {return likeCount;}
 
     /** set like count */
-    public void setLikeCount(int likeCount) {
-        this.likeCount = likeCount;
-    }
+    public void setLikeCount(int likeCount) {this.likeCount = likeCount;}
 
 
     /**
@@ -261,23 +217,4 @@ public class Review implements HasId {
     public static boolean isValidReviewStatus(int reviewStatus) {
         return validReviewStatuses.contains(reviewStatus);
     }
-
-
-    /**
-     * Returns a human-readable string representing how long ago the review was created, formatted in Norwegian.
-     *
-     * @return A string like "for 5 minutter siden" indicating how long ago the review was created.
-     */
-
-    /*
-    public String getShortDateString() {
-        return NorwegianTimeAgoTextFormatter.formatInstantAgo(createdAt, "for ", " siden");
-    }
-    */
-
-    /*
-    public String getStatusName(){
-        return reviewStatusToStringMap.getOrDefault(status, "unknown").toLowerCase();
-    }
-    */
 }

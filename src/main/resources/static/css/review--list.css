@@ -1,6 +1,8 @@
 .review--list{
     color:#333;
 
+
+
     .review {
         .votes{
             &:before{
@@ -25,7 +27,7 @@
             }
 
             .down-votes{
-                display:none !important;
+                /*display:none !important;*/
             }
         }
 

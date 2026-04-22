@@ -24,7 +24,7 @@ public record NewReviewForm(
 ) {
     public NewReviewForm {
         email = org.jsoup.Jsoup.parse(email).text();
-        password = org.jsoup.Jsoup.parse(password).text();
+        //password = org.jsoup.Jsoup.parse(password).text();
         displayName = org.jsoup.Jsoup.parse(displayName).text();
         title = org.jsoup.Jsoup.parse(title).text();
         comment = org.jsoup.Jsoup.parse(comment).text();
@@ -46,6 +46,7 @@ public record NewReviewForm(
 
         try {
             // Validate input parameters (you can add more validation as needed)
+            checkArgument(dto.externalId != null, "External Id cannot be null");
             checkArgument(dto.score >= 1 && dto.score <= 5, "Score must be between 1 and 5.");
 
             if (AppConfig.ENABLE_CLIENT_EMAIL_AND_PASSWORD_REQUIRED) {

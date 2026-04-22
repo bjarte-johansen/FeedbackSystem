@@ -13,6 +13,11 @@ public class ProxyFactoryBeans {
     }
 
     @Bean
+    public static VerificationCodeRepository createVerificationCodeRepository() {
+        return RepositoryProxyConstructor.create(VerificationCodeRepository.class);
+    }
+
+    @Bean
     public static TenantDomainRepository createTenantDomainRepository() {
         return RepositoryProxyConstructor.create(TenantDomainRepository.class);
     }

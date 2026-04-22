@@ -1,7 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <div class="box review--list-filters">
-    <div class="box filter-buttons">
+    <!--
+    <div class="box filter-buttons admin-filter-by-status-buttons">
         (Admin uferdig)
         Filtrer status:
         <a href="/R/admin/filter/status/1" class="btn text-deco-none filter-approved">Godkjent</a>
@@ -10,6 +11,7 @@
         <a href="/R/admin/filter/status/-1" class="btn text-deco-none filter-any">Alle</a>
         )
     </div>
+    -->
 
     <span class="active-filters mobile-full d-none" style="margin-right:8px;">
         Aktive filtre:
@@ -23,42 +25,55 @@
     </span>
 
     <!-- score filter dropdown -->
-    <select name="scoreFilter" onchange="Review.triggerClientScoreFilterChange(this)">
-        <!--<option value="${scoreFilter}" selected>Filtrer score</option>-->
+    <span class="filter-component">
+        <select name="scoreFilter" onchange="Review.triggerClientScoreFilterChange(this)">
+            <!--<option value="${scoreFilter}" selected>Filtrer score</option>-->
 
-        <c:forEach var="i" begin="1" end="5">
-            <option value="${i}" ${scoreFilter == i ? 'selected' : ''}>Score: ${i}</option>
-        </c:forEach>
-        <option value="" selected>Score: alle</option>
-    </select>
-
-    <!-- order by dropdown -->
-    <select name="orderByEnum" onchange="Review.triggerClientOrderByEnumChange(this)">
-        <c:forEach var="orderByOption" items="${reviewListOrderOptions}" varStatus="loop">
-            <option value="${orderByOption.value}" ${orderByOption.value == currentOrderByEnum ? 'selected' : ''}>${orderByOption.key}</option>
-        </c:forEach>
-        <option value="" selected>Sorter: vanlig</option>
-    </select>
-
-    <hr>
+            <c:forEach var="i" begin="1" end="5">
+                <option value="${i}" ${scoreFilter == i ? 'selected' : ''}>Score: ${i}</option>
+            </c:forEach>
+            <option value="" selected>Score: alle</option>
+        </select>
+    </span>
 
     <!-- order by dropdown -->
-    <select name="statusFilterEnum" onchange="Review.triggerClientStatusFilterChange(this)">
-        <c:forEach var="mapEntry" items="${constants.reviewStatus.friendlyNameToConst}" varStatus="loop">
-            <option value="${mapEntry.value}">${mapEntry.key}</option>
-        </c:forEach>
-        <option value="1,2,3">Alle</option>
-        <option value="" selected>Status: valgt</option>
-    </select>
+    <span class="filter-component">
+        <select name="orderByEnum" onchange="Review.triggerClientOrderByEnumChange(this)">
+        <%--
+            <c:forEach var="orderByOption" items="${reviewListOrderOptions}" varStatus="loop">
+                <option value="${orderByOption.value}" ${orderByOption.value == currentOrderByEnum ? 'selected' : ''}>${orderByOption.key}</option>
+            </c:forEach>
+            <option value="" selected>Sorter: vanlig</option>
+        --%>
+        </select>
+    </span>
 
-    <hr>
+    <!-- <hr> -->
 
-    <div class="box">
+    <!-- order by dropdown -->
+    <span class="filter-component">
+        <select name="statusFilterEnum" onchange="Review.triggerClientStatusFilterChange(this)">
+            <c:forEach var="mapEntry" items="${constants.reviewStatus.friendlyNameToConst}" varStatus="loop">
+                <option value="${mapEntry.value}">${mapEntry.key}</option>
+            </c:forEach>
+            <option value="1,2,3">Alle</option>
+            <option value="" selected>Status: valgt</option>
+        </select>
+    </span>
+
+    <!-- <hr> -->
+
+<!--
+    <span class="filter-component">
         Dato fra
         <input type="date" name="startDateFilter" value="${filters.startDateFilter}" onchange="Review.triggerStartDateFilterChange(this)">
         til
         <input type="date" name="endDateFilter" value="${filters.endDateFilter}" onchange="Review.triggerEndDateFilterChange(this)">
-        , Antall dager:
+    </span>
+    ,
+-->
+    <span class="filter-component">
+        Antall dager:
         <select name="numberOfDaysFilter" onchange="Review.triggerNumberOfDaysFilterChange(this)">
             <option value="7" ${currentDateFilterPreset == 7 ? 'selected' : ''}>Siste 7 dager</option>
             <option value="30" ${currentDateFilterPreset == 30 ? 'selected' : ''}>Siste 30 dager</option>
@@ -66,7 +81,7 @@
             <option value="180" ${currentDateFilterPreset == 180 ? 'selected' : ''}>Siste 180 dager</option>
             <option value="365" ${currentDateFilterPreset == 365 ? 'selected' : ''}>Siste 1 år</option>
             <option value="730" ${currentDateFilterPreset == 365 ? 'selected' : ''}>Siste 2 år</option>
-            <option value="" selected>Intervall: ingen</option>
+            <option value="" selected>Alle</option>
         </select>
-    </div>
+    </span>
 </div>

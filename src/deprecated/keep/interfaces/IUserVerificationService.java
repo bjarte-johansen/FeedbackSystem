@@ -1,7 +1,5 @@
 package root.interfaces;
 
-import root.models.UserVerificationRecord;
-
 
 /**
  * Interface for user verification services. This service is responsible for handling the logic related to user verification,

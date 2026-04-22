@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import root.app.AppConfig;
 import root.controllers.helpers.ControllerConstantMaps;
-import root.includes.logger.Logger;
 import root.models.Review;
 import root.app.ReviewQueryOptions;
 //import root.repositories.ReviewerRepository;
@@ -23,7 +22,6 @@ import java.time.LocalDate;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNullElse;
 
 //import static com.google.common.base.Preconditions.checkArgument;;
 
@@ -31,6 +29,8 @@ import static java.util.Objects.requireNonNullElse;
 
 @Controller
 public class ClientController {
+    private static final boolean ENABLE_LISTING_ENABLE_OVERRIDE = false;
+
     @Autowired
     ReviewRepository reviewRepo;
 
@@ -38,7 +38,7 @@ public class ClientController {
     ReviewService reviewService;
 
     @Autowired
-    ReviewPageService reviewPageService;
+    ClientReviewPageService clientReviewPageService;
 
     @Autowired
     ReviewSettingsRepository reviewSettingsRepo;
@@ -63,7 +63,7 @@ public class ClientController {
     }
 
 
-    private ReviewSettings avoidDuplicateCodeRouteHandler(HashMap<String, Object> vm, boolean isAdministrator, String externalId){
+    private ReviewSettings getCachedReviewConfigAndSetAttributes(HashMap<String, Object> vm, boolean isAdministrator, String externalId){
         vm.put("isClient", "true");
         vm.put("isAdministrator", String.valueOf(isAdministrator));
 
@@ -78,6 +78,14 @@ public class ClientController {
 
         return reviewCfg;
     }
+
+    private void applyNonAdministratorStatusFilter(ReviewQueryOptions qo, boolean isAdmin){
+        if(!isAdmin && qo.getStatusFilterSet().isEmpty()){
+            // if not admin and no status filter provided, default to only approved
+            qo.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
+        }
+    }
+
 
     /**
      * Return JSON string corresponding to
@@ -115,11 +123,14 @@ public class ClientController {
         final HashMap<String, Object> vm = new HashMap<>();
         final boolean bIsAdministrator = IsAdminService.isAdmin();
 
-        var reviewCfg = avoidDuplicateCodeRouteHandler(vm, bIsAdministrator, externalId);
+        var reviewCfg = getCachedReviewConfigAndSetAttributes(vm, bIsAdministrator, externalId);
 
-        if(reviewCfg.getEnableListing()) {
+        if(reviewCfg.getEnableListing() || ENABLE_LISTING_ENABLE_OVERRIDE) {
             ReviewQueryOptions qo = ReviewQueryOptionsParser.parseRequest(req, defaultLimit);
-            vm.putAll(reviewPageService.buildReviewListingModelData(externalId, qo, includeStats));
+
+            applyNonAdministratorStatusFilter(qo, bIsAdministrator);
+
+            vm.putAll(clientReviewPageService.buildReviewListingModelData(externalId, qo, includeStats));
 
             // put in names/lookups etc
             vm.put("constants", ControllerConstantMaps.ALL_CONSTANTS);
@@ -171,30 +182,20 @@ public class ClientController {
         final HashMap<String, Object> vm = new LinkedHashMap<>();
         final boolean bIsAdministrator = IsAdminService.isAdmin();
 
-        var reviewCfg = avoidDuplicateCodeRouteHandler(vm, bIsAdministrator, externalId);
+        var reviewCfg = getCachedReviewConfigAndSetAttributes(vm, bIsAdministrator, externalId);
 
-        if(reviewCfg.getEnableListing()) {
+        if(reviewCfg.getEnableListing() || ENABLE_LISTING_ENABLE_OVERRIDE) {
             ReviewQueryOptions qo = ReviewQueryOptionsParser.parseRequest(req, defaultLimit);
 
-            if(!bIsAdministrator && qo.getStatusFilterSet().isEmpty()){
-                // if not admin and no status filter provided, default to only approved
-                qo.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
-            }
+            applyNonAdministratorStatusFilter(qo, bIsAdministrator);
 
-            vm.putAll(reviewPageService.buildReviewListingModelData(externalId, qo, includeStats));
-
-            // testing values
-            if (Boolean.TRUE.equals(showDemoPills)) {
-                // add test data for select externalId pill, in production this should be dynamically loaded based on
-                // existing reviews in the database
-                Utils.addSelectExternalIdPillData(vm, reviewRepo);
-            }
+            vm.putAll(clientReviewPageService.buildReviewListingModelData(externalId, qo, includeStats));
 
             // put in names/lookups etc
             vm.put("constants", ControllerConstantMaps.ALL_CONSTANTS);
 
             // add ordering options to model
-            vm.put("reviewListOrderOptions", ReviewPageService.orderByOptionsMap());
+            //vm.put("reviewListOrderOptions", ClientReviewPageService.orderByOptionsMap());
         }
 
         vm.put("json", root.includes.Utils.toJson(vm));

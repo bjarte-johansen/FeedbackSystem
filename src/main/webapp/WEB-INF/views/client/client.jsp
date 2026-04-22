@@ -7,15 +7,17 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/new-review-form.css"></link>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/review--list.css"></link>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/review--stats.css"></link>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/review--admin.css"></link>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="/js/Constants.js"></script>
     <script src="/js/timeAgo.js"></script>
     <script src="/js/Assert.js"></script>
     <script src="/js/Spinner.js"></script>
     <script src="/js/Router.js"></script>
+    <script src="/js/PageCursor.js"></script>
     <script src="/js/ReviewListing.js"></script>
     <script src="/js/StatisticsRenderer.js"></script>
-    <script src="/js/PageCursor.js"></script>
     <script src="/js/Utils.js"></script>
     <script src="/js/routes.js"></script>
     <script src="/js/client-review.js"></script>

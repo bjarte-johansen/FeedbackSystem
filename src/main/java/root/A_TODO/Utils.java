@@ -1,15 +1,11 @@
-package root.controllers;
-
-import root.repositories.ReviewRepository;
-
-import java.util.List;
-import java.util.Map;
+package root.A_TODO;
 
 
 /**
  * utility class for controllers
  */
 
+@Deprecated
 public class Utils {
     /**
      * Adds a list of unique external IDs to the model for use in a select pill component. This method can be called in
@@ -21,9 +17,9 @@ public class Utils {
      * @return
      */
 
-    public static List<String> addSelectExternalIdPillData(Map<String, Object> modelMap, ReviewRepository reviewRepo) {
-        List<String> uniqueExternalIds = reviewRepo.findDistinctExternalIdByExternalId();
-        modelMap.put("uniqueExternalIds", uniqueExternalIds);
-        return uniqueExternalIds;
-    }
+//    public static List<String> addSelectExternalIdPillData(Map<String, Object> modelMap, ReviewRepository reviewRepo) {
+//        List<String> uniqueExternalIds = reviewRepo.findDistinctExternalIdByExternalId();
+//        modelMap.put("uniqueExternalIds", uniqueExternalIds);
+//        return uniqueExternalIds;
+//    }
 }

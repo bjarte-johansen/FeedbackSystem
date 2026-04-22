@@ -37,5 +37,7 @@
         </div>
     </div>
 
+    <div class="add-new-review-anchor">
     <a href="javascript:void(0)" onclick="Review.client.showNewReviewForm();">Legg til ny omtale</a>
+    </div>
 </div>

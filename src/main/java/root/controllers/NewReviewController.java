@@ -1,5 +1,6 @@
 package root.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -9,13 +10,22 @@ import root.app.AppConfig;
 import root.common.testdata.FunnyUserNameGenerator;
 import root.common.testdata.IpsumLoremGenerator;
 import root.controllers.dto.NewReviewForm;
+import root.includes.EmailVerificationCodeSender;
+import root.includes.Utils;
+import root.includes.VerificationCodeDigitsGenerator;
+import root.includes.logger.Logger;
 import root.models.Review;
 import root.models.ReviewSettings;
+import root.models.VerificationCode;
 import root.repositories.ReviewRepository;
+import root.repositories.VerificationCodeRepository;
+import root.services.HostNameResolver;
 import root.services.ReviewSettingsService;
+import root.services.VerificationCodeService;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -27,6 +37,12 @@ public class NewReviewController {
 
     @Autowired
     ReviewSettingsService reviewSettingsService;
+
+    @Autowired
+    VerificationCodeRepository verificationCodeRepository;
+
+    @Autowired
+    VerificationCodeService verificationCodeService;
 
 
     /**
@@ -89,20 +105,25 @@ public class NewReviewController {
         Model model
     ) throws Exception {
         model.addAttribute("externalId", externalId);
-        model.addAttribute("submitUrl", "/api/submit-review");
+        model.addAttribute("submitUrl", "/api/review/submit");
 
         // prefilled for dev work only
         if (prefilled > 0) {
             model.addAttribute("form", encodePrefilledValues());
         }
 
-        return "new-review-form";
+        return "client/new-review-form";
     }
 
 
     /**
      * API endpoint to submit a new review. For simplicity, we are using request parameters for all input, but in a real
      * application you would likely want to use a request body with a DTO object for better structure and validation.
+     *
+     * At this point the review must allready have been verified via verification code, do not allow submitting of reviews
+     * without it, unless possibly for administrators in the future. Its spam-protection.
+     *
+     * All input is automaticly sanitized (HTML is stripped)
      *
      * @param form
      * @return
@@ -115,9 +136,8 @@ public class NewReviewController {
         List<String> errors = NewReviewForm.validate(form, new ArrayList<String>());
         checkArgument(errors.isEmpty(), errors.toString());
 
-        final ReviewSettings reviewCfg = reviewSettingsService.findOrCreateByExternalId(
-            Objects.requireNonNullElse(form.externalId(), "")
-            )
+        final ReviewSettings reviewCfg = reviewSettingsService
+            .findOrCreateByExternalId(Objects.requireNonNullElse(form.externalId(), ""))
             .orElseThrow(() -> new RuntimeException("Unexpected empty review settings"));
 
         if(reviewCfg.getEnableSubmit()){
@@ -141,7 +161,47 @@ public class NewReviewController {
             reviewRepo.save(review);
         }else{
             // TODO: serve message that form submission is temporarily disabled
+            throw new RuntimeException("Form submission temporarily disabled");
         }
+
+        return ResponseEntity.ok().build();
+    }
+
+
+    /**
+     * Send verification code to given email. Uses verification-service to do the heavy lifting
+     *
+     * @param email
+     * @param req
+     * @return
+     */
+
+    @PostMapping("/api/verification-code/send")
+    public ResponseEntity<Void> sendVerificationCode(
+        @RequestParam String email,
+        HttpServletRequest req
+    ) {
+        String host = HostNameResolver.getNormalizedHost(req);
+        verificationCodeService.send(host, email);
+
+        return ResponseEntity.ok().build();
+    }
+
+
+    /**
+     * Check that verification code corresponds with email and that internal requirements are met.
+     * @param email
+     * @param code
+     * @return
+     */
+
+    @PostMapping("/api/verification-code/verify")
+    public ResponseEntity<Void> checkVerificationCode(
+        @RequestParam String email,
+        @RequestParam String code
+    ){
+        boolean ok = verificationCodeService.verify(email, code);
+        if(!ok) ResponseEntity.status(400).build();
 
         return ResponseEntity.ok().build();
     }

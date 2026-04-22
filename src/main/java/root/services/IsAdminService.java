@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class IsAdminService {
-
     public static boolean isAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) return false;

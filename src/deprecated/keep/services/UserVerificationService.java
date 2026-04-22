@@ -2,7 +2,6 @@ package root.services.deprecated;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import root.models.UserVerificationRecord;
 import root.includes.VerificationCodeDigitsGenerator;
 //import root.interfaces.IUserVerificationService;
 //import root.repositories.ReviewerRepository;

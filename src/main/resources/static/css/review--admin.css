@@ -1,0 +1,23 @@
+.review--admin-interface{
+    .filter-buttons .active{
+        --bg: color-mix(in srgb, var(--review-primary-btn-color), black 20%);
+    }
+
+    .btn.disabled, button[disabled] {
+        --bg: var(--review-disabled-btn-color);
+        background-color: var(--bg);
+        border: 1px solid color-mix(in srgb, var(--bg) 82%, black);
+        cursor: default;
+    }
+}
+
+/* move to be under administrator only */
+.admin-filter-by-status-buttons{
+    /* same as other button */
+    .btn.disabled, button[disabled] {
+        --bg: var(--review-disabled-btn-color);
+        background-color: var(--bg);
+        border: 1px solid color-mix(in srgb, var(--bg) 82%, black);
+        cursor: default;
+    }
+}
