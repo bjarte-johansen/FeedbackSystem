@@ -2,7 +2,7 @@ package root.controllers;
 
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import root.models.Review;
+import root.models.review.Review;
 
 import java.util.Map;
 

@@ -3,15 +3,13 @@ package root.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
-import root.App;
-import root.app.AppContext;
-import root.app.AppRequestSchema;
+import root.includes.context.SchemaContext;
 import root.database.DataSourceManager;
-import root.DatabaseManager;
+import root.includes.Functional;
 import root.includes.logger.Logger;
-import root.models.Review;
-import root.models.Tenant;
-import root.repositories.TenantRepository;
+import root.models.review.Review;
+import root.models.tenant.Tenant;
+import root.repositories.tenant.TenantRepository;
 
 import java.util.List;
 
@@ -19,97 +17,33 @@ import java.util.List;
 @DependsOn("appContext")
 public class DatabaseService {
     @Autowired
-    AppContext appContext;
-
-    @Autowired
     TenantRepository tenantRepo;
 
     @Autowired
-    DatabaseManager databaseManager;
-
-    public void migrateTenantRelatedToPublic(){
-        /*
-        CREATE TABLE public.tenant
-            (LIKE test.tenant INCLUDING ALL);
-
-        INSERT INTO public.tenant
-        SELECT * FROM test.tenant;
-
-        -- tenant_domain
-        CREATE TABLE public.tenant_domain
-            (LIKE test.tenant_domain INCLUDING ALL);
-
-        INSERT INTO public.tenant_domain
-        SELECT * FROM test.tenant_domain;
-
-        SELECT setval(
-            pg_get_serial_sequence('public.tenant','id'),
-            (SELECT MAX(id) FROM public.tenant)
-        );
-
-        SELECT setval(
-            pg_get_serial_sequence('public.tenant_domain','id'),
-            (SELECT MAX(id) FROM public.tenant_domain)
-        );
-
-        TRUNCATE public.tenant, public.tenant_domain RESTART IDENTITY CASCADE;
-
-        INSERT INTO public.tenant
-        SELECT * FROM test.tenant;
-
-        INSERT INTO public.tenant_domain
-        SELECT * FROM test.tenant_domain;
-        */
-    }
+    DatabaseDemoDataService databaseDemoDataService;
 
     public void resetDemoData() {
-        try(var ignore1 = Logger.scope("resetDemoData")) {
+        Logger.withScope("resetDemoData", () -> {
             // reset public schema, this will cascade and reset tenant and tenant_domain tables as well
             // is logged internally
-            databaseManager.resetPublicSchema();
+            databaseDemoDataService.resetPublicSchema();
 
-            try(var ignore2 = Logger.scope("Resetting tenant schemas...")){
-                AppRequestSchema.withThreadSchema("public", () -> {
-                    for (var tenant : tenantRepo.findAll()) {
-                        try (var ignore3 = AppRequestSchema.withThreadSchema(tenant.getSchemaName())) {
-                            databaseManager.resetTenantSchema();
-                        }
-                    }
+            Logger.withScope("Resetting tenant schemas...", () -> {
+                SchemaContext.scopeSchema("public", () -> {
+                    tenantRepo.findAll().forEach(tenant -> {
+                        SchemaContext.scopeSchema(
+                            tenant.getSchemaName(),
+                            databaseDemoDataService::resetTenantSchema
+                        );
+                    });
                 });
-            }
-        }
-    }
-
-    public void speedTest(){
-//                    var conn = DataSourceManager.getConnection();
-//                    conn.setSchema("test");
-//                    //System.out.println("SCHHEMA: " + rs.getString(1));
-//                    //Logger.log("SCHEMA IS " + conn.getSchema());
-//                    try (var p = new TryWithTimer("insert row without fsql query")) {
-//
-//                        var ps = conn.prepareStatement("INSERT INTO test.review (external_id, author_id, author_name, score, title, comment, created_at, status, like_count, dislike_count) VALUES  ('/prodsdfuct/2', 1, 'SneakyUnicorn459', 2, 'Laboris quis commodo.', 'Ut magna lorem consectetur ullamco. minim enim incididunt consectetur ea. incididunt commodo.', '2025-03-21 06:21:31.020787', 3, 0, 0)");
-//                        ps.executeUpdate();
-//                        ResultSet rset = ps.getGeneratedKeys();
-//                        Long key;
-//                        if(rset.next()) {
-//                            key = rset.getLong(1);
-//                        }
-//
-//                    }
-//                    conn.close();
-//
-//                    try (var p2 = new TryWithTimer("insert row with fsql query")) {
-//                        FSQLQuery.create("INSERT INTO test.review (external_id, author_id, author_name, score, title, comment, created_at, status, like_count, dislike_count) VALUES  ('/prodsdfuct/2', 1, 'SneakyUnicorn459', 2, 'Laboris quis commodo.', 'Ut magna lorem consectetur ullamco. minim enim incididunt consectetur ea. incididunt commodo.', '2025-03-21 06:21:31.020787', 3, 0, 0)")
-//                            .insertAndGetId();
-//                    }
-//                    //if(true) throw new Exception("stop");
-//
-//                    //System.out.println("IT FUCKING INSERTED!");
+            });
+        });
     }
 
     public void executeDatabasePatches() throws Exception {
         // create lambda patcher
-        App.ConnectionStatementRunnable patchAddReviewVoteTable = (_1, st) -> {
+        Functional.ConnectionStatementRunnable patchAddReviewVoteTable = (_1, st) -> {
             st.execute("""
 CREATE TABLE IF NOT EXISTS review_vote (
 	id		   BIGSERIAL PRIMARY KEY,
@@ -124,13 +58,13 @@ CREATE TABLE IF NOT EXISTS review_vote (
         };
 
         // create lambda patcher
-        App.ConnectionStatementRunnable patchAddStatusFieldForReview = (_1, st) -> {
+        Functional.ConnectionStatementRunnable patchAddStatusFieldForReview = (_1, st) -> {
             st.execute("ALTER TABLE review ADD COLUMN IF NOT EXISTS status SMALLINT NOT NULL DEFAULT 0");
             st.execute("CREATE INDEX IF NOT EXISTS idx_review_status ON review (status)");
         };
 
         // create lambda patcher
-        App.ConnectionStatementRunnable patchAddStatusIndexDescSortedForReview = (_1, st) -> {
+        Functional.ConnectionStatementRunnable patchAddStatusIndexDescSortedForReview = (_1, st) -> {
             // drop old indexes if they exist, we will replace them with new ones that are sorted by id desc and filtered by status
             st.execute("DROP INDEX IF EXISTS idx_review_status_1_created;");
             st.execute("DROP INDEX IF EXISTS idx_review_status_equals_1;");
@@ -140,7 +74,7 @@ CREATE TABLE IF NOT EXISTS review_vote (
             st.execute("CREATE INDEX IF NOT EXISTS idx_review_status_rejected ON review(id DESC) WHERE status = " + Review.REVIEW_STATUS_REJECTED);
         };
 
-        List<App.ConnectionStatementRunnable> patchers = List.of(
+        List<Functional.ConnectionStatementRunnable> patchers = List.of(
             patchAddReviewVoteTable,
             patchAddStatusFieldForReview,
             patchAddStatusIndexDescSortedForReview
@@ -148,16 +82,16 @@ CREATE TABLE IF NOT EXISTS review_vote (
 
         // return lambda executor that runs the patchers
         // TODO: bug here, its implemented twice that we do the test schema for some reason, need to investigate and fix this
-        AppRequestSchema.withThreadSchema("public", () -> {
+        SchemaContext.scopeSchema("public", () -> {
             for (var tenant : tenantRepo.findAll()) {
                 patchTenant(tenant, patchers);
             }
         });
     }
 
-    private void patchTenant(Tenant tenant, List<App.ConnectionStatementRunnable> patchers) throws Exception {
+    private void patchTenant(Tenant tenant, List<Functional.ConnectionStatementRunnable> patchers) throws Exception {
         // apply patch for relevant schema
-        AppRequestSchema.withThreadSchema(tenant.getSchemaName(), () -> {
+        SchemaContext.scopeSchema(tenant.getSchemaName(), () -> {
             try (var conn = DataSourceManager.getConnection()) {
                 try (var st = conn.createStatement()) {
                     for (var patcher : patchers)

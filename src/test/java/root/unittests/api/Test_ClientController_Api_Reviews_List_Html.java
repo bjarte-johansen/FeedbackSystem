@@ -85,12 +85,12 @@ public class Test_ClientController_Api_Reviews_List_Html extends TestA0Base {
             "&orderByEnum=8"
         );
 
-        String uri = "/api/reviews/list/html";
+        String url = "/api/reviews/list/html";
 
         for (String variation : variations) {
             for (String statusVariation : statusVariations) {
                 for (String orderByVariation : orderByVariations) {
-                    String current = uri + variation + statusVariation + orderByVariation;
+                    String current = url + variation + statusVariation + orderByVariation;
                     var result = mockMvc.perform(get(current))
                         .andExpect(status().isOk())
                         .andReturn();

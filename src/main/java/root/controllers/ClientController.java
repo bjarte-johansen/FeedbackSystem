@@ -9,16 +9,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import root.app.AppConfig;
-import root.controllers.helpers.ControllerConstantMaps;
-import root.models.Review;
-import root.app.ReviewQueryOptions;
+import root.models.review.Review;
 //import root.repositories.ReviewerRepository;
-import root.models.ReviewSettings;
-import root.repositories.ReviewRepository;
-import root.repositories.ReviewSettingsRepository;
-import root.services.*;
+import root.repositories.review.ReviewRepository;
+import root.services.review.CachedReviewSettingsService;
+import root.services.review.ClientReviewPageService;
+import root.services.review.ReviewService;
 
-import java.time.LocalDate;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -29,8 +26,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 @Controller
 public class ClientController {
-    private static final boolean ENABLE_LISTING_ENABLE_OVERRIDE = false;
-
     @Autowired
     ReviewRepository reviewRepo;
 
@@ -39,64 +34,38 @@ public class ClientController {
 
     @Autowired
     ClientReviewPageService clientReviewPageService;
-
+/*
     @Autowired
     ReviewSettingsRepository reviewSettingsRepo;
+ */
+
     @Autowired
     private CachedReviewSettingsService cachedReviewSettingsService;
 
 
-    /**
-     * Default route to show reviews for a default externalId. This is just for convenience and demonstration purposes,
-     * and should be removed or redirected to a more appropriate page in production code.
-     * TODO: remove or redirect to a more appropriate page in production code
-     *
-     * @param model
-     * @param req
-     * @return
-     * @throws Exception
-     */
+//    /**
+//     * Default route to show reviews for a default externalId. This is just for convenience and demonstration purposes,
+//     * and should be removed or redirected to a more appropriate page in production code.
+//     * TODO: remove or redirect to a more appropriate page in production code
+//     *
+//     * @param model
+//     * @param req
+//     * @return
+//     * @throws Exception
+//     */
+//
+//    @GetMapping("/")
+//    public String index(Model model, HttpServletRequest req, RedirectAttributes ra) throws Exception {
+//        return "redirect:/api/reviews/list/html?showDemoPills=true&externalId=/invalid-path";
+//    }
 
-    @GetMapping("/")
-    public String index(Model model, HttpServletRequest req, RedirectAttributes ra) throws Exception {
-        return "redirect:/api/reviews/list/html?showDemoPills=true&externalId=/invalid-path";
-    }
-
-
-    private ReviewSettings getCachedReviewConfigAndSetAttributes(HashMap<String, Object> vm, boolean isAdministrator, String externalId){
-        vm.put("isClient", "true");
-        vm.put("isAdministrator", String.valueOf(isAdministrator));
-
-        final ReviewSettings reviewCfg = cachedReviewSettingsService.findOrCreateByExternalId(
-            Objects.requireNonNullElse(externalId, "")
-        );
-
-        vm.put("reviewConfig", root.includes.Utils.linkedMap(
-            "enableListing", reviewCfg.getEnableListing(),
-            "enableSubmit", reviewCfg.getEnableSubmit()
-        ));
-
-        return reviewCfg;
-    }
-
-    private void applyNonAdministratorStatusFilter(ReviewQueryOptions qo, boolean isAdmin){
-        if(!isAdmin && qo.getStatusFilterSet().isEmpty()){
-            // if not admin and no status filter provided, default to only approved
-            qo.getStatusFilterSet().add(Review.REVIEW_STATUS_APPROVED);
-        }
-    }
 
 
     /**
      * Return JSON string corresponding to
-     * @param externalId
-     * @param cursor
-     * @param orderByEnum
-     * @param scoreFilter
-     * @param startDateFilter
-     * @param endDateFilter
-     * @param numDaysFilter
      * @param includeStats
+     * @param includeJsonAsAttribute
+     * @param defaultLimit
      * @param req
      * @return
      */
@@ -104,62 +73,7 @@ public class ClientController {
     @GetMapping({"/api/reviews/list/json"})
     @ResponseBody
     public Map<String, Object> showReviewsAsJson(
-        @RequestParam(required = false) String externalId,
-        @RequestParam(required = false) String cursor,
-        @RequestParam(required = false) Integer orderByEnum,
-        @RequestParam(required = false) String scoreFilter,
-        @RequestParam(required = false) String statusFilter,
-        @RequestParam(required = false) LocalDate startDateFilter,
-        @RequestParam(required = false) LocalDate endDateFilter,
-        @RequestParam(required = false) Integer numDaysFilter,
-        @RequestParam(required = false, defaultValue="false") boolean includeStats,
-
-        // fake param to indicate default limit
-        @RequestParam(defaultValue = ("" + AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS)) int defaultLimit,
-
-        // request
-        HttpServletRequest req
-    ) {
-        final HashMap<String, Object> vm = new HashMap<>();
-        final boolean bIsAdministrator = IsAdminService.isAdmin();
-
-        var reviewCfg = getCachedReviewConfigAndSetAttributes(vm, bIsAdministrator, externalId);
-
-        if(reviewCfg.getEnableListing() || ENABLE_LISTING_ENABLE_OVERRIDE) {
-            ReviewQueryOptions qo = ReviewQueryOptionsParser.parseRequest(req, defaultLimit);
-
-            applyNonAdministratorStatusFilter(qo, bIsAdministrator);
-
-            vm.putAll(clientReviewPageService.buildReviewListingModelData(externalId, qo, includeStats));
-
-            // put in names/lookups etc
-            vm.put("constants", ControllerConstantMaps.ALL_CONSTANTS);
-        }
-
-        return vm;
-    }
-
-
-    /**
-     * Main route to show reviews for a given externalId. This is the main route of the application and is used to
-     * display reviews for a given externalId with pagination and sorting. It also displays aggregate score stats for
-     * the given externalId.
-     *
-     * @param externalId
-     * @param cursor
-     * @param orderByEnum
-     * @param scoreFilter
-     * @param startDateFilter
-     * @param endDateFilter
-     * @param numDaysFilter
-     * @param includeStats
-     * @param model
-     * @param req
-     * @return
-     */
-
-    @GetMapping("/api/reviews/list/html")
-    public String showReviews(
+        /*
         @RequestParam(required = false) String externalId,
         @RequestParam(required = false) String cursor,
         @RequestParam(required = false) Integer orderByEnum,
@@ -169,36 +83,65 @@ public class ClientController {
         @RequestParam(required = false) LocalDate endDateFilter,
         @RequestParam(required = false) Integer numDaysFilter,
         @RequestParam(required = false) Boolean showDemoPills,
-        @RequestParam(required = false, defaultValue="true") boolean includeStats,
         @RequestParam(required = false) Boolean realApi,
-        Model model,
-
-        // fake param to indicate default limit
-        @RequestParam(defaultValue = ("" + AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS)) final int defaultLimit,
-
-        // request
+         */
+        @RequestParam(defaultValue = "false") boolean includeStats,
+        @RequestParam(defaultValue = "false") Boolean includeJsonAsAttribute,
+        @RequestParam(defaultValue = ("" + AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS)) int defaultLimit,
         HttpServletRequest req
     ) {
-        final HashMap<String, Object> vm = new LinkedHashMap<>();
-        final boolean bIsAdministrator = IsAdminService.isAdmin();
+        Map<String, Object> vm = clientReviewPageService.buildPageData(
+            includeStats,
+            includeJsonAsAttribute,
+            defaultLimit,
+            req
+        );
 
-        var reviewCfg = getCachedReviewConfigAndSetAttributes(vm, bIsAdministrator, externalId);
+        return vm;
+    }
 
-        if(reviewCfg.getEnableListing() || ENABLE_LISTING_ENABLE_OVERRIDE) {
-            ReviewQueryOptions qo = ReviewQueryOptionsParser.parseRequest(req, defaultLimit);
 
-            applyNonAdministratorStatusFilter(qo, bIsAdministrator);
+    /**
+     * Main route to show reviews for a given externalId. This is the main route of the application and is used to
+     * display reviews for a given externalId with pagination and sorting. It also displays aggregate score stats for
+     * the given externalId. This will render HTML and give showReviewsAsJson as json in a attribute or javascript
+     * snippet to extract information for page viewing.
+     *
+     * @param includeStats
+     * @param includeJsonAsAttribute
+     * @param defaultLimit
+     * @param model
+     * @param req
+     * @return
+     */
 
-            vm.putAll(clientReviewPageService.buildReviewListingModelData(externalId, qo, includeStats));
-
-            // put in names/lookups etc
-            vm.put("constants", ControllerConstantMaps.ALL_CONSTANTS);
-
-            // add ordering options to model
-            //vm.put("reviewListOrderOptions", ClientReviewPageService.orderByOptionsMap());
-        }
-
-        vm.put("json", root.includes.Utils.toJson(vm));
+    @GetMapping("/api/reviews/list/html")
+    public String showReviewsAsHtml(
+        /*
+        @RequestParam(required = false) String externalId,
+        @RequestParam(required = false) String cursor,
+        @RequestParam(required = false) Integer orderByEnum,
+        @RequestParam(required = false) String scoreFilter,
+        @RequestParam(required = false) String statusFilter,
+        @RequestParam(required = false) LocalDate startDateFilter,
+        @RequestParam(required = false) LocalDate endDateFilter,
+        @RequestParam(required = false) Integer numDaysFilter,
+        @RequestParam(required = false) Boolean showDemoPills,
+        @RequestParam(required = false) Boolean realApi,
+         */
+        @RequestParam(defaultValue = "true") boolean includeStats,
+        @RequestParam(defaultValue = "true") Boolean includeJsonAsAttribute,
+        @RequestParam(defaultValue = ("" + AppConfig.CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS)) final int defaultLimit,
+        HttpServletRequest req,
+        Model model
+    ) {
+        // use same route as other controller so we know they are 100% compatible
+        Map<String, Object> vm = showReviewsAsJson(
+            includeStats,
+            includeJsonAsAttribute,
+            defaultLimit,
+            req
+            );
 
         model.addAllAttributes(vm);
         return "client/client";

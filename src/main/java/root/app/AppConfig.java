@@ -3,9 +3,15 @@ package root.app;
 import org.springframework.stereotype.Component;
 import root.database.DataSourceConnectionParams;
 
-import javax.xml.crypto.Data;
 import java.util.regex.Pattern;
 
+
+/**
+ * class to store lots of different constants / read only variable that are used throughout the project. The
+ * importance of this is that one doesnt have to jump around everywhere to edit settings.
+ *
+ * This could in the future be read from application.properties or other storage
+ */
 
 @Component
 public class AppConfig {
@@ -13,9 +19,6 @@ public class AppConfig {
     public static final DataSourceConnectionParams TEST = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905", "h184905", "pass", "test");
     public static final DataSourceConnectionParams PROD = new DataSourceConnectionParams("jdbc:postgresql://ider-database.westeurope.cloudapp.azure.com:5433/h184905", "h184905", "pass", "test");
     public static final DataSourceConnectionParams CURRENT_CONNECTION_PARAMS = TEST;
-
-    // client settings
-    public static boolean ENABLE_CLIENT_EMAIL_AND_PASSWORD_REQUIRED = false;
 
     // password stuff
     public static int MIN_PASSWORD_LENGTH = 8;
@@ -27,10 +30,14 @@ public class AppConfig {
     // verification code stuff
     // note that VERIFICATION_CODE_EMAIL_FORMAT includes TWO %s, that are inserted during sending; the first
     // is the code, the second is host so user knows its from the right domain
+    public static String VERIFICATION_CODE_EMAIL_ACCOUNT = "dat109prosjekt@gmail.com";
+    public static String VERIFICATION_CODE_EMAIL_APP_PASSWORD = "fwhf izag otim phro";
+
     public static int VERIFICATION_CODE_EXPIRATION_SECONDS = 300;
     public static int MAX_VERIFICATION_CODE_ATTEMPTS = 5;
+
     public static String VERIFICATION_CODE_SECRET = "everyone-likes-a-spicy-meatball";
-    public static String VERIFICATION_CODE_EMAIL_FORMAT = """
+    public static String VERIFICATION_CODE_EMAIL_FORMAT = """              
         <html>
           <body style="font-family: Arial, sans-serif;">
             <div style="font-size:24px;font-weight:bold;
@@ -64,18 +71,16 @@ public class AppConfig {
     // max number of connections in the connection pool, should be set according to expected load and database limits
     public final static int DB_MAX_CONNECTION_POOL_SIZE = 30;
 
-    // TODO: must be set to false for production
-    //public static boolean TESTING_MODE = true;
 
     // default pagination settings for reviews listing page
     public final static int CLIENT_DEFAULT_MAX_VISIBLE_REVIEWS = 5;
-    public final static int ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS = Integer.MAX_VALUE;
+    public final static int ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS = 25;
+
+    public final static String MSG_INVALID_ADMIN_LOGIN_CREDENTIALS =
+        "Ugyldig kombinasjon av epost og passord. Bruk 'tenant1@test.com' og 'password1' som testkonto.";
 
     // TODO: must be set to false in production, otherwise all reviews will be automatically approved without moderation.
     public static boolean AUTO_APPROVE_NEW_REVIEWS = true;
-
-    // TODO: must be set to false for production
-    public static final boolean USE_MULTI_TENANT = true;
 
     // set database specific stuff, mostly for JDBC adapter and metadata queries
     public static final String DEFAULT_ENTITY_ID_NAME = "id";
@@ -92,6 +97,6 @@ public class AppConfig {
 
     // used only for testing fsqlquery/proxy, not part of project
 
-    // TODO: remove before delivery
+    // TODO: remove before delivery, we leave these in for ease
     public static final String FANTASY_TABLE_NAME = "fantasy";
 }

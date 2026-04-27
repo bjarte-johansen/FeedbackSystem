@@ -1,15 +1,13 @@
 package root.services;
 
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import root.app.AppConfig;
 import root.includes.EmailVerificationCodeSender;
 import root.includes.Utils;
 import root.includes.VerificationCodeDigitsGenerator;
-import root.models.VerificationCode;
-import root.repositories.VerificationCodeRepository;
+import root.models.verification.VerificationCode;
+import root.repositories.verification.VerificationCodeRepository;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -91,6 +89,7 @@ public class VerificationCodeService {
             return true;
         }
 
+        // increase number of attempts
         rec.setAttempts(rec.getAttempts() + 1);
         verificationCodeRepository.save(rec);
 

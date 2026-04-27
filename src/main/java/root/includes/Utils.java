@@ -7,10 +7,7 @@ import root.includes.logger.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;;
@@ -38,6 +35,13 @@ public class Utils {
 
     public static boolean hasText(String s) {
         return org.springframework.util.StringUtils.hasText(s);
+    }
+
+
+    public static boolean isValidEmail(String email) {
+        if(email == null) return false;
+
+        return email.matches(AppConfig.VALID_EMAIL_REGEX);
     }
 
 
@@ -98,7 +102,7 @@ public class Utils {
     public static boolean requireValidEmail(String email) {
         checkArgument(email != null, "Email cannot be null");
         checkArgument(!email.isEmpty(), "Email cannot be empty");
-        checkArgument(email.matches(AppConfig.VALID_EMAIL_REGEX), "Invalid email format");
+        checkArgument(Utils.isValidEmail(email), "Invalid email format");
         return true;
     }
 
@@ -237,5 +241,16 @@ public class Utils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+    /**
+     * Check that number is in range inclusive
+     * @param x value to check
+     * @param min inclusive minimum value
+     * @param max inclusive maximum value
+     */
+    public static boolean isBetweenInclusive(int x, int min, int max) {
+        return x >= min && x <= max;
     }
 }

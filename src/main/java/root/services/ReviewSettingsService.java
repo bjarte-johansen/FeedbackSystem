@@ -2,8 +2,8 @@ package root.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import root.models.ReviewSettings;
-import root.repositories.ReviewSettingsRepository;
+import root.models.review.ReviewSettings;
+import root.repositories.review.ReviewSettingsRepository;
 
 import java.util.Optional;
 
@@ -28,21 +28,27 @@ public class ReviewSettingsService {
      * @return the settings for the review
      */
 
-    public Optional<ReviewSettings> findByExternalId(String externalId) {
-        return reviewSettingsRepo.findByExternalId(externalId);
+    public ReviewSettings findByExternalId(String externalId) {
+        return reviewSettingsRepo.findByExternalId(externalId).orElse(null);
     }
 
-    public Optional<ReviewSettings> findOrCreateByExternalId(String externalId) {
-        var rs = reviewSettingsRepo.findByExternalId(externalId);
-        if(rs.isPresent()) return rs;
+    /**
+     * Find or create uncached review settings for a given externalId if exists. Automatically persists created
+     * entities.
+     *
+     * @param externalId the externalId to find review settings for, e.g. "/product/123"
+     * @return the settings for the review
+     */
 
-        var newRs = new ReviewSettings();
-        newRs.setExternalId(externalId);
-        newRs.setEnableListing(true);
-        newRs.setEnableSubmit(true);
+    public ReviewSettings findOrCreateByExternalId(String externalId) {
+        var rs = findByExternalId(externalId);
+        if(rs != null) return rs;
 
-        reviewSettingsRepo.save(newRs);
-
-        return Optional.of(newRs);
+        rs = new ReviewSettings();
+        rs.setExternalId(externalId);
+        rs.setEnableListing(true);
+        rs.setEnableSubmit(true);
+        reviewSettingsRepo.save(rs);
+        return rs;
     }
 }

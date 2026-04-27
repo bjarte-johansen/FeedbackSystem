@@ -1,7 +1,7 @@
 package root.unittests.services;
 
 import org.junit.jupiter.api.Test;
-import root.services.HostNameNormalizer;
+import root.services.host.HostNameNormalizer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

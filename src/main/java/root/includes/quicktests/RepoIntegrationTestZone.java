@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import root.database.*;
 import root.includes.logger.Logger;
-import root.models.Review;
-import root.repositories.ReviewRepository;
+import root.models.review.Review;
+import root.repositories.review.ReviewRepository;
 
 import java.util.List;
 

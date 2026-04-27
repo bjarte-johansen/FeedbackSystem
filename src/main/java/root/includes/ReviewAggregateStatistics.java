@@ -9,6 +9,12 @@ import java.util.Map;
  * total score count, score distribution, and score counts for each score value.
  *
  * This object is used as a DTO (data transer object) only
+ *
+ * It is currently not cached because the following actions can invalidate stats:
+ *  - Adding a new review
+ *  - Deleting a review
+ *  - Updating a review with new status (Only approved reviews are counted)
+ *  -
  */
 
 public class ReviewAggregateStatistics {
@@ -110,17 +116,17 @@ public class ReviewAggregateStatistics {
         return scoreDistribution;
     }
 
-    /**
-     * Sets the score distribution for the reviews. The score distribution is a map that represents the percentage of
-     * reviews that fall into each score category. The keys of the map are the score values (e.g., 1, 2, 3, 4, 5), and
-     * the values are the corresponding percentages of reviews that have that score.
-     *
-     * @param scoreDistribution Map<Integer, Double> representing the score distribution for the reviews, where the keys
-     *  are the score values and the values are the corresponding percentages of reviews that have that score.
-     */
-    public void setScoreDistribution(Map<Integer, Double> scoreDistribution) {
-        this.scoreDistribution = scoreDistribution;
-    }
+//    /**
+//     * Sets the score distribution for the reviews. The score distribution is a map that represents the percentage of
+//     * reviews that fall into each score category. The keys of the map are the score values (e.g., 1, 2, 3, 4, 5), and
+//     * the values are the corresponding percentages of reviews that have that score.
+//     *
+//     * @param scoreDistribution Map<Integer, Double> representing the score distribution for the reviews, where the keys
+//     *  are the score values and the values are the corresponding percentages of reviews that have that score.
+//     */
+//    public void setScoreDistribution(Map<Integer, Double> scoreDistribution) {
+//        this.scoreDistribution = scoreDistribution;
+//    }
 
     /**
      * Returns the score counts for the reviews. The score counts is a map that represents the count of reviews that fall
@@ -134,15 +140,15 @@ public class ReviewAggregateStatistics {
         return scoreCount;
     }
 
-    /**
-     * Sets the score counts for the reviews. The score counts is a map that represents the count of reviews that fall into
-     * each score category. The keys of the map are the score values (e.g., 1, 2, 3, 4, 5), and the values are the
-     * corresponding counts of reviews that have that score.
-     *
-     * @param scoreCount Map<Integer, Integer> representing the score counts for the reviews, where the keys are the
-     *  score values and the values are the corresponding counts of reviews that have that score.
-     */
-    public void setScoreCount(Map<Integer, Integer> scoreCount) {
-        this.scoreCount = scoreCount;
-    }
+//    /**
+//     * Sets the score counts for the reviews. The score counts is a map that represents the count of reviews that fall into
+//     * each score category. The keys of the map are the score values (e.g., 1, 2, 3, 4, 5), and the values are the
+//     * corresponding counts of reviews that have that score.
+//     *
+//     * @param scoreCount Map<Integer, Integer> representing the score counts for the reviews, where the keys are the
+//     *  score values and the values are the corresponding counts of reviews that have that score.
+//     */
+//    public void setScoreCount(Map<Integer, Integer> scoreCount) {
+//        this.scoreCount = scoreCount;
+//    }
 }

@@ -1,16 +1,12 @@
 function initClientRoutes(router) {
     const applyReviewVoteAction = function (reviewId, voteType) {
         Spinner.with(async () => {
-            return fetch(`/api/review/${reviewId}/${voteType}`, {method: "POST"})
-                .then(res => {
-                    if (!res.ok) {
-                        return;
-                    }
-                    Review.reloadReview(reviewId);
-                })
-                .catch(err => {
-                    console.error("Error voting ${voteType} for review", reviewId, err);
-                });
+            if(!(await Async.fetchOk(`/api/review/${reviewId}/${voteType}`, {method: "POST"}))) {
+                console.error("Failed vote-action on review");
+                return;
+            }
+
+            Review.reloadReview(reviewId);
         });
     };
 
@@ -23,42 +19,31 @@ function initClientRoutes(router) {
     });
 
     router.route("/R/reviews/filter-by-score/:score", ({params}) => {
-        Review.triggerClientScoreFilterPresetChange(params.score);
+        Review.clientTriggers.triggerClientScoreFilterPresetChange(params.score);
     });
 
     router.start();
 }
 
+
 function initAdminRoutes (router){
-    // admin routes
-    router.route("/R/admin/filter/status/:statusEnum", ({params, e}) => {
-        $(e.target).toggleClass("active");
-        console.log("admin filter review status clicked", params.statusEnum);
-
-        const url = new URL(window.location.href);
-        url.searchParams.set("statusFilter", params.statusEnum); // 👈 overwrite
-        window.location.href = url.toString();
-    });
-
     async function patchReviewStatus(reviewId, action){
         await Spinner.with(async () => {
             const url = `/api/review/mark-${action}?reviewId=${reviewId}`;
-            const res = await fetch(url,{ method: "PATCH" });
-
-            if(!res.ok){
-                const text = await res.text();
-                console.log("HTTP error:", res.status, text);
+            if(!(await Async.fetchOk(url,{method: "PATCH"}))) {
+                console.error("Failed to change review status");
                 return;
             }
 
-            console.log("success", res.ok, res.status);
+            Review.reloadReviewList({ isAdministrator: true});
         });
     }
 
-    router.route("/R/api/review/:reviewId/mark-:action", ({params, e}) => {
+    router.route("/R/api/review/:reviewId/mark-:action", ({params}) => {
         patchReviewStatus(params.reviewId, params.action);
-        window.location.reload();
     });
 
     router.start();
+
+    console.log("admin routes initialized");
 }

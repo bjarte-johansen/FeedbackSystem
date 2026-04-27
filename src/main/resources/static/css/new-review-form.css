@@ -1,40 +1,74 @@
-.submit-review-form {
-
-    .form-group {
-        margin-bottom: 8px;
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-
-    }
-    .form-group::after {
-        content: "";
-        display: block;
-        clear: both;
+.feedback-system, .review--list {
+    input:disabled, input[disabled], input[readonly] {
+        font-style: italic !important;
     }
 
-    label {
-        display: inline-block;
-        /*margin-bottom: 5px;*/
-        width: 200px;
-        font-size: 1em;
-        font-weight: bold;
+    .form-defaults, .submit-review-form {
+        h4 {
+            font-size: 1.2em;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+
+            &::after {
+                content: "";
+                display: block;
+                clear: both;
+            }
+        }
+
+        label {
+            display: block;
+            /*margin-bottom: 5px;*/
+            font-size: 1em;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        textarea, select, input {
+            box-sizing: border-box;
+            border-color: #666;
+            border-style: solid;
+            border-width: 1px;
+            padding: 8px;
+            width: 100%;
+            display: block;
+
+        }
+
+        textarea {
+            box-sizing: border-box;
+            min-height: 100px;
+        }
     }
 
-    textarea, select, input {
-        box-sizing: border-box;
-        border-color: #666;
-        border-style: solid;
-        border-width: 1px;
-        padding: 8px;
-        width: auto;
-        flex: 1;
+    .flex-form {
 
     }
 
-    textarea {
-        box-sizing: border-box;
-        min-height: 100px;
-        flex: 1;
+    .inline-form {
+        .form-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+
+        }
+
+        label {
+            display: inline-block;
+            width: 200px;
+            margin-bottom: 0;
+        }
+
+        textarea, select, input {
+            width: auto;
+            flex: 1;
+
+        }
+
+        textarea {
+            flex: 1;
+        }
     }
 }

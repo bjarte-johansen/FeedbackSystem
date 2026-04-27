@@ -1,29 +1,28 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
-<div class="box-virtual submit-review-form">
+<div class="box-virtual submit-review-form inline-form">
     <form class="form--submit-review-form submit-url" action="${submitUrl}" method="post">
+        <!--
         <p class="alert alert-info">
             Benytt "test@test.com" og "Abacus556!" som epost og passord for å unngå å måtte verifisere konto.
         </p>
+        TODO: legg til verifiseringskode
+        -->
 
         <input type="hidden" name="externalId" class="externalId external-id" value="${externalId}">
 
-        <fieldset class="mb-3">
-            <h4>Konto</h4>
+        <fieldset>
+            <h4>Omtale</h4>
 
             <div class="form-group">
                 <label for="email">Epost:</label>
                 <input type="text" id="email" name="email" class="form-control" placeholder="Bruk test@test.com" value="test@test.com">
             </div>
 
-            <div class="form-group">
+            <div class="form-group d-none">
                 <label for="password">Passord:</label>
                 <input type="password" id="password" name="password" class="form-control" value="Abacus556!">
             </div>
-        </fieldset>
-
-        <fieldset>
-            <h4>Omtale</h4>
 
             <div class="form-group">
                 <label for="displayName">Navn:</label>
@@ -40,6 +39,7 @@
                     <option value="5" selected>5</option>
                     <c:if test="${form != null && form.scoreSuggestion != null}">
                         <option value="${form.scoreSuggestion}" selected>${form.scoreSuggestion}</option>
+                    </c:if>
                 </select>
             </div>
 

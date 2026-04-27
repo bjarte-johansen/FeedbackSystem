@@ -4,14 +4,14 @@ package root;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import root.app.AppContext;
 import root.includes.logger.Logger;
 import root.includes.logger.LoggerScope;
-import root.models.Review;
-import root.repositories.ReviewRepository;
+import root.models.review.Review;
+import root.repositories.review.ReviewRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.springframework.boot.test.context.SpringBootTest;
+import root.services.DatabaseDemoDataService;
 
 import java.time.Instant;
 import java.util.List;
@@ -26,7 +26,7 @@ public class TestA0Review extends TestA0Base{
     ReviewRepository reviewRepo;// = RepositoryProxyConstructor.create(ReviewRepository.class);
 
     @Autowired
-    DatabaseManager databaseManager;
+    DatabaseDemoDataService databaseDemoDataService;
 
 
 //    /**
@@ -51,7 +51,7 @@ public class TestA0Review extends TestA0Base{
             reviewRepo.delete(e);
         });
 
-        databaseManager.cleanTenantSchema();
+        databaseDemoDataService.cleanTenantSchema();
     }
 
     protected void insertReview1() throws Exception {

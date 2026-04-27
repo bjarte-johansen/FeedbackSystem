@@ -41,4 +41,80 @@ public class TestNumericRangeRecord {
         assertThrows(IllegalArgumentException.class, () -> makeRange(null, null));
         assertThrows(ClassCastException.class, () -> makeRange((Integer) o, null));
     }
+
+    /**
+     * Her er noen tester laget av chatGPT som tok en copy-paste av klassen vår. Dette vil være veldig
+     * greit når man utvider funksjonalitet og bruker TDD for mindre klasser i fremtiden
+     */
+
+    @Test
+    void validRange_shouldCreate() {
+        var r = new NumericRangeRecord<>(1, 5);
+
+        assertEquals(1, r.start());
+        assertEquals(5, r.end());
+        assertTrue(r.isValid());
+    }
+
+    @Test
+    void equalValues_shouldBeAllowed() {
+        var r = new NumericRangeRecord<>(3, 3);
+
+        assertEquals(3, r.start());
+        assertEquals(3, r.end());
+    }
+
+    @Test
+    void startGreaterThanEnd_shouldThrow() {
+        assertThrows(IllegalArgumentException.class,
+            () -> new NumericRangeRecord<>(5, 1));
+    }
+
+    @Test
+    void nullStart_shouldThrow() {
+        assertThrows(IllegalArgumentException.class,
+            () -> new NumericRangeRecord<Integer>(null, 1));
+    }
+
+    @Test
+    void nullEnd_shouldThrow() {
+        assertThrows(IllegalArgumentException.class,
+            () -> new NumericRangeRecord<>(1, null));
+    }
+
+    @Test
+    void toCSV_defaultDelimiter() {
+        var r = new NumericRangeRecord<>(1, 10);
+
+        assertEquals("1,10", r.toCSV());
+    }
+
+    @Test
+    void toCSV_customDelimiter() {
+        var r = new NumericRangeRecord<>(1, 10);
+
+        assertEquals("1-10", r.toCSV("-"));
+    }
+
+    @Test
+    void toCSV_nullDelimiter_shouldThrow() {
+        var r = new NumericRangeRecord<>(1, 10);
+
+        assertThrows(IllegalArgumentException.class,
+            () -> r.toCSV(null));
+    }
+
+    @Test
+    void toString_shouldMatchCSV() {
+        var r = new NumericRangeRecord<>(2, 8);
+
+        assertEquals("2,8", r.toString());
+    }
+
+    @Test
+    void worksWithDifferentNumberTypes() {
+        var r = new NumericRangeRecord<>(1.5, 2.5);
+
+        assertEquals("1.5,2.5", r.toCSV());
+    }
 }

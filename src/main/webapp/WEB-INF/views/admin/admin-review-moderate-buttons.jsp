@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
+<!-- TODO add admin test instead of just relying on css -->
 <div class="box-virtual admin-review-moderate-buttons">
     <a class="btn disabled current-status">
         <span class="d-none show-if-approved">Status: Godkjent</span>
@@ -8,8 +9,8 @@
     </a>
 
     <span class="actions">
-        <a href="/R/api/review/${review.id}/mark-approved" class="btn mark-approved hide-if-approved">Godkjenn</a>
-        <a href="/R/api/review/${review.id}/mark-rejected" class="btn mark-rejected hide-if-rejected">Avvis</a>
-        <a href="/R/api/review/${review.id}/mark-pending" class="btn mark-pending hide-if-pending">Vurder på ny</a>
+        <a href="/R/api/review/{reviewId}/mark-approved" class="btn mark-approved hide-if-approved">Godkjenn</a>
+        <a href="/R/api/review/{reviewId}/mark-rejected" class="btn mark-rejected hide-if-rejected">Avvis</a>
+        <a href="/R/api/review/{reviewId}/mark-pending" class="btn mark-pending hide-if-pending">Vurder på ny</a>
     </span>
 </div>

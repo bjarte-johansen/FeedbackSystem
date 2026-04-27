@@ -2,11 +2,11 @@
 
 <html>
 <head>
-    <title>Feilmelding - FeedbackSystem</title>
+    <title>Melding - FeedbackSystem</title>
 </head>
 <body>
 
-<h1>Feilmelding</h1>
+<h1>Melding</h1>
 
 <div class="box">
 ${statusMessage}

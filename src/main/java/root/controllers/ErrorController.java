@@ -1,9 +1,13 @@
 package root.controllers;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import root.includes.logger.Logger;
+
+import java.io.IOException;
 
 
 /**
@@ -21,11 +25,25 @@ public class ErrorController {
      */
 
     @GetMapping("/403")
-    public String accessDeniedError(@RequestParam(required = false) String statusMessage, Model model) {
+    public String accessDeniedError(
+        @RequestParam(required = false) String statusMessage,
+        @RequestParam(required = false) String error,
+        Model model,
+        HttpServletResponse res
+    ) throws IOException {
+        Logger.log("YOU ARE IN /403 HANDLER" + statusMessage + " " + error);
+
+        if(error != null && !error.isBlank() && statusMessage == null || statusMessage.isBlank()){
+            statusMessage = error;
+        }
+
         model.addAttribute("statusMessage", statusMessage != null ? statusMessage : "Du har ikke tilgang til denne siden.");
 
-        return "error";
+        //return "admin/login";
+        res.sendRedirect("/admin/login");
+        return null;
     }
+
 
     /**
      * Simple route to display an error page. This is just for demonstration purposes and should be replaced with proper
@@ -33,7 +51,17 @@ public class ErrorController {
      */
 
     @GetMapping("/error")
-    public String error(@RequestParam(required = false) String statusMessage, Model model) {
+    public String error(
+        @RequestParam(required = false) String statusMessage,
+        @RequestParam(required = false) String error,
+        Model model
+    ) {
+        Logger.log("YOU ARE IN /error HANDLER" + statusMessage + " " + error);
+
+        if(error != null && !error.isBlank() && statusMessage == null || statusMessage.isBlank()){
+            statusMessage = error;
+        }
+
         if (statusMessage != null && !model.containsAttribute("statusMessage")) {
             model.addAttribute("statusMessage", statusMessage);
         }

@@ -100,22 +100,22 @@ public class PageCursor {
 //    }
 
 
-    /**
-     * Builds a SQL fragment for LIMIT and OFFSET based on the current state of the PageCursor.
-     *
-     * @return A string containing the SQL fragment for LIMIT and OFFSET, which can be used in SQL queries.
-     */
-    public String buildLimitOffsetSql() {
-        String s = "";
-        if (limit > 0) {
-            s += "LIMIT " + this.limit;
-        }
-        if (offset > 0) {
-            if (!s.isEmpty()) s += " ";
-            s += "OFFSET " + this.offset;
-        }
-        return s;
-    }
+//    /**
+//     * Builds a SQL fragment for LIMIT and OFFSET based on the current state of the PageCursor.
+//     *
+//     * @return A string containing the SQL fragment for LIMIT and OFFSET, which can be used in SQL queries.
+//     */
+//    public String buildLimitOffsetSql() {
+//        String s = "";
+//        if (limit > 0) {
+//            s += "LIMIT " + this.limit;
+//        }
+//        if (offset > 0) {
+//            if (!s.isEmpty()) s += " ";
+//            s += "OFFSET " + this.offset;
+//        }
+//        return s;
+//    }
 
 
 //    /** decode string into cursor, string must be in int,int format */

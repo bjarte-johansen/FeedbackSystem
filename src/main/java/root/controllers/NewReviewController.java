@@ -9,23 +9,19 @@ import org.springframework.web.bind.annotation.*;
 import root.app.AppConfig;
 import root.common.testdata.FunnyUserNameGenerator;
 import root.common.testdata.IpsumLoremGenerator;
-import root.controllers.dto.NewReviewForm;
-import root.includes.EmailVerificationCodeSender;
-import root.includes.Utils;
-import root.includes.VerificationCodeDigitsGenerator;
-import root.includes.logger.Logger;
-import root.models.Review;
-import root.models.ReviewSettings;
-import root.models.VerificationCode;
-import root.repositories.ReviewRepository;
-import root.repositories.VerificationCodeRepository;
-import root.services.HostNameResolver;
+import root.controllers.dto.NewReviewFormDto;
+import root.includes.context.TenantContext;
+import root.models.review.Review;
+import root.models.review.ReviewSettings;
+import root.models.tenant.Tenant;
+import root.repositories.review.ReviewRepository;
+import root.repositories.verification.VerificationCodeRepository;
+import root.services.host.HostNameResolver;
 import root.services.ReviewSettingsService;
 import root.services.VerificationCodeService;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -131,38 +127,43 @@ public class NewReviewController {
 
     @PostMapping({"/api/review/submit"})
     public ResponseEntity<Void> submitReview(
-        @ModelAttribute NewReviewForm form
+        @ModelAttribute NewReviewFormDto form
     ) {
-        List<String> errors = NewReviewForm.validate(form, new ArrayList<String>());
+        List<String> errors = NewReviewFormDto.validate(form, new ArrayList<>());
         checkArgument(errors.isEmpty(), errors.toString());
 
-        final ReviewSettings reviewCfg = reviewSettingsService
-            .findOrCreateByExternalId(Objects.requireNonNullElse(form.externalId(), ""))
-            .orElseThrow(() -> new RuntimeException("Unexpected empty review settings"));
-
-        if(reviewCfg.getEnableSubmit()){
-            // no reviewer, verification code in the future
-            // Reviewer reviewer = reviewerRepo.findByEmail(form.email()).orElse(null);
-            // checkArgument(reviewer != null, "Reviewer not found");
-
-            Review review = new Review();
-            review.setAuthorName(form.displayName());
-            review.setScore(form.score());
-            review.setComment(form.comment());
-            review.setExternalId(form.externalId());
-            review.setCreatedAt(Instant.now());
-            review.setTitle(form.title());
-            review.setStatus(Review.REVIEW_STATUS_PENDING);
-
-            if (AppConfig.AUTO_APPROVE_NEW_REVIEWS /* NOTE: should be set to false for production */) {
-                review.setStatus(Review.REVIEW_STATUS_APPROVED);
-            }
-
-            reviewRepo.save(review);
-        }else{
-            // TODO: serve message that form submission is temporarily disabled
-            throw new RuntimeException("Form submission temporarily disabled");
+        // check tenant enable submit
+        Tenant tenant = TenantContext.get();
+        if(!tenant.getEnableSubmit()){
+            throw new RuntimeException("Form submission temporarily disabled for this tenant");
         }
+
+        final ReviewSettings reviewCfg = reviewSettingsService
+            .findOrCreateByExternalId(Objects.requireNonNullElse(form.externalId(), ""));
+
+        // check tenant enable submit
+        if(!reviewCfg.getEnableSubmit()){
+            throw new RuntimeException("Form submission temporarily disabled for this page");
+        }
+
+        // no reviewer, verification code in the future
+        // Reviewer reviewer = reviewerRepo.findByEmail(form.email()).orElse(null);
+        // checkArgument(reviewer != null, "Reviewer not found");
+
+        Review review = new Review();
+        review.setAuthorName(form.displayName());
+        review.setScore(form.score());
+        review.setComment(form.comment());
+        review.setExternalId(form.externalId());
+        review.setCreatedAt(Instant.now());
+        review.setTitle(form.title());
+        review.setStatus(Review.REVIEW_STATUS_PENDING);
+
+        if (AppConfig.AUTO_APPROVE_NEW_REVIEWS /* NOTE: should be set to false for production */) {
+            review.setStatus(Review.REVIEW_STATUS_APPROVED);
+        }
+
+        reviewRepo.save(review);
 
         return ResponseEntity.ok().build();
     }

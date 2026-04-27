@@ -1,6 +1,6 @@
 package root.controllers.helpers;
 
-import root.models.Review;
+import root.models.review.Review;
 
 import java.util.LinkedHashMap;
 

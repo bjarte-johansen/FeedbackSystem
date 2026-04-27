@@ -18,6 +18,25 @@ public class TestPasswordService {
     private PasswordService passwordService;
 
 
+    /**
+     * We cannot test deterministic, because bcrypt creates new salt every time,
+     * but we can test allways different
+     */
+    @Test
+    public void test_different(){
+        {
+            String a = passwordService.encode("password123");
+            String b = passwordService.encode("password456");
+            assertTrue(!a.equals(b));
+        }
+
+        {
+            String a = passwordService.encode("password123");
+            String b = passwordService.encode("password123");
+            assertTrue(!a.equals(b));
+        }
+    }
+
     @Test
     public void testValidPasswordGenerator() {
         List<String> validPasswords = List.of("password1", "12345678", "qwertyuiop", "letmein123", "admin1234");

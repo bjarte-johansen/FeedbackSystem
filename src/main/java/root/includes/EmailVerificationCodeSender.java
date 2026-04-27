@@ -6,6 +6,13 @@ import root.app.AppConfig;
 
 import java.util.Properties;
 
+/**
+ * Class to send email verification code. The message itself is a formatted string currently stored in (see code). The
+ * email is sent in HTML format.
+ * <p>
+ * Ideally we should store server, app password, sender address etc in a central location or database. We have
+ * hardcoded it.
+ */
 
 public class EmailVerificationCodeSender {
 
@@ -20,8 +27,8 @@ public class EmailVerificationCodeSender {
         Session s = Session.getInstance(p, new Authenticator() {
             protected PasswordAuthentication getPasswordAuthentication() {
                 return new PasswordAuthentication(
-                    "dat109prosjekt@gmail.com",
-                    "fwhf izag otim phro" // 16-char app password
+                    AppConfig.VERIFICATION_CODE_EMAIL_ACCOUNT,
+                    AppConfig.VERIFICATION_CODE_EMAIL_APP_PASSWORD // 16-char app password
                 );
             }
         });

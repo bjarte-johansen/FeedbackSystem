@@ -1,21 +1,14 @@
 package root.unittests.api;
 
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import root.DatabaseManager;
 import root.TestA0Base;
 import root.includes.logger.Logger;
-import root.includes.logger.LoggerScope;
-import root.models.Review;
-import root.repositories.ReviewRepository;
-
-import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -56,7 +49,7 @@ public class Test_ClientController_Api_Review_Id extends TestA0Base {
 
         // assert output taken from actual testing, a real route
         assertEquals(
-            "{\"id\":17,\"externalId\":\"/product/1\",\"authorId\":1,\"authorName\":\"GoofyLlama178\",\"score\":3,\"title\":\"Dolor labore.\",\"comment\":\"Sit lorem elit dolor consectetur ex. ad amet. do. consectetur eiusmod nisi ut ad sit. exercitation et sed.\",\"createdAt\":\"2024-10-02T22:28:28.685206Z\",\"status\":3,\"likeCount\":0,\"dislikeCount\":1,\"shortDateString\":\"for 1 Ã¥r siden\"}",
+            "{\"id\":17,\"externalId\":\"/product/1\",\"authorId\":1,\"authorName\":\"GoofyLlama178\",\"score\":3,\"title\":\"Dolor labore.\",\"comment\":\"Sit lorem elit dolor consectetur ex. ad amet. do. consectetur eiusmod nisi ut ad sit. exercitation et sed.\",\"createdAt\":\"2024-10-02T22:28:28.685206Z\",\"status\":3,\"likeCount\":0,\"dislikeCount\":1}",
             body
         );
     }

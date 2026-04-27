@@ -1,0 +1,25 @@
+.alert{
+    padding: 8px;
+    border-radius: 5px;
+    margin-bottom: 0.9em;
+    color: #FFF;
+}
+.alert-error{
+    border: 1px solid #ff0217;
+    background: #ff0217;
+}
+.alert-success{
+    border: 1px solid #115108;
+    background: #115108;
+}
+.alert-info{
+    border: 1px solid #cdd9ed;
+    background: #cfe2ff;
+    color: #084298;
+}
+.alert-secondary{
+    border: 1px solid #3a3a3a;
+    background: #3a3a3a;
+}
+
+.alert:empty{display: none;}

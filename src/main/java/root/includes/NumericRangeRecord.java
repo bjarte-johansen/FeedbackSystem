@@ -6,8 +6,8 @@ import static com.google.common.base.Preconditions.checkArgument;
  * A simple generic class representing a numeric range with minimum and maximum values. It provides methods to convert
  * the range to a comma-separated string and to parse a comma-separated string into a Range object.
  * <p>
- * IMPORTANT: the class will happily accept "1", "1,2", "1-2" and [1] and [1,2] as valid inputs, if only one value
- * exists it will be duplicated to create a range where min and max are the same. IMPORTANT: No validation is done. It
+ * NOTE: the class will happily accept "1", "1,2", "1-2" and [1] and [1,2] as valid inputs, if only one value
+ * exists it will be duplicated to create a range where min and max are the same. Note: No validation is done. It
  * is the responsibility of the caller to ensure that the input is valid.
  */
 

@@ -1,4 +1,4 @@
-package root.A_TODO;
+package root.__ignore__;
 
 import root.models.Tenant;
 

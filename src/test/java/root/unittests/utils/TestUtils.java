@@ -156,4 +156,56 @@ public class TestUtils {
         assertEquals("5 &lt; 10 &amp; 10 &gt; 5", Utils.escapeHtml("5 < 10 & 10 > 5"), "Expected escapeHtml(\"5 < 10 & 10 > 5\") to return \"5 &lt; 10 &amp; 10 &gt; 5\"");
         assertEquals("She said, &quot;Hello!&quot;", Utils.escapeHtml("She said, \"Hello!\""), "Expected escapeHtml(\"She said, \\\"Hello!\\\"\") to return \"She said, &quot;Hello!&quot;\"");
     }
+
+
+    /**
+     * ALL sha256 tests written by chatgpt. It took about 20 seconds to build them. We love that AI to catch
+     * errors during development for utilities we need. And also note that we need to learn how to tell AI
+     * to write updated tests in the future when we write classes like this, so that we can easily regenerate tests
+     * if we change the implementation of the method.
+     *
+     * Github change/version history could probably help us with this
+     */
+
+    @Test
+    void sha256_knownValue() {
+        String input = "hello";
+        String expected = "2cf24dba5fb0a30e26e83b2ac5b9e29e"
+            + "1b161e5c1fa7425e73043362938b9824";
+
+        assertEquals(expected, Utils.sha256(input));
+    }
+
+    @Test
+    void sha256_emptyString() {
+        String expected = "e3b0c44298fc1c149afbf4c8996fb924"
+            + "27ae41e4649b934ca495991b7852b855";
+
+        assertEquals(expected, Utils.sha256(""));
+    }
+
+    @Test
+    void sha256_isDeterministic() {
+        String input = "test123";
+
+        String h1 = Utils.sha256(input);
+        String h2 = Utils.sha256(input);
+
+        assertEquals(h1, h2);
+    }
+
+    @Test
+    void sha256_differentInputsDifferentHashes() {
+        String h1 = Utils.sha256("a");
+        String h2 = Utils.sha256("b");
+
+        assertNotEquals(h1, h2);
+    }
+
+    @Test
+    void sha256_outputLength() {
+        String hash = Utils.sha256("anything");
+
+        assertEquals(64, hash.length()); // 256 bits = 64 hex chars
+    }
 }

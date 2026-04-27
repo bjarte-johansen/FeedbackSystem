@@ -2,30 +2,54 @@ package root.controllers;
 
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import root.annotations.AdminOnly;
 import root.app.AppConfig;
-import root.app.ReviewQueryOptions;
-import root.controllers.helpers.ControllerConstantMaps;
-import root.includes.Utils;
-import root.models.Review;
-import root.services.AdminReviewPageService;
-import root.services.ReviewService;
+import root.controllers.dto.ReviewSettingsDto;
+import root.models.review.Review;
+import root.repositories.review.ReviewSettingsRepository;
+import root.services.review.ClientReviewPageService;
+import root.services.review.ReviewService;
+import root.services.ReviewSettingsService;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.*;
 
 
+/**
+ * Class to handle admin routes
+ * <p>
+ * Routes for letting one edit administrator settings have intentionally been left out in this version. Particularly
+ * the editing of domains would have to be isolated so that no one delete their domain -> tenant mapping, as it would
+ * cause lookups to stop working
+ * <p>
+ * Only rudimentary ways of editing review capabilities such as enableListing and enableSubmit for specific review-pages
+ * have been left.
+ */
 
 @Controller
 public class AdminController {
     // declare repos
-    private final ReviewService reviewService;
-    private final AdminReviewPageService adminReviewPageService;
+    @Autowired
+    private ReviewService reviewService;
+
+    @Autowired
+    private ReviewSettingsService reviewSettingsService;
+
+    @Autowired
+    private ReviewSettingsRepository reviewSettingsRepo;
+
+    //@Autowired
+    //private TenantResolver tenantResolver;
+
+    @Autowired
+    private ClientReviewPageService clientReviewPageService;
 
 
     /*
@@ -44,24 +68,11 @@ public class AdminController {
     }
 
 
-    /**
-     * Constructor with dependency injection.
-     *
-     * @param reviewService
-     * @param adminReviewPageService
-     */
-
-    public AdminController(ReviewService reviewService, AdminReviewPageService adminReviewPageService) {
-        this.reviewService = reviewService;
-        this.adminReviewPageService = adminReviewPageService;
-    }
-
-
-
     /*
     API endpoints
     TODO: test these endpoints with Postman or similar tool, and implement a simple admin UI if time permits.
      */
+
 
     /**
      * Shows the admin dashboard page with a list of reviews filtered by status. The status filter is passed as a query
@@ -77,12 +88,12 @@ public class AdminController {
      * @param dateFilterPreset
      * @param model
      * @return
-     * @throws Exception
      */
 
     @AdminOnly
     @GetMapping({"/admin/dashboard", "/admin", "/admin/", "/admin/dashboard/reviews"})
     public String showFilteredReviews(
+        @RequestParam(defaultValue = "/invalid-path") String externalId,
         @RequestParam(required = false) Integer orderByEnum,
         @RequestParam(required = false) String statusFilter,
         @RequestParam(required = false) LocalDate dateFilterStart,
@@ -91,20 +102,13 @@ public class AdminController {
         @RequestParam(name = "cursor", required = false, defaultValue="") String pageCursorStr,
         HttpServletRequest req,
         Model model
-    ) throws Exception {
-        int defaultLimit = AppConfig.ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS;
-
-        ReviewQueryOptions po = ReviewQueryOptionsParser.parseRequest(req, defaultLimit);
-
-        // build model data for the view using the service
-        var vm = adminReviewPageService.buildReviewListModelData(po);
-
-        // put in names/lookups etc
-        vm.put("constants", ControllerConstantMaps.ALL_CONSTANTS);
-
-        // make json representation
-        vm.put("json", Utils.toJson(vm.get("reviews")));
-
+    ) {
+        Map<String, Object> vm = clientReviewPageService.buildPageData(
+            false,
+            true,
+            AppConfig.ADMIN_DEFAULT_MAX_VISIBLE_REVIEWS,
+            req
+        );
         model.addAllAttributes(vm);
         return "admin/admin-dashboard";
     }
@@ -170,6 +174,48 @@ public class AdminController {
 
         reviewService.deleteById(reviewId);
 
+        return ResponseEntity.ok().build();
+    }
+
+
+    /**
+     * create edit reviewing settings list form
+     * @param model
+     * @return
+     */
+
+    @AdminOnly
+    @GetMapping("/api/review/settings/list")
+    public String showListForReviewSettings(Model model) {
+        var reviewSettingsList = reviewSettingsRepo.findAll()
+            .stream()
+            .sorted((a, b) -> a.getId().compareTo(b.getId()))
+            .toList();
+        model.addAttribute("reviewSettingsList", reviewSettingsList);
+        return "admin/review-settings-list";
+    }
+
+
+    /**
+     * save review settings form
+     * @param dto
+     * @return
+     */
+
+    @AdminOnly
+    @PutMapping("/api/review/settings/list")
+    public ResponseEntity<Void> saveReviewSettings(
+        @RequestBody ReviewSettingsDto dto
+    ){
+        checkArgument(dto.externalId() != null, "External Id cannot be empty");
+
+        // we dont do any validation here
+        // we use externalId instead of id
+        var reviewSettings = reviewSettingsService.findOrCreateByExternalId(dto.externalId());
+        reviewSettings.setName(dto.name());
+        reviewSettings.setEnableSubmit(Boolean.parseBoolean(dto.enableSubmit()));
+        reviewSettings.setEnableListing(Boolean.parseBoolean(dto.enableListing()));
+        reviewSettingsRepo.save(reviewSettings);
         return ResponseEntity.ok().build();
     }
 }

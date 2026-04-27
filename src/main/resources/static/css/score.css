@@ -1,0 +1,47 @@
+/********** SCORE STARS ****************************/
+
+.review--list, .feedback-system{
+    /* stars, in part by chatgpt */
+
+    /* base */
+    .score {
+        --stars: 0;
+        position: relative;
+        display: inline-block;
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    .score::before,
+    .score::after {
+        content: "★★★★★";
+        display: block;           /* 🔥 important */
+    }
+
+    .score::before {
+        color: #c7c9c9;
+    }
+
+    .score::after {
+        color: var(--review-primary-btn-color);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: calc(var(--stars) * 20%);
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    /* presets */
+    .score-1, .score-1-0 { --stars: 1; }
+    .score-1-5 { --stars: 1.5; }
+    .score-2, .score-2-0 { --stars: 2; }
+    .score-2-5 { --stars: 2.5; }
+    .score-3, .score-3-0 { --stars: 3; }
+    .score-3-5 { --stars: 3.5; }
+    .score-4, .score-4-0 { --stars: 4; }
+    .score-4-5 { --stars: 4.5; }
+    .score-5, .score-5-0 { --stars: 5; }
+}
+
+/********** END SCORE STARS ************************/

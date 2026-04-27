@@ -5,11 +5,11 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import root.app.AppContext;
-import root.app.AppRequestSchema;
+import root.app.connection.ConnectionProviderInitializer;
+import root.includes.context.SchemaContext;
 import root.includes.logger.Logger;
 import root.includes.logger.LoggerScope;
-import root.repositories.ReviewRepository;
+import root.repositories.review.ReviewRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -35,7 +35,7 @@ public class TestA0Base {
     public static String PREVIOUS_SCHEMA_NAME = null;
 
     @Autowired
-    AppContext appContext;
+    ConnectionProviderInitializer connectionProviderInitializer;
 
     // private stuff
     LoggerScope __logger;
@@ -91,7 +91,7 @@ public class TestA0Base {
 
     @BeforeEach
     public void beforeEach(TestInfo info) throws Exception {
-        appContext.init();
+        //appContext.init();
         System.setProperty("APP_ENV", "test");
 
         __logger = Logger.scope(
@@ -100,8 +100,8 @@ public class TestA0Base {
             TestA0Base::loggerExitBlock
         );
 
-        PREVIOUS_SCHEMA_NAME = AppRequestSchema.get();
-        AppRequestSchema.set(TEST_SCHEMA_NAME);
+        PREVIOUS_SCHEMA_NAME = SchemaContext.get();
+        SchemaContext.set(TEST_SCHEMA_NAME);
 
         cleanDatabase();
     }
@@ -119,9 +119,9 @@ public class TestA0Base {
         cleanDatabase();
 
         if(PREVIOUS_SCHEMA_NAME != null) {
-            AppRequestSchema.remove();
+            SchemaContext.remove();
         }else{
-            AppRequestSchema.set(TEST_SCHEMA_NAME);
+            SchemaContext.set(TEST_SCHEMA_NAME);
         }
 
         __logger.close();

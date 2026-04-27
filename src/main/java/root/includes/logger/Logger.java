@@ -28,6 +28,8 @@ ansi functions
     }
 */
 
+// TODO: depth should probably not be threadlocal, hard to say for sure, could be beneficial to look at it
+
 public class Logger {
     protected static LoggerConfiguration cfg = new LoggerConfiguration();
 
@@ -100,6 +102,12 @@ public class Logger {
     }
     public static LoggerScope scope(String title, boolean verbose) {
         return scope(title, 1, verbose);
+    }
+
+    public static void withScope(String title, Runnable runnable) {
+        try(var tmp = scope(title)) {
+            runnable.run();
+        }
     }
 
     public static LoggerScope scope(String title, BiConsumer<String, Integer> fnEnter, BiConsumer<String, Integer> fnLeave){
@@ -214,11 +222,17 @@ public class Logger {
         }
 
         String indentStr = getIndentPrefixStr();
+        String userOut;
         int inputLength = input.length();
 
         synchronized (Logger.class) {
             String magicOut = "";
-            String userOut = SyntaxHighlighter.highlight(input);
+            if(cfg.SYNTAX_HIGHLIGHT_ENABLED) {
+                userOut = SyntaxHighlighter.highlight(input);
+            }else{
+                userOut = input;
+
+            }
             StringBuilder out = new StringBuilder(512);
 
             if(cfg.USE_MAGIC_LOGGING) {

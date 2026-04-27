@@ -11,6 +11,9 @@ import jakarta.persistence.Table;
 public class RepositoryProxyConstructor {
     public static ArrayList<String> MODEL_PACKAGE_SEARCH_PATH = new ArrayList<>(List.of(
         "root.models",
+        "root.models.review",
+        "root.models.tenant",
+        "root.models.verification",
         "root.includes.quicktests.repofun"
     ));
     private static final Map<String, Class<?>> CACHE = new ConcurrentHashMap<>();

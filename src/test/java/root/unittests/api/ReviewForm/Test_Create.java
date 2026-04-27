@@ -8,7 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import root.TestA0Base;
-import root.config.RequestContextFilter;
+import root.includes.context.RequestContext;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -23,7 +23,7 @@ public class Test_Create extends TestA0Base {
 
     @BeforeAll
     public static void setup() {
-        RequestContextFilter.VERBOSE = false;
+        RequestContext.VERBOSE = false;
     }
 
     @Test

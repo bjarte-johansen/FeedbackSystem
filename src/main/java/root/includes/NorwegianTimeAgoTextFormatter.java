@@ -7,6 +7,7 @@ import java.time.Instant;
  * "for 2 timer siden", etc. Note: This is a simple implementation and may not cover all edge cases or localization
  * nuances. In part written by ChatGPT, with some adjustments for Norwegian language and pluralization.
  * TODO: Consider using a library like Joda-Time or java.time.format for more robust formatting and localization support.
+ * TODO: no longer used
  */
 
 public class NorwegianTimeAgoTextFormatter {

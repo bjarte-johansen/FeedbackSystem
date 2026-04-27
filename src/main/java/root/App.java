@@ -1,5 +1,4 @@
 /**
- * This file is part of the "Where You At?" application (https://whereyouat.app).
  *
  * IMPORTANT: To enable localhost development profile, add the following line to run config VM options:
  *      -Dspring.profiles.active=local to VM options (run configuration)
@@ -10,85 +9,34 @@
 
 package root;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
-import root.includes.EmailVerificationCodeSender;
-
-import java.sql.Connection;
-import java.util.*;
 
 
+/**
+ * Main classes for spring project
+ */
 
 @SpringBootApplication
 public class App extends SpringBootServletInitializer {
+
+    /**
+     * starts spring app on localserver
+     * @param args
+     */
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(App.class);
-        app.setDefaultProperties(Map.of(
-            "spring.profiles.active", "local"
-        ));
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                EmailVerificationCodeSender.send("bjartej@hotmail.com", "minserver.no", "123456");
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        });
-
         app.run(args);
     }
 
-    // used when deployed as WAR in Tomcat
+    /**
+     * used when deployed as WAR in Tomcat
+     */
+
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
         return builder.sources(App.class);
     }
-
-    @FunctionalInterface
-    public interface ConnectionStatementRunnable{
-        void run(Connection c, java.sql.Statement st) throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ConnectionStatementSchemaRunnable{
-        void run(Connection c, java.sql.Statement st, String schema) throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ThrowingRunnable{
-        void run() throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ThrowingConsumer<T>{
-        void run(T t) throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ThrowingSupplier<T>{
-        T run() throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ThrowingFunction<T, R>{
-        R run(T t) throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ThrowingBiFunction<T, U, R>{
-        R run(T t, U u) throws Exception;
-    }
-
-    /*
-    public static void logExec(ThrowingRunnable runnable, String title) throws Exception {
-        try(var _ = Logger.scope(title != null ? title : "{unnamed block}")) {
-            runnable.run();
-        }
-    }
-    */
 }

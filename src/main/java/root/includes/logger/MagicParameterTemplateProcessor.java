@@ -36,6 +36,7 @@ class MagicParameterTemplateProcessor {
         //  by one when there are no parameters, the common case for short formats like "@classMethod" or "@link")
 
         if (fmt == null || fmt.isEmpty()) return "";
+        if(fmt.indexOf('@') == -1) return fmt;
 
         StringBuilder sb = new StringBuilder(fmt.length() + 64);
 
