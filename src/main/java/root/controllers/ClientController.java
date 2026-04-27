@@ -43,21 +43,18 @@ public class ClientController {
     private CachedReviewSettingsService cachedReviewSettingsService;
 
 
-//    /**
-//     * Default route to show reviews for a default externalId. This is just for convenience and demonstration purposes,
-//     * and should be removed or redirected to a more appropriate page in production code.
-//     * TODO: remove or redirect to a more appropriate page in production code
-//     *
-//     * @param model
-//     * @param req
-//     * @return
-//     * @throws Exception
-//     */
-//
-//    @GetMapping("/")
-//    public String index(Model model, HttpServletRequest req, RedirectAttributes ra) throws Exception {
-//        return "redirect:/api/reviews/list/html?showDemoPills=true&externalId=/invalid-path";
-//    }
+    /**
+     * Default route set up for demo
+     * @param model
+     * @param req
+     * @param ra
+     * @return
+     * @throws Exception
+     */
+    @GetMapping("/")
+    public String index(Model model, HttpServletRequest req, RedirectAttributes ra) throws Exception {
+        return "demo/demo";
+    }
 
 
 
