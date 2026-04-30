@@ -1,94 +1,79 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
-<%--
-<c:forEach var="e" items="${requestScope}">
-    <c:if test="${not fn:startsWith(e.key, 'org.springframework') and not fn:startsWith(e.key, 'jakarta')}">
-        <c:if test="${not fn:startsWith(e.key, 'reviews')}">
-            <c:if test="${
-                not fn:startsWith(e.key, 'hiddenHttpMethodFilter') and
-                not fn:startsWith(e.key, 'characterEncodingFilter') and
-                not fn:startsWith(e.key, 'formContentFilter') and
-                not fn:startsWith(e.key, 'requestContextFilter') and
-                not fn:startsWith(e.key, 'myRequestContextFilter') and
-                not fn:startsWith(e.key, 'json')
-            }">
-                ${e.key} = ${e.value}<br>
-            </c:if>
-        </c:if>
-    </c:if>
-</c:forEach>
---%>
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <title>Client</title>
+    <meta charset="UTF-8">
 
+    <link rel="icon" href="/favicon/favicon.ico">
 
-<c:if test="${not enableListing}">
-    <div class="container--reviews d-none">
-        <div class="box-virtual review--list ${isClient ? 'is-client' : ''} ${isAdministrator ? 'is-admin' : ''}">
-            <p>Omtaler er slått av for denne siden</p>
-        </div>
-    </div>
-</c:if>
+    <style>
+        /* css for this page, client will have his own */
+        html { scroll-behavior: auto; }
+        body { font-family: Arial, Helvetica, sans-serif; margin: 20px; }
+        input{ line-height: 1.6em; }
+        table { border-collapse: collapse;  }
+        table, th, td { border: 1px solid #ccc; padding: 8px; text-align:left; }
+        th { background: #f0f0f0; }
+        *{line-height: 1.4em;}
+        .description button{ padding:8px; }
 
-<c:if test="${enableListing}">
-    <link rel="stylesheet/less" href="/css/main.less">
-    <script src="https://cdn.jsdelivr.net/npm/less@4"></script>
+        /* unused */
+        .backdrop{
+            background-image: url("/html/webshop.png");
+            width:100%;
+            height:500px;
+            margin-bottom:16px;
+            display:none;
+        }
+    </style>
 
+    <!-- REQUIRED PART OF SCRIPTS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="/js/classes/Constants.js"></script>
-    <script src="/js/classes/Scroll.js"></script>
-    <script src="/js/classes/TimeAgoFormatter.js"></script>
-    <script src="/js/classes/Assert.js"></script>
-    <script src="/js/classes/Spinner.js"></script>
-    <script src="/js/classes/Async.js"></script>
-    <script src="/js/classes/Router.js"></script>
-    <script src="/js/classes/PageCursor.js"></script>
-    <script src="/js/classes/ReviewQueryOptions.js"></script>
-    <script src="/js/classes/ReviewListing.js"></script>
-    <script src="/js/classes/ReviewListingRenderer.js"></script>
-    <script src="/js/classes/StatisticsRenderer.js"></script>
-    <script src="/js/classes/UiReviewListingFilter.js"></script>
-    <script src="/js/classes/NewReviewFormValidator.js"></script>
-    <script src="/js/classes/Utils.js"></script>
-    <script src="/js/classes/UserInterfaceTriggers.js"></script>
-    <script src="/js/classes/ModalDialog.js"></script>
+    <script src="/js/classes/DynamicReviewListingLoader.js" type="text/javascript"></script>
 
-    <script src="/js/routes.js"></script>
-    <script src="/js/client-review.js"></script>
+    <script>
+        // usage, our code
+        document.addEventListener("DOMContentLoaded", () => {
+            const params = new URLSearchParams(window.location.search);
+            const externalId = params.get("externalId");
 
+            const searchParams = new URLSearchParams();
+            searchParams.set("realApi", "true");
+            searchParams.set("externalId", externalId !== null ? externalId : "/product/1");
 
-    <!-- review section part -->
-    <div class="container--reviews d-none">
-        <div class="box-virtual review--list ${isClient ? 'is-client' : ''} ${isAdministrator ? 'is-admin' : ''}"
-            data-json="${fn:escapeXml(json)}"
-            data-enable-listing="${reviewConfig.enableListing}"
-            data-is-client="${isClient}"
-            data-is-administrator="${isAdministrator}">
-
-            <div class="admin-only">
-                <!--<h2>Administrator settings</h2>-->
-                <div class="d-flex">
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='/api/review/settings/list';">⚙ Artikkel innst.</button>
-                    <button type="button" class="btn btn-primary " onclick="window.location.href='/api/tenant/edit/form/html';">⚙ Hoved innst</button>
-                    <button type="button" class="btn btn-primary ms-auto" onclick="window.location.href='/admin/logout';">Logout</button>
-                </div>
-            </div>
-
-            <div class="box-virtual mb-4">
-                <%@ include file="reviews-statistics.jsp" %>
-
-                <!-- form to submit new review -->
-                <div class="box-virtual submit-review-form-container"></div>
-            </div>
-
-            <%@ include file="filters.jsp" %>
-
-            <%@ include file="admin-paginator.jsp" %>
-
-            <%@ include file="review-list.jsp" %>
-
-            <%@ include file="admin-paginator.jsp" %>
-            <%@ include file="client-paginator.jsp" %>
+            DynamicReviewListingLoader.loadReviewListing(
+                document.getElementById("omtaler"),
+                searchParams
+            );
+        });
+    </script>
+</head>
+<body>
+    <div class="description">
+        <h1>Eksempel på implementasjon, dynamisk rute</h1>
+        <div style="background-color:#dfdfdf; padding: 16px; border-radius: 0px; border: 1px solid #CCC; margin-bottom:16px;">
+            Eksempelet vårt viser for /product/1 som angitt i javascript loader og siden viser dynamisk innlasting og
+            client-side rendering.
+            <br><br>
+            Noen steder er det optimalisert for mobil med filtre, men ikke plasser.
+            <br><br>
+            <button onclick="$('.backdrop').toggle()">Toggle fake nettbutikk</button>
+            <br><br>
+            <h5>Stier simulerer forskjellige sider</h5>
+            <button onclick="window.location.href=window.location.href.split('?')[0] + '?externalId=/product/1';">/product/1</button>
+            <button onclick="window.location.href=window.location.href.split('?')[0] + '?externalId=/product/2';">/product/2</button>
+            <button onclick="window.location.href=window.location.href.split('?')[0] + '?externalId=/splitter-ny-vare';">/splitter-ny-vare</button>
+            <button onclick="window.location.href=window.location.href.split('?')[0] + '?externalId=/visning-disabled';">/visning-disabled</button>
+            <button onclick="window.location.href=window.location.href.split('?')[0] + '?externalId=/ny-omtale-disabled';">/ny-omtale-disabled</button>
         </div>
     </div>
-</c:if>
+
+    <div class="fake-website">
+        <div class="backdrop"></div>
+
+        <div id="omtaler"></div>
+
+    </div>
+</body>
+</html>
